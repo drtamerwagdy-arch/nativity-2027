@@ -314,8 +314,8 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
         <div class="pills tiers" data-tiers></div>
         <h3 style="margin-top:14px">Your business</h3>
         <label class="f">Business name<input name="business" id="sp-business" autocomplete="organization"></label>
-        <label class="f">Website <span>(optional)</span><input name="website" id="sp-website" inputmode="url" autocomplete="url" placeholder="www.yourbusiness.ca"></label>
-        <label class="f">What would you like your ad to say? <span>(optional, up to 120 characters)</span><textarea name="ad_text" id="sp-ad" rows="2" maxlength="120" placeholder="e.g. Family dentistry in NE Calgary · Merry Christmas!"></textarea></label>
+        <label class="f">Website <span>(optional)</span><input name="website" id="sp-website" inputmode="url" autocomplete="url"></label>
+        <label class="f">What would you like your ad to say? <span>(optional, up to 120 characters)</span><textarea name="ad_text" id="sp-ad" rows="2" maxlength="120"></textarea></label>
         <h3 style="margin-top:14px">Your logo</h3>
         <label class="btn ghost wide" style="text-align:center">Upload your logo<input type="file" accept="image/*" class="hide" data-logo></label>
         <div data-logoprev></div>
@@ -342,7 +342,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.17</span></footer>
+<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.18</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -607,8 +607,17 @@ function ProofBox(root, opts) {
 <script>// Quick guide (Tamer 2026-09-24), shared by the public page and the team page: a welcome note, then short bubbles that
 // light up one part of the page. A Guide switch in every bubble turns it off; the Help button brings it back.
 // No sliding and no jumping: the page moves only when the part is out of view, and the bubble appears once it has.
-//   var g = QuickGuide(steps, { seen: 'storage-key', off: 'storage-key', before: fn });  g.auto();  g.start(true)
-//   step = { el: css selector | function returning an element | null (centred note), t: title, d: html text, go: button }
+//   var help = HelpButton(function () { g.start(true); });
+//   var g = QuickGuide(steps, { seen: 'storage-key', off: 'storage-key', fab: help, before: fn, after: fn });  g.auto();
+//   step = { el: css selector | function returning an element | null (centred note), t: title, d: html text, go: button,
+//            pre: function run first (e.g. switch to the Donate tab) }
+function HelpButton(onClick) {
+  var b = document.createElement('button');
+  b.type = 'button'; b.className = 'help-fab'; b.setAttribute('aria-label', 'Help: quick guide');
+  b.innerHTML = '<span aria-hidden="true">?</span> Help'; b.onclick = onClick;
+  document.body.appendChild(b);
+  return b;
+}
 function QuickGuide(steps, o) {
   function flag(k) { try { return localStorage.getItem(k) === '1'; } catch (e) { return false; } }
   function setFlag(k, on) { try { if (on) localStorage.setItem(k, '1'); else localStorage.removeItem(k); } catch (e) { } }
@@ -616,14 +625,11 @@ function QuickGuide(steps, o) {
     var e = !s.el ? null : typeof s.el === 'function' ? s.el() : document.querySelector(s.el);
     return e && e.getClientRects().length ? e : null;   // hidden or missing: show the bubble centred instead
   }
-  var fab = document.createElement('button');
-  fab.type = 'button'; fab.className = 'help-fab'; fab.setAttribute('aria-label', 'Help: quick guide');
-  fab.innerHTML = '<span aria-hidden="true">?</span> Help';
-  fab.onclick = function () { setFlag(o.off, false); start(true); };
-  document.body.appendChild(fab);
+  var fab = o.fab || { classList: { add: function () { }, remove: function () { } } };
 
   function start(fromHelp) {
     if (document.querySelector('.tour-tip')) return;
+    if (fromHelp === true) setFlag(o.off, false);   // asking for help turns the guide back on
     if (o.before) o.before();
     var i = 0, hole = document.createElement('div'), tip = document.createElement('div');
     hole.className = 'tour-hole'; tip.className = 'tour-tip'; tip.setAttribute('role', 'dialog'); tip.setAttribute('aria-label', 'Quick guide');
@@ -642,7 +648,9 @@ function QuickGuide(steps, o) {
       tip.style.top = (below ? r.bottom + pad + 12 : above ? r.top - pad - 12 - th : Math.max(12, innerHeight - th - 12)) + 'px';
     }
     function step(n) {
-      i = n; var s = steps[i], last = i === steps.length - 1, e = target(s);
+      i = n; var s = steps[i], last = i === steps.length - 1;
+      if (s.pre) s.pre();
+      var e = target(s);
       tip.classList.remove('on');
       tip.innerHTML = '<div class="tour-n">Quick guide' + (i ? ' · ' + i + ' of ' + (steps.length - 1) : '') + '</div><b>' + s.t + '</b><p>' + s.d + '</p>' +
         '<div class="tour-b"><label class="tour-sw" title="Turn the quick guide off"><input type="checkbox" checked data-sw><span aria-hidden="true"></span>Guide</label><span>' +
@@ -659,6 +667,7 @@ function QuickGuide(steps, o) {
       hole.remove(); tip.remove(); fab.classList.remove('hide');
       removeEventListener('scroll', place, true); removeEventListener('resize', place); document.removeEventListener('keydown', esc);
       setFlag(o.seen, true);
+      if (o.after) o.after();
     }
     addEventListener('scroll', place, true); addEventListener('resize', place); document.addEventListener('keydown', esc);
     step(fromHelp === true ? 1 : 0);   // from the Help button: straight to the first tip
@@ -2982,7 +2991,11 @@ var qrcode = function() {
       '</div>';
   }
   // everyone gets a tax receipt unless they tick "No tax receipt needed"
-  $$('[data-person]').forEach(function (d) { d.innerHTML = PERSON; });
+  $$('[data-person]').forEach(function (d) {
+    var f = d.closest('form'), id = f && f.id;
+    d.innerHTML = id === 'give' ? PERSON.replace('your tickets and receipt go here', 'your receipt goes here')
+      : id === 'spon' ? PERSON.replace('your tickets and receipt go here', 'your confirmation goes here') : PERSON;
+  });
   // on both forms (Get tickets and Donate), Tamer 2026-09-24
   $$('[data-receipt]').forEach(function (d) { d.innerHTML = '<p class="hint" style="margin:10px 0 4px">By default you will get a tax receipt, unless you don\'t need one.</p><label class="pills" style="margin:0"><label><input type="checkbox" name="no_receipt"> No tax receipt needed</label></label>'; });
 
@@ -2995,6 +3008,7 @@ var qrcode = function() {
     var tab = id === 'wait' ? 'buy' : id;   // the waitlist sits under Get tickets
     if (id !== 'done') $$('[data-go]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-go') === tab); });
     if (id !== 'done' && !quiet) setTimeout(function () { $('#pick').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 30);
+    if (id === 'spon' && sponGuide && !document.querySelector('.tour-tip')) sponGuide.auto();
   }
   $$('[data-go]').forEach(function (b) { b.onclick = function () { var g = b.getAttribute('data-go'); show(g === 'buy' && (CFG.seatsLeft <= 0 || !CFG.open) ? 'wait' : g); }; });
 
@@ -3189,23 +3203,43 @@ var qrcode = function() {
   function payCopy(k) { var c = $$('#buy [data-payhow] .copy'); return c[k] || null; }
   function methodPill(v) { var r = $('#buy input[name=method][value="' + v + '"]'); return r && r.closest('label'); }
   // wording from Tamer 2026-09-24 ("start like any app … several ways to pay …")
+  function onBuy() { if (cur !== 'buy') show('buy', true); }
+  function onGive() { if (cur !== 'give') show('give', true); }
   var TOUR = [
-    { el: null, t: 'Welcome', d: 'This quick guide shows you how to get your tickets, donate or become a sponsor. We recommend not skipping it.', go: 'Start' },
-    { el: function () { return $('#pick'); }, t: 'Choose', d: 'Get tickets, donate, or become a sponsor.' },
-    { el: function () { var r = $('#buy input[name=method]'); return r && r.closest('.pills'); }, t: 'Several ways to pay', d: 'Cash to a team member, Interac e-Transfer, or cheque.' },
-    { el: function () { return methodPill('Cash'); }, t: 'Paying cash?', d: 'Give a team member the cash with your name and email. They issue your e-tickets and you get them by email right away.' },
-    { el: function () { return payCopy(0); }, t: 'Paying by e-Transfer?', d: 'Send it to <b>donations@stminacalgary.ca</b>.' },
-    { el: function () { var c = $$('#buy [data-payhow] .copy'); return c[c.length - 1]; }, t: 'Write "Wonder Worker"', d: 'Remember to write <b>Wonder Worker</b> in the message of your e-Transfer.' },
-    { el: function () { return $('#buy [data-proof] .warn'); }, t: 'Take a screenshot', d: 'showing only the amount, the email and the message. Make sure nothing private shows; crop it if needed.' },
-    { el: function () { return $('#buy [data-proof] [data-upload]'); }, t: 'Upload it here', d: 'You will get an automated email with your tickets.' },
-    { el: function () { return $('#buy [data-receipt]'); }, t: 'Your tax receipt', d: 'This payment goes on your tax receipt. Your details stay private: only the organizers and the church treasurer see them, for your tickets and tax receipt.' }
+    { el: null, t: 'Welcome', d: 'This quick guide shows you how to get your tickets, donate or become a sponsor. We recommend not skipping it.', go: 'Start', pre: onBuy },
+    { el: function () { return $('#pick'); }, t: 'Choose', d: 'Get tickets, donate, or become a sponsor.', pre: onBuy },
+    { el: function () { var r = $('#buy input[name=method]'); return r && r.closest('.pills'); }, t: 'Several ways to pay', d: 'Cash to a team member, Interac e-Transfer, or cheque.', pre: onBuy },
+    { el: function () { return methodPill('Cash'); }, t: 'Paying cash?', d: 'Give a team member the cash with your name and email. They issue your e-tickets and you get them by email right away.', pre: onBuy },
+    { el: function () { return payCopy(0); }, t: 'Paying by e-Transfer?', d: 'Send it to <b>donations@stminacalgary.ca</b>.', pre: onBuy },
+    { el: function () { var c = $$('#buy [data-payhow] .copy'); return c[c.length - 1]; }, t: 'Write "Wonder Worker"', d: 'Remember to write <b>Wonder Worker</b> in the comment section of your e-Transfer.', pre: onBuy },
+    { el: function () { return $('#buy [data-proof] .warn'); }, t: 'Take a screenshot', d: 'showing only the amount, the email and the message. Make sure nothing private shows; crop it if needed.', pre: onBuy },
+    { el: function () { return $('#buy [data-proof] [data-upload]'); }, t: 'Upload it here', d: 'You will get an automated email with your tickets.', pre: onBuy },
+    // the Donate page (Tamer 2026-09-24): a quick explanation there too
+    { el: function () { return $('#give [data-banner]'); }, t: 'Donating?', d: 'Open <b>Donate</b>. The banner shows our goal and how far we are.', pre: onGive },
+    { el: function () { return $('#give .money'); }, t: 'Your gift', d: 'Pick or type an amount, then send it by e-Transfer to <b>donations@stminacalgary.ca</b> with <b>Wonder Worker</b> in the comment section. No screenshot needed.', pre: onGive },
+    { el: function () { return $('#give [data-receipt]'); }, t: 'Your tax receipt', d: 'Your payment goes on your tax receipt. Your details stay private: only the organizers and the church treasurer see them, for your tickets and tax receipt.', pre: onGive }
+  ];
+  // Become a sponsor: its own short guide, shown the first time someone opens it (Tamer 2026-09-24)
+  var SPON_TOUR = [
+    { el: null, t: 'Becoming a sponsor', d: 'A quick guide to sponsoring the Nativity Celebration 2027.', go: 'Start' },
+    { el: '#spon [data-tiers]', t: 'Choose your sponsorship', d: '$300, $400 or $500.' },
+    { el: function () { var e = $('#sp-business'); return e && e.closest('label'); }, t: 'Your business', d: 'Its name, your website (optional) and what you would like your ad to say.' },
+    { el: function () { var e = $('#spon [data-logo]'); return e && e.closest('label'); }, t: 'Upload your logo', d: 'It shows on this page, every logo the same size, once we approve your sponsorship.' },
+    { el: function () { var r = $('#spon input[name=method]'); return r && r.closest('.pills'); }, t: 'Pay', d: 'By e-Transfer to <b>donations@stminacalgary.ca</b> with <b>Wonder Worker</b> in the comment section, or by cheque.' },
+    { el: function () { return $('#spon [data-proof] [data-upload]'); }, t: 'Upload it here', d: 'A screenshot of the e-Transfer or a photo of the cheque. You will get a thank-you email.' }
   ];
   // on for everyone (Tamer 2026-09-24); new keys so people who saw the preview (Tamer too) get it once more
-  var guide = $('#pick') ? QuickGuide(TOUR, { seen: 'ww27-guide-seen-v2', off: 'ww27-guide-off-v2', before: function () {
-    show('buy', true);
-    var et = $('#buy input[name=method][value="e-Transfer"]');
-    if (et && !et.checked) { et.checked = true; et.dispatchEvent(new Event('change', { bubbles: true })); }
-  } }) : null;
+  var guide = null, sponGuide = null;
+  if ($('#pick')) {
+    // one Help button: the sponsor guide on Become a sponsor, the main guide everywhere else
+    var help = HelpButton(function () { (cur === 'spon' ? sponGuide : guide).start(true); });
+    guide = QuickGuide(TOUR, { seen: 'ww27-guide-seen-v2', off: 'ww27-guide-off-v2', fab: help, before: function () {
+      show('buy', true);
+      var et = $('#buy input[name=method][value="e-Transfer"]');
+      if (et && !et.checked) { et.checked = true; et.dispatchEvent(new Event('change', { bubbles: true })); }
+    }, after: function () { show('buy', true); } });   // the guide ends back on Get tickets
+    sponGuide = QuickGuide(SPON_TOUR, { seen: 'ww27-spon-guide-seen', off: 'ww27-guide-off-v2', fab: help });
+  }
   function tourStart() { if (guide) guide.auto(); }
 
   api('config').then(function (c) {

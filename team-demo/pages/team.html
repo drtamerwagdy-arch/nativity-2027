@@ -200,7 +200,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   <section class="card hide" id="mine"><h2>My sales</h2><div data-list></div></section>
   <section class="card hide" id="bad"><h2>Link not valid</h2><p>This link is no longer valid. Please ask Tamer for a new one.</p></section>
 </main>
-<footer><span>Wonder Worker Art Team · team page</span><span class="ver">v1.17</span></footer>
+<footer><span>Wonder Worker Art Team · team page</span><span class="ver">v1.18</span></footer>
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
    Online demo (window.WW_DEMO): the engine runs in the page around this one; ask it by message. */
@@ -250,8 +250,17 @@ function copyBtn(root) {
 <script>// Quick guide (Tamer 2026-09-24), shared by the public page and the team page: a welcome note, then short bubbles that
 // light up one part of the page. A Guide switch in every bubble turns it off; the Help button brings it back.
 // No sliding and no jumping: the page moves only when the part is out of view, and the bubble appears once it has.
-//   var g = QuickGuide(steps, { seen: 'storage-key', off: 'storage-key', before: fn });  g.auto();  g.start(true)
-//   step = { el: css selector | function returning an element | null (centred note), t: title, d: html text, go: button }
+//   var help = HelpButton(function () { g.start(true); });
+//   var g = QuickGuide(steps, { seen: 'storage-key', off: 'storage-key', fab: help, before: fn, after: fn });  g.auto();
+//   step = { el: css selector | function returning an element | null (centred note), t: title, d: html text, go: button,
+//            pre: function run first (e.g. switch to the Donate tab) }
+function HelpButton(onClick) {
+  var b = document.createElement('button');
+  b.type = 'button'; b.className = 'help-fab'; b.setAttribute('aria-label', 'Help: quick guide');
+  b.innerHTML = '<span aria-hidden="true">?</span> Help'; b.onclick = onClick;
+  document.body.appendChild(b);
+  return b;
+}
 function QuickGuide(steps, o) {
   function flag(k) { try { return localStorage.getItem(k) === '1'; } catch (e) { return false; } }
   function setFlag(k, on) { try { if (on) localStorage.setItem(k, '1'); else localStorage.removeItem(k); } catch (e) { } }
@@ -259,14 +268,11 @@ function QuickGuide(steps, o) {
     var e = !s.el ? null : typeof s.el === 'function' ? s.el() : document.querySelector(s.el);
     return e && e.getClientRects().length ? e : null;   // hidden or missing: show the bubble centred instead
   }
-  var fab = document.createElement('button');
-  fab.type = 'button'; fab.className = 'help-fab'; fab.setAttribute('aria-label', 'Help: quick guide');
-  fab.innerHTML = '<span aria-hidden="true">?</span> Help';
-  fab.onclick = function () { setFlag(o.off, false); start(true); };
-  document.body.appendChild(fab);
+  var fab = o.fab || { classList: { add: function () { }, remove: function () { } } };
 
   function start(fromHelp) {
     if (document.querySelector('.tour-tip')) return;
+    if (fromHelp === true) setFlag(o.off, false);   // asking for help turns the guide back on
     if (o.before) o.before();
     var i = 0, hole = document.createElement('div'), tip = document.createElement('div');
     hole.className = 'tour-hole'; tip.className = 'tour-tip'; tip.setAttribute('role', 'dialog'); tip.setAttribute('aria-label', 'Quick guide');
@@ -285,7 +291,9 @@ function QuickGuide(steps, o) {
       tip.style.top = (below ? r.bottom + pad + 12 : above ? r.top - pad - 12 - th : Math.max(12, innerHeight - th - 12)) + 'px';
     }
     function step(n) {
-      i = n; var s = steps[i], last = i === steps.length - 1, e = target(s);
+      i = n; var s = steps[i], last = i === steps.length - 1;
+      if (s.pre) s.pre();
+      var e = target(s);
       tip.classList.remove('on');
       tip.innerHTML = '<div class="tour-n">Quick guide' + (i ? ' · ' + i + ' of ' + (steps.length - 1) : '') + '</div><b>' + s.t + '</b><p>' + s.d + '</p>' +
         '<div class="tour-b"><label class="tour-sw" title="Turn the quick guide off"><input type="checkbox" checked data-sw><span aria-hidden="true"></span>Guide</label><span>' +
@@ -302,6 +310,7 @@ function QuickGuide(steps, o) {
       hole.remove(); tip.remove(); fab.classList.remove('hide');
       removeEventListener('scroll', place, true); removeEventListener('resize', place); document.removeEventListener('keydown', esc);
       setFlag(o.seen, true);
+      if (o.after) o.after();
     }
     addEventListener('scroll', place, true); addEventListener('resize', place); document.addEventListener('keydown', esc);
     step(fromHelp === true ? 1 : 0);   // from the Help button: straight to the first tip
@@ -437,7 +446,12 @@ function QuickGuide(steps, o) {
     { el: '#sale .money', t: 'Amount and payment', d: 'Enter the amount received, choose <b>Cash</b> or <b>Cheque</b>, then tap <b>Submit purchase</b>. The buyer gets the email right away.' },
     { el: '#mine', t: 'My sales', d: 'Your sales show here. Made a mistake? <b>Undo</b> within 15 minutes.' }
   ];
-  load().then(function () { if (!sale.classList.contains('hide')) QuickGuide(TEAM_TOUR, { seen: 'ww27-team-tour-seen', off: 'ww27-team-tour-off' }).auto(); });
+  load().then(function () {
+    if (sale.classList.contains('hide')) return;
+    var tg, help = HelpButton(function () { tg.start(true); });
+    tg = QuickGuide(TEAM_TOUR, { seen: 'ww27-team-tour-seen', off: 'ww27-team-tour-off', fab: help });
+    tg.auto();
+  });
 })();
 </script>
 </body>
