@@ -1,4 +1,4 @@
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Nativity 2027 · Practice page</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Nativity 2027 · Team practice</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
@@ -37,13 +37,14 @@ iframe.page{position:absolute;inset:0;width:100%;height:100%;border:0;background
 <header class="bar">
   <div class="top">
     <span class="pill">DEMO</span>
-    <h1>Nativity 2027 · what everyone sees</h1>
+    <h1>Nativity 2027 · team practice</h1>
     <span class="note">Practice only: nothing is real or sent.</span>
     <button type="button" class="reset" id="reset">Reset demo</button>
   </div>
   <nav class="tabs" role="tablist" aria-label="Demo pages">
-    <button type="button" role="tab" id="tab-index" data-tab="index" aria-selected="true">Public page</button>
-    <button type="button" role="tab" id="tab-outbox" data-tab="outbox" aria-selected="false">Your emails <span class="count" id="count">0</span></button>
+    <button type="button" role="tab" id="tab-index" data-tab="index" aria-selected="true">Public page · everyone</button>
+    <button type="button" role="tab" id="tab-team" data-tab="team" aria-selected="false">Team page · team only</button>
+    <button type="button" role="tab" id="tab-outbox" data-tab="outbox" aria-selected="false">Emails sent <span class="count" id="count">0</span></button>
   </nav>
 </header>
 <main>
@@ -3162,7 +3163,7 @@ if (typeof module !== 'undefined') module.exports = Core;
 (function () {
   var BASE = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
   var TICKETS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 901, 902, 903, 904, 905];
-  var KEY_STORE = 'ww27-public-demo-v1', MINA = 'demo-member-mina-0000000000', OWNER = 'demo-owner';
+  var KEY_STORE = 'ww27-team-demo-v1', MINA = 'demo-member-mina-0000000000', OWNER = 'demo-owner';
   var db = null, clock = 0;
 
   // ---------- the engine's surroundings, all inside this page ----------
@@ -3182,7 +3183,6 @@ if (typeof module !== 'undefined') module.exports = Core;
     append: function (t, o) { db[t].push(JSON.parse(JSON.stringify(o))); save(); },
     update: function (t, id, patch) { var r = db[t].filter(function (x) { return x.id === id; })[0]; if (r) for (var k in patch) r[k] = patch[k]; save(); },
     mail: function (m) {
-      if (/artteam@|drtamerwagdy@yahoo/i.test(m.to)) return;   // main demo: only the buyer's own emails
       var inline = {}; for (var cid in (m.inline || {})) inline[cid] = m.inline[cid].url;
       db.outbox.unshift({ no: db.outbox.length + 1, at: ENV.now().toISOString(), to: m.to, subject: m.subject, html: m.html, inline: inline,
         attachments: (m.attachments || []).map(function (a) { return a.name; }) });
@@ -3253,7 +3253,7 @@ if (typeof module !== 'undefined') module.exports = Core;
       if (m.no !== openNo) return html;
       var code = (m.subject.match(/Your booking .*\((WW27-\d{4})\)/) || [])[1];
       return html + '<div class="viewer"><div class="head"><span>From: Wonder Worker Art Team &lt;artteam@stminacalgary.ca&gt;</span><span>To: ' + esc(m.to) + '</span>' +
-        '' +
+        (code ? '<span><button type="button" class="btn" data-openbooking="' + code + '">Open ' + code + ' on the team page</button> (as if a team member scanned the code)</span>' : '') +
         '</div><iframe title="Email" data-mail="' + m.no + '"></iframe></div>';
     }).join('');
     [].forEach.call(box.querySelectorAll('[data-no]'), function (b) { b.onclick = function () { var n = Number(b.getAttribute('data-no')); openNo = openNo === n ? null : n; renderOutbox(); }; });
