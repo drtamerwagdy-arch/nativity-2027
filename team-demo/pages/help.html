@@ -147,6 +147,13 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 .help-fab.hide{display:none}
 @media (prefers-reduced-motion:reduce){.tour-tip.on{transition:none}}
 
+/* team page counter (Tamer 2026-09-24): sold, printed, e-tickets, gifted (not in total), seats left; warning when low */
+.soldbar{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px}
+.soldbar>div{text-align:center}.soldbar>div>b{display:block;font:800 22px/1.1 Inter,system-ui,sans-serif;color:var(--ink)}.soldbar>div>span{font-size:12px;color:var(--soft)}
+.soldbar>div:first-child>b{color:var(--accent)}
+.soldbar .lowwarn{grid-column:1/-1;margin:4px 0 0;background:#FDECEA;color:#8A1C12;border-radius:10px;padding:9px 11px;font-size:14.5px}
+@media (max-width:560px){.soldbar{grid-template-columns:repeat(3,1fr)}}
+
 /* team guide (Tamer 2026-09-24): how to use the team page, and which emails go out when */
 .gh{background:linear-gradient(180deg,#3A1F4E,#5A2447);color:#F4EEDC;padding:22px 16px}
 .gh .in{max-width:860px;margin:0 auto}.gh small{font:400 14px/1 "Bebas Neue",Impact,sans-serif;letter-spacing:3px;color:#F2C14E}
@@ -176,7 +183,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 <section class="gs"><h2><span class="n">1</span>Selling tickets on the spot</h2>
 <ol>
 <li>Under <b>New sale</b>, type the buyer's first and last name and email (mobile is optional).</li>
-<li><b>Printed tickets handed over</b>: type their numbers (e.g. <b>12-14</b>). Hand them out from No. 1 upward; the page shows the highest number you can use.<br><b>Email e-tickets</b>: choose how many; they arrive by email.</li>
+<li><b>Printed tickets handed over</b>: type their numbers (e.g. <b>12-14</b>). Printed tickets are No. 1 to 377.<br><b>Email e-tickets</b>: choose how many; they get their own numbers (1001 and up) and arrive by email.</li>
 <li>Enter the amount received, choose <b>Cash</b> or <b>Cheque</b>, and submit.</li>
 <li>Buyer doesn't need a tax receipt? Tick <b>Buyer declines a tax receipt</b>.</li>
 </ol>
@@ -195,6 +202,12 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 <li>Tap <b>Scan code</b> and point at the ticket's <b>door code</b> (in the ticket email) or the QR on a printed ticket. Typing <b>T377</b> works too.</li>
 <li><b>✓ registered</b>: welcome them in. <b>Not registered</b>: ask Tamer.</li>
 </ol></section>
+
+<section class="gs"><h2>Tickets sold</h2>
+<ul>
+<li>The counter at the top shows <b>tickets sold</b> (printed + e-tickets), <b>gifted seats</b> (not in the total) and <b>seats left</b>.</li>
+<li>When seats run low a warning shows, and artteam@ gets an email at 50, 25 and 10 seats left. Check with Tamer before handing out more printed tickets.</li>
+</ul></section>
 
 <section class="gs"><h2><span class="n">4</span>Your cash</h2>
 <ul>

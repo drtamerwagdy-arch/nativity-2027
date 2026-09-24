@@ -2467,24 +2467,24 @@ var qrcode = function() {
  *
  * Tables: entries (every sale / cash booking / donation / waitlist), members (team links), handovers (cash given to Hany).
  * Cash bookings: a buyer books online, gets a QR code by email, pays a team member, who scans it and taps Paid.
- * Numbers: ONE series 1–capacity for every ticket (Tamer 2026-09-24). Printed tickets are handed out from No. 1 upward and
- * the team types their numbers when recording the sale; online orders, paid cash bookings, team e-tickets and gift seats
- * take numbers from the top down (377, 376, …), so the two ends meet only when the hall is nearly full. `next_online` is
- * that downward pointer: a number above it is never given again (a cancelled e-ticket may still sit in someone's inbox)
- * and is refused as a printed number.
+ * Numbers (Tamer 2026-09-24): printed tickets are No. 1–377 (the team types the numbers when recording the sale);
+ * e-tickets (online orders, paid cash bookings, team e-tickets) are No. 1001 upward, given in order and never reused
+ * (`next_online`). The two ranges never meet; the total sold can never pass the seats (capacity − reserved).
+ * Seats running low: artteam@ gets one email at each threshold in `low_seats` (50, 25, 10) and when sold out.
  * Gift seats have their own numbers, 901 upward, and only Tamer sees them (dashboard): buyers, the team page and the
  * public page show just how many seats were gifted. `gift_seats` (optional) sets seats aside for gifts: the public
  * seats-left leaves them out, ordinary tickets cannot use them, and gifts beyond them take ordinary seats.
  */
 var Core = (function () {
-  var GIFT_MIN = 901, GIFT_MAX = 999;
+  var GIFT_MIN = 901, GIFT_MAX = 999, ETICKET_MIN = 1001, ETICKET_MAX = 1999;
   var DEFAULTS = {
     capacity: 377, reserved: 0, suggested: 20, goal: 10000, hold_days: 10,
     booking_max: 6,        // pay-in-cash booking: most of the buyer's own tickets per booking (gifted seats not counted)
     min_table: '10,25,45,70',   // least donation for 1, 2, 3, 4 tickets; from 5 tickets the full suggested amount each
     sponsor_tiers: '300,400,500',  // sponsorship amounts (Tamer 2026-09-24)
     order_max: 20,         // most tickets per online order
-    next_online: '', next_gift: GIFT_MIN, next_order: 1,   // next_online empty = start at capacity
+    next_online: ETICKET_MIN, next_gift: GIFT_MIN, next_order: 1,   // the next e-ticket number (1001 upward)
+    low_seats: '50,25,10', low_alerted: '',   // seats-left thresholds that email artteam@ once each; which were sent
     gift_seats: '',        // seats set aside for gifts (Tamer only; empty = none set aside)
     etransfer_email: 'donations@stminacalgary.ca', team_email: 'artteam@stminacalgary.ca',
     error_email: 'drtamerwagdy@yahoo.com',   // system errors go to Tamer personally; payment checks go to team_email
@@ -2557,8 +2557,11 @@ var Core = (function () {
   // seats: capacity − reserved − tickets and gift seats issued − seats held by unpaid cash bookings (for hold_days).
   // The public count also leaves out whatever is still set aside for gifts (gift_seats).
   function seatCount(env, s, except) {
-    var c = { reg: 0, gift: 0, giftNumbers: [], heldGift: 0 };
-    Object.keys(usedNumbers(env)).forEach(function (k) { var n = Number(k); if (n >= GIFT_MIN) { c.gift++; c.giftNumbers.push(n); } else c.reg++; });
+    var c = { reg: 0, gift: 0, giftNumbers: [], heldGift: 0, printed: 0, eticket: 0 };
+    Object.keys(usedNumbers(env)).forEach(function (k) {
+      var n = Number(k);
+      if (n >= ETICKET_MIN) { c.reg++; c.eticket++; } else if (n >= GIFT_MIN) { c.gift++; c.giftNumbers.push(n); } else { c.reg++; c.printed++; }
+    });
     pendingHolds(env, s).filter(function (e) { return e.id !== except; }).forEach(function (e) { c.reg += num(e.qty); c.heldGift += num(e.gift_qty); });
     c.pool = num(s.gift_seats);
     c.poolLeft = Math.max(0, c.pool - c.gift - c.heldGift);
@@ -2572,17 +2575,16 @@ var Core = (function () {
   function voided(s) { return parseNumbers(String(s.void_numbers).replace(/\s/g, ',')); }
   function salesOpen(env, s) { return env.now().getTime() <= new Date(s.sales_close).getTime(); }
 
-  // the highest number online sales may still use; printed tickets must stay at or below it
-  function topNumber(s) { var cap = num(s.capacity), p = s.next_online; return p === '' || p == null ? cap : Math.min(num(p), cap); }
+  // e-tickets: 1001 upward, in order, never reused (a cancelled e-ticket may still sit in someone's inbox)
   function take(env, s, count) {
-    var used = usedNumbers(env), vo = voided(s), out = [], n = topNumber(s);
+    var used = usedNumbers(env), vo = voided(s), out = [], n = Math.max(num(s.next_online) || ETICKET_MIN, ETICKET_MIN);
     while (out.length < count) {
-      if (n < 1) throw err('No more ticket numbers are available. Please contact the team.');
+      if (n > ETICKET_MAX) throw err('No more ticket numbers are available. Please contact the team.');
       if (!used[n] && vo.indexOf(n) < 0) out.push(n);
-      n--;
+      n++;
     }
     s.next_online = n; env.setSetting('next_online', n);   // s too, in case more numbers are taken in the same request
-    return out.sort(function (a, b) { return a - b; });
+    return out;
   }
   // gift seats: their own numbers, 901 upward, never reused
   function takeGift(env, s, count) {
@@ -2851,6 +2853,7 @@ var Core = (function () {
     });
   }
   function bookingOutcome(env, e) {
+    lowSeatsCheck(env, s);   // a booking holds seats too
     return { ok: true, booking: true, order: e.order_code, link: bookingLink(env, e), amount: num(e.amount), qty: num(e.qty), gift_qty: num(e.gift_qty), first: e.first, email: e.email };
   }
 
@@ -2862,7 +2865,27 @@ var Core = (function () {
     return e;
   }
 
+  // what the team page shows (Tamer 2026-09-24): printed and e-tickets sold, seats left, and whether seats are low
+  function soldFor(env, s) {
+    var c = seatCount(env, s), low = list(s.low_seats).sort(function (a, b) { return b - a; })[0] || 0;
+    // gifted seats shown as their own count, not in the total sold (Tamer 2026-09-24); they still take seats
+    return { printed: c.printed, eticket: c.eticket, total: c.printed + c.eticket, gifted: c.gift, left: Math.max(0, c.left), low: c.left <= low };
+  }
+  // one email to artteam@ at each threshold (and when sold out), never twice
+  function lowSeatsCheck(env, s) {
+    var c = seatCount(env, s), left = Math.max(0, c.left), sent = list(s.low_alerted);
+    var hit = list(s.low_seats).concat([0]).filter(function (t) { return left <= t && sent.indexOf(t) < 0; });
+    if (!hit.length) return;
+    env.setSetting('low_alerted', sent.concat(hit).join(','));
+    try {
+      env.mail({ to: s.team_email, name: s.from_name, subject: (left ? 'Seats running low: ' + left + ' left' : 'Sold out') + ' · Nativity Celebration 2027',
+        html: shell('<p><b>' + (left ? 'Only ' + left + ' seats are left.' : 'All seats are taken: the page now offers the waitlist.') + '</b></p>' +
+          '<p>Sold so far: <b>' + c.printed + '</b> printed and <b>' + c.eticket + '</b> e-tickets' + (c.heldGift ? '' : '') + ', of ' + (num(s.capacity) - num(s.reserved)) + ' seats.</p>' +
+          '<p>Printed tickets not yet sold should not be handed out once seats run out.</p>') });
+    } catch (x) { env.log('low seats email failed: ' + x.message); }
+  }
   function finishSale(env, s, e, opening, reasons, what) {
+    lowSeatsCheck(env, s);
     if (e.email) {
       try { ticketsEmail(env, s, e, list(e.tickets), list(e.gift_numbers), opening); env.update('entries', e.id, { emailed: env.now().toISOString() }); }
       catch (x) { reasons = reasons.concat(['tickets email failed: ' + x.message]); }
@@ -2946,7 +2969,7 @@ var Core = (function () {
   function memberMe(env, p) {
     var m = memberByKey(env, p.key); if (!m) throw err('This link is no longer valid. Please ask Tamer for a new one.');
     var s = settings(env), mine = env.list('entries').filter(function (e) { return e.member_id === m.id; }).reverse();
-    return { name: m.name, cash: cashHeld(env, m), seatsLeft: Math.max(0, seatsLeft(env, s)), suggested: num(s.suggested), printedUpTo: topNumber(s), capacity: num(s.capacity),
+    return { name: m.name, cash: cashHeld(env, m), seatsLeft: Math.max(0, seatsLeft(env, s)), suggested: num(s.suggested), capacity: num(s.capacity), sold: soldFor(env, s),
       sales: mine.slice(0, 50).map(function (e) { return { id: e.id, created: e.created, name: e.first + ' ' + e.last, email: e.email, tickets: e.tickets, amount: num(e.amount), method: e.method, status: e.status,
         undo: e.status !== 'void' && env.now().getTime() - new Date(e.created).getTime() < 15 * 60e3 }; }) };
   }
@@ -2966,10 +2989,10 @@ var Core = (function () {
       if (printed) {
         nums = parseNumbers(p.numbers);
         if (!nums.length) throw err('Enter the printed ticket numbers you handed over (e.g. 42-45).');
-        var used = usedNumbers(env), vo = voided(s), top = topNumber(s);
-        var taken = nums.filter(function (n) { return used[n]; }), bad = nums.filter(function (n) { return !used[n] && (n < 1 || n > top || vo.indexOf(n) > -1); });
+        var used = usedNumbers(env), vo = voided(s), last = num(s.capacity);
+        var taken = nums.filter(function (n) { return used[n]; }), bad = nums.filter(function (n) { return !used[n] && (n < 1 || n > last || vo.indexOf(n) > -1); });
         if (taken.length) throw err('Ticket ' + taken.join(', ') + ' is already registered to another buyer. Please check the number.');   // no names: members see only their own sales
-        if (bad.length) throw err('Ticket ' + bad.join(', ') + ' cannot be used: printed tickets go up to No. ' + top + ' (higher numbers went to online buyers) and cancelled numbers are not reused. Please hand over another printed ticket.');
+        if (bad.length) throw err('Ticket ' + bad.join(', ') + ' cannot be used: printed tickets are No. 1 to No. ' + last + ', and cancelled numbers are not reused. Please check the number.');
         if (!fits(env, s, nums.length, 0)) throw err('Only ' + Math.max(0, seatsLeft(env, s)) + ' seats left.');
       } else {
         var q = Math.floor(num(p.qty)); if (q < 1 || q > 20) throw err('Number of tickets: 1 to 20.');
@@ -3037,7 +3060,7 @@ var Core = (function () {
     var members = env.list('members').map(function (m) { return { id: m.id, name: m.name, active: String(m.active) !== 'false', cash: cashHeld(env, m), link: env.pageUrl('team', m.key) }; });
     var entries = env.list('entries').slice().reverse();
     var sc = seatCount(env, s);
-    var t = { seatsUsed: Object.keys(usedNumbers(env)).length, seatsLeft: sc.left, gifts: { given: sc.gift, numbers: sc.giftNumbers, held: sc.heldGift, pool: sc.pool, poolLeft: sc.poolLeft }, capacity: num(s.capacity), reserved: num(s.reserved), goal: num(s.goal), total: 0, byMethod: {}, byKind: {} };
+    var t = { seatsUsed: Object.keys(usedNumbers(env)).length, seatsLeft: sc.left, printed: sc.printed, eticket: sc.eticket, gifts: { given: sc.gift, numbers: sc.giftNumbers, held: sc.heldGift, pool: sc.pool, poolLeft: sc.poolLeft }, capacity: num(s.capacity), reserved: num(s.reserved), goal: num(s.goal), total: 0, byMethod: {}, byKind: {} };
     live(env).forEach(function (e) { t.total += num(e.amount); t.byMethod[e.method] = (t.byMethod[e.method] || 0) + num(e.amount); t.byKind[e.kind] = (t.byKind[e.kind] || 0) + num(e.amount); });
     return { entries: entries, members: members, handovers: env.list('handovers'), totals: t, settings: s, cols: ENTRY_COLS };
   }
@@ -3066,7 +3089,7 @@ var Core = (function () {
   }
   function ownerSetting(env, p) {
     requireOwner(env, p.key);
-    var allowed = ['capacity', 'reserved', 'suggested', 'goal', 'sales_close', 'receipt_ticket_value', 'void_numbers', 'paused', 'booking_max', 'min_table', 'order_max', 'hold_days', 'sponsor_tiers', 'gift_seats', 'team_page_url', 'owner_page_url'];
+    var allowed = ['capacity', 'reserved', 'suggested', 'goal', 'sales_close', 'receipt_ticket_value', 'void_numbers', 'paused', 'booking_max', 'min_table', 'order_max', 'hold_days', 'sponsor_tiers', 'gift_seats', 'team_page_url', 'owner_page_url', 'low_seats'];
     if (allowed.indexOf(p.name) < 0) throw err('That setting cannot be changed here.');
     env.setSetting(p.name, str(p.value)); return { ok: true };
   }
@@ -3131,7 +3154,7 @@ var Core = (function () {
   }
   function ticketStatus(env, p) {
     var n = Math.floor(num(p.n)), e = usedNumbers(env)[n];
-    return { n: n, registered: !!e, printed: !!e && /printed/.test(e.note || '') };
+    return { n: n, registered: !!e, printed: n >= 1 && n < GIFT_MIN };
   }
 
   var ACTIONS = { config: config, order: order, donate: donate, sponsor: sponsor, waitlist: waitlist, ticket_status: ticketStatus,
@@ -3163,7 +3186,7 @@ if (typeof module !== 'undefined') module.exports = Core;
 <script>
 (function () {
   var BASE = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
-  var TICKETS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 901, 902, 903, 904, 905];
+  var TICKETS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 901, 902, 903, 904, 905, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019, 1020, 1021, 1022, 1023, 1024, 1025, 1026, 1027, 1028, 1029, 1030];
   var KEY_STORE = 'ww27-team-demo-v1', MINA = 'demo-member-mina-0000000000', OWNER = 'demo-owner';
   var db = null, clock = 0;
 
