@@ -70,6 +70,9 @@ p{margin:6px 0}
 .panel2{background:#FAFBFD;border:1px solid var(--line);border-radius:12px;padding:18px}
 .span2{grid-column:1/-1}
 @media (max-width:860px){.fgrid{grid-template-columns:1fr}.card{padding:18px}.panel2{padding:14px}}
+/* Get tickets on a computer: Tickets + donation, then Gift a seat, in the left column; Your details on the right.
+   On a phone the order is the page order: Tickets + donation, Your details, Gift a seat + receipt, Pay. */
+@media (min-width:861px){#buy .b-tix{grid-column:1;grid-row:1}#buy .b-who{grid-column:2;grid-row:1/span 2}#buy .b-gift{grid-column:1;grid-row:2}}
 label.f{display:block;margin:0 0 12px;font:600 13px/1.3 Inter,system-ui,sans-serif;color:var(--ink)}
 label.f span{font-weight:400;color:var(--soft)}
 label.f input,label.f select,label.f textarea{display:block;width:100%;margin-top:6px;font:16px/1.3 Inter,system-ui,sans-serif;padding:11px 12px;border:1px solid var(--fieldline);border-radius:10px;background:var(--field);color:var(--ink);min-height:46px}
@@ -227,18 +230,21 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   <form class="card hide" id="buy" novalidate>
     <div class="sechead"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M13 6v2M13 11v2M13 16v2"/></svg></span><div><h2>Get tickets</h2><div class="sub">By donation · suggested $20 or more per ticket</div></div><span id="seats" class="seatpill"></span></div>
     <div class="fgrid">
-      <div class="panel2">
+      <div class="panel2 b-tix">
         <h3>Tickets</h3>
         <div class="row"><span>How many</span><div class="stepper"><button type="button" data-d="-1" aria-label="fewer">−</button><input name="qty" id="b-qty" type="number" min="1" max="20" value="2" inputmode="numeric" aria-label="Tickets"><button type="button" data-d="1" aria-label="more">+</button></div></div>
         <h3 style="margin-top:14px">Your donation</h3>
         <div class="money"><b>$</b><input name="amount" id="b-amount" type="number" min="1" step="1" inputmode="decimal" aria-label="Donation amount"><span class="hint" data-suggest></span></div>
         <p class="hint">Every donation beyond that supports the service.</p>
-        <h3 style="margin-top:16px">Gift a seat <span style="text-transform:none;letter-spacing:0;font-weight:400">(optional)</span></h3>
+      </div>
+      <div class="panel2 b-who"><div data-person></div></div>
+      <!-- gift + receipt: under Tickets on a computer, after Your details on a phone (Tamer 2026-09-24) -->
+      <div class="panel2 b-gift">
+        <h3>Gift a seat <span style="text-transform:none;letter-spacing:0;font-weight:400">(optional)</span></h3>
         <div class="row"><span>Seats to gift</span><div class="stepper"><button type="button" data-d="-1" aria-label="fewer">−</button><input name="gift_qty" id="b-gift" type="number" min="0" max="20" value="0" inputmode="numeric" aria-label="Gift seats"><button type="button" data-d="1" aria-label="more">+</button></div></div>
         <p class="hint">A gifted seat goes quietly to a senior or a newcomer.</p>
         <div data-receipt></div>
       </div>
-      <div class="panel2"><div data-person></div></div>
       <div class="panel2 span2">
         <h3>Pay</h3>
         <div class="pills"><label><input type="radio" name="method" value="e-Transfer" checked> e-Transfer</label><label><input type="radio" name="method" value="Cash"> Cash to a team member</label><label><input type="radio" name="method" value="Cheque"> Cheque</label></div>
@@ -308,7 +314,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.8</span></footer>
+<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.9</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
