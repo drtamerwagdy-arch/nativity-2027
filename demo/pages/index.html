@@ -342,7 +342,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.20</span></footer>
+<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.21</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3205,6 +3205,14 @@ var qrcode = function() {
   // wording from Tamer 2026-09-24 ("start like any app … several ways to pay …")
   function onBuy() { if (cur !== 'buy') show('buy', true); }
   function onGive() { if (cur !== 'give') show('give', true); }
+  // the Donate page (Tamer 2026-09-24): a quick explanation there too, at the end of the main guide
+  var GIVE_STEPS = [
+    { el: function () { return $('#give [data-banner]'); }, t: 'Donating?', d: 'On the <b>Donate</b> page, the banner shows our goal and how far we are.', pre: onGive },
+    { el: function () { return $('#give .money'); }, t: 'Your gift', d: 'Pick or type an amount, then send it by e-Transfer to <b>donations@stminacalgary.ca</b> with <b>Wonder Worker</b> in the comment section. No screenshot needed.', pre: onGive },
+    { el: function () { return $('#give [data-receipt]'); }, t: 'Your tax receipt', d: 'Your payment goes on your tax receipt. Your details stay private: only the organizers and the church treasurer see them, for your tickets and tax receipt.', pre: onGive }
+  ];
+  // someone who arrives on Donate (the /donate link or its QR code) gets just the donation part
+  var GIVE_TOUR = [{ el: null, t: 'Donating', d: 'A quick guide to donating to the Nativity Celebration 2027.', go: 'Start', pre: onGive }].concat(GIVE_STEPS);
   var TOUR = [
     { el: null, t: 'Welcome', d: 'This quick guide shows you how to get your tickets, donate or become a sponsor. We recommend not skipping it.', go: 'Start', pre: onBuy },
     { el: function () { return $('#pick'); }, t: 'Choose', d: 'Get tickets, donate, or become a sponsor.', pre: onBuy },
@@ -3214,11 +3222,7 @@ var qrcode = function() {
     { el: function () { var c = $$('#buy [data-payhow] .copy'); return c[c.length - 1]; }, t: 'Write "Wonder Worker"', d: 'Remember to write <b>Wonder Worker</b> in the comment section of your e-Transfer.', pre: onBuy },
     { el: function () { return $('#buy [data-proof] .warn'); }, t: 'Take a screenshot', d: 'showing only the amount, the email and the message. Make sure nothing private shows; crop it if needed.', pre: onBuy },
     { el: function () { return $('#buy [data-proof] [data-upload]'); }, t: 'Upload it here', d: 'You will get an automated email with your tickets.', pre: onBuy },
-    // the Donate page (Tamer 2026-09-24): a quick explanation there too
-    { el: function () { return $('#give [data-banner]'); }, t: 'Donating?', d: 'Open <b>Donate</b>. The banner shows our goal and how far we are.', pre: onGive },
-    { el: function () { return $('#give .money'); }, t: 'Your gift', d: 'Pick or type an amount, then send it by e-Transfer to <b>donations@stminacalgary.ca</b> with <b>Wonder Worker</b> in the comment section. No screenshot needed.', pre: onGive },
-    { el: function () { return $('#give [data-receipt]'); }, t: 'Your tax receipt', d: 'Your payment goes on your tax receipt. Your details stay private: only the organizers and the church treasurer see them, for your tickets and tax receipt.', pre: onGive }
-  ];
+  ].concat(GIVE_STEPS);
   // Become a sponsor: its own short guide, shown the first time someone opens it (Tamer 2026-09-24)
   var SPON_TOUR = [
     { el: null, t: 'Becoming a sponsor', d: 'A quick guide to sponsoring the Nativity Celebration 2027.', go: 'Start' },
@@ -3229,18 +3233,20 @@ var qrcode = function() {
     { el: function () { return $('#spon [data-proof] [data-upload]'); }, t: 'Upload it here', d: 'A screenshot of the e-Transfer or a photo of the cheque. You will get a thank-you email.' }
   ];
   // on for everyone (Tamer 2026-09-24); new keys so people who saw the preview (Tamer too) get it once more
-  var guide = null, sponGuide = null;
+  var guide = null, sponGuide = null, giveGuide = null;
   if ($('#pick')) {
-    // one Help button: the sponsor guide on Become a sponsor, the main guide everywhere else
-    var help = HelpButton(function () { (cur === 'spon' ? sponGuide : guide).start(true); });
+    // one Help button: the sponsor guide on Become a sponsor, the donation guide on Donate, the main guide elsewhere
+    var help = HelpButton(function () { (cur === 'spon' ? sponGuide : cur === 'give' ? giveGuide : guide).start(true); });
     guide = QuickGuide(TOUR, { seen: 'ww27-guide-seen-v2', off: 'ww27-guide-off-v2', fab: help, before: function () {
       show('buy', true);
       var et = $('#buy input[name=method][value="e-Transfer"]');
       if (et && !et.checked) { et.checked = true; et.dispatchEvent(new Event('change', { bubbles: true })); }
     }, after: function () { show('buy', true); } });   // the guide ends back on Get tickets
     sponGuide = QuickGuide(SPON_TOUR, { seen: 'ww27-spon-guide-seen', off: 'ww27-guide-off-v2', fab: help });
+    giveGuide = QuickGuide(GIVE_TOUR, { seen: 'ww27-give-guide-seen', off: 'ww27-guide-off-v2', fab: help });
   }
-  function tourStart() { if (guide) guide.auto(); }
+  // the guide that fits the page someone arrived on (Become a sponsor opens its own when shown)
+  function tourStart() { if (!guide || cur === 'spon') return; (cur === 'give' ? giveGuide : guide).auto(); }
 
   api('config').then(function (c) {
     for (var k in c) CFG[k] = c[k];
