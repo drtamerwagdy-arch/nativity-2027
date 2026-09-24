@@ -3225,7 +3225,7 @@ if (typeof module !== 'undefined') module.exports = Core;
 
   // ---------- tabs ----------
   var frame = document.getElementById('frame'), outbox = document.getElementById('outbox'), cache = {};
-  var PARAMS = { index: {}, team: { k: MINA }, owner: { k: OWNER } };
+  var PARAMS = { index: { tour: '1' }, help: {}, team: { k: MINA }, owner: { k: OWNER } };
   function show(tab, params) {
     [].forEach.call(document.querySelectorAll('[data-tab]'), function (b) { b.setAttribute('aria-selected', b.getAttribute('data-tab') === tab); });
     if (tab === 'outbox') { frame.hidden = true; outbox.hidden = false; renderOutbox(); return; }

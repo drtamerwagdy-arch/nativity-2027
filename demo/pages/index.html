@@ -324,7 +324,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.11</span></footer>
+<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.13</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3104,7 +3104,7 @@ var qrcode = function() {
 
   // ---- start ----
   // ---- quick guide (Tamer 2026-09-24): five brief bubbles on how to pay, the e-Transfer message above all.
-  // Preview only for now: it starts when the address has ?tour=1; the "How to pay?" link replays it.
+  // Preview only for now: it is switched on by ?tour=1 in the address; the "How to pay?" link replays it.
   var TOUR = [
     { el: function () { return $('#pick'); }, t: 'Choose', d: 'Get tickets, donate, or become a sponsor.' },
     { el: function () { var r = $('#buy input[name=method]'); return r && r.closest('.pills'); }, t: 'Pick how to pay', d: 'Interac e-Transfer, cash to a team member, or cheque.' },
@@ -3153,7 +3153,9 @@ var qrcode = function() {
     $('#pick').parentNode.insertBefore(again, $('#pick'));
     $('button', again).onclick = tour;
   }
-  function tourStart() { if (param('tour')) setTimeout(tour, 500); }
+  // shown once (Tamer 2026-09-24): automatically on the first visit only; the "How to pay?" link replays it
+  function tourSeen() { try { return localStorage.getItem('ww27-tour-seen') === '1'; } catch (e) { return false; } }
+  function tourStart() { if (param('tour') && !tourSeen()) setTimeout(tour, 500); }
 
   api('config').then(function (c) {
     for (var k in c) CFG[k] = c[k];

@@ -44,6 +44,7 @@ iframe.page{position:absolute;inset:0;width:100%;height:100%;border:0;background
   <nav class="tabs" role="tablist" aria-label="Demo pages">
     <button type="button" role="tab" id="tab-index" data-tab="index" aria-selected="true">Public page · everyone</button>
     <button type="button" role="tab" id="tab-team" data-tab="team" aria-selected="false">Team page · team only</button>
+    <button type="button" role="tab" id="tab-help" data-tab="help" aria-selected="false">How to use</button>
     <button type="button" role="tab" id="tab-outbox" data-tab="outbox" aria-selected="false">Emails sent <span class="count" id="count">0</span></button>
   </nav>
 </header>
@@ -3225,7 +3226,7 @@ if (typeof module !== 'undefined') module.exports = Core;
 
   // ---------- tabs ----------
   var frame = document.getElementById('frame'), outbox = document.getElementById('outbox'), cache = {};
-  var PARAMS = { index: {}, team: { k: MINA }, owner: { k: OWNER } };
+  var PARAMS = { index: { tour: '1' }, help: {}, team: { k: MINA }, owner: { k: OWNER } };
   function show(tab, params) {
     [].forEach.call(document.querySelectorAll('[data-tab]'), function (b) { b.setAttribute('aria-selected', b.getAttribute('data-tab') === tab); });
     if (tab === 'outbox') { frame.hidden = true; outbox.hidden = false; renderOutbox(); return; }
