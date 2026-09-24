@@ -1,0 +1,18 @@
+<!doctype html>
+<!-- Loader for the Nativity 2027 team page (each servant's personal link). It fetches the current page from the Apps Script web app without
+     Google cookies, so it works in browsers signed in to several Google accounts (Google's own address shows
+     "Sorry, unable to open the file" there). No data or keys live here: each person's key is in their own link. -->
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Nativity 2027 · Team</title></head>
+<body style="margin:0;background:#F3F5F9;font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#5B6477">
+<p id="ld" style="text-align:center;padding:48px 16px">Loading…</p>
+<script>
+var API = 'https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec', PAGE = 'team', q = {};
+location.search.slice(1).split('&').forEach(function (kv) { if (!kv) return; var i = kv.indexOf('='); q[decodeURIComponent(i < 0 ? kv : kv.slice(0, i))] = i < 0 ? '' : decodeURIComponent(kv.slice(i + 1).replace(/\+/g, ' ')); });
+if (PAGE !== 'index') q.p = PAGE;
+fetch(API + '?raw=' + PAGE).then(function (r) { if (!r.ok) throw 0; return r.text(); }).then(function (h) {
+  h = h.replace('<head>', '<head><script>window.WW_API=' + JSON.stringify(API) + ';window.WW_PARAMS=' + JSON.stringify(q).replace(/</g, '\\u003c') + ';<\/script>');
+  document.open(); document.write(h); document.close();
+}).catch(function () { document.getElementById('ld').innerHTML = 'Sorry, the page did not load. Please <a href="javascript:location.reload()">try again</a>.'; });
+</script>
+</body></html>
