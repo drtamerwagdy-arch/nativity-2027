@@ -401,10 +401,10 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
     </div>
     <div class="fgrid">
       <div class="panel2 b-tix">
-        <div class="row qrow"><span class="big">Tickets</span><div class="stepper"><button type="button" data-d="-1" aria-label="fewer">−</button><input name="qty" id="b-qty" type="number" min="1" max="20" value="1" inputmode="numeric" aria-label="Tickets"><button type="button" data-d="1" aria-label="more">+</button></div></div>
+        <div class="row qrow"><span class="big">Tickets</span><div class="stepper"><button type="button" data-d="-1" aria-label="fewer">−</button><input name="qty" id="b-qty" type="number" min="0" max="20" value="0" inputmode="numeric" aria-label="Tickets"><button type="button" data-d="1" aria-label="more">+</button></div></div>
         <div class="row qrow don"><span class="big">Your donation</span><div class="money"><b>$</b><input name="amount" id="b-amount" type="number" min="1" step="1" inputmode="decimal" aria-label="Donation amount"></div>
-          <button type="button" class="sugtag" data-sugtag aria-live="polite"><small>SUGGESTED</small><b data-sugamt></b></button></div>
-        <div class="sgline" data-suggest></div>
+          <button type="button" class="sugtag hide" data-sugtag aria-live="polite"><small>SUGGESTED</small><b data-sugamt></b></button></div>
+        <div class="sgline" data-suggest>★ Suggested $20 per ticket ★<small>Every dollar beyond that supports the service.</small></div>   <!-- on the page from the first moment (Tamer 2026-09-25) -->
       </div>
       <div class="panel2 b-who"><div data-person></div></div>
       <div class="panel2 b-gift">
@@ -508,7 +508,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.42</span></footer>
+<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.43</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3269,6 +3269,7 @@ var qrcode = function() {
   }
   var buy = $('#buy'), buyProof = new ProofBox($('[data-proof]', buy), { expected: function () { return $('[name=amount]', buy).value; }, done: 'you will get your tickets by email.' }), buyTouched = false;
   function minimumFor(q, g) {
+    if (q < 1) return CFG.suggested * g;   // the page opens at 0 tickets
     var t = String(CFG.minTable).split(/[\s,]+/).map(Number).filter(function (n) { return n > 0; });
     return (q <= t.length ? t[q - 1] : CFG.suggested * q) + CFG.suggested * g;
   }
@@ -3276,14 +3277,16 @@ var qrcode = function() {
     var q = Number($('[name=qty]', buy).value) || 0, g = Number($('[name=gift_qty]', buy).value) || 0, s = (q + g) * CFG.suggested;
     // the rules show only when someone goes past them (same checks as the engine)
     var a = Number($('[name=amount]', buy).value) || 0, lim = '', least = minimumFor(q, g);
-    if (buyTouched && a && a + 0.001 < least) lim = 'The minimum donation for ' + q + ' ticket' + (q > 1 ? 's' : '') + (g ? ' and ' + g + ' gifted seat' + (g > 1 ? 's' : '') : '') + ' is ' + money(least) + '.';
+    if (buyTouched && q >= 1 && a && a + 0.001 < least) lim = 'The minimum donation for ' + q + ' ticket' + (q > 1 ? 's' : '') + (g ? ' and ' + g + ' gifted seat' + (g > 1 ? 's' : '') : '') + ' is ' + money(least) + '.';
     $('[data-err]', buy).textContent = lim;
     // Tamer 2026-09-25: "Suggested $20 per ticket" under the donation; a gifted seat is a $20 donation (not "suggested")
     $('[data-suggest]', buy).innerHTML = '★ Suggested ' + money(CFG.suggested) + ' per ticket ★<small>Every dollar beyond that supports the service.</small>';
     $('[data-giftnote]', buy).textContent = money(CFG.suggested) + ' donation · optional';
-    // the tag follows the tickets and swings in again whenever the amount changes; the donation box is never filled in by itself
+    // the tag shows only once tickets are added (the page opens at 0), follows them and swings in again whenever the amount
+    // changes (Tamer 2026-09-25); the donation box is never filled in by itself; the gold banner is always there
     var tag = $('[data-sugtag]', buy), amt = money(s) + ' or more';
-    if ($('[data-sugamt]', tag).textContent !== amt) { $('[data-sugamt]', tag).textContent = amt; tag.classList.remove('swing'); void tag.offsetWidth; tag.classList.add('swing'); }
+    if (q < 1) { tag.classList.add('hide'); $('[data-sugamt]', tag).textContent = ''; }
+    else if ($('[data-sugamt]', tag).textContent !== amt) { tag.classList.remove('hide'); $('[data-sugamt]', tag).textContent = amt; tag.classList.remove('swing'); void tag.offsetWidth; tag.classList.add('swing'); }
     $('[data-payhow]', buy).innerHTML = payHow();   // e-Transfer only online (Tamer 2026-09-25)
     copyBtn(buy);
   }
@@ -3295,6 +3298,7 @@ var qrcode = function() {
   buy.addEventListener('input', function (e) { if (e.target.name === 'qty' || e.target.name === 'gift_qty') buySync(); });
   buy.addEventListener('change', function (e) { if (e.target.name === 'method') buySync(); });
   submit(buy, 'order', function (p) {
+    if (!(Number(p.qty) >= 1)) throw new Error('Please choose how many tickets you need.');
     if (!(Number(p.amount) > 0)) throw new Error('Please enter your donation. We suggest ' + money(((Number(p.qty) || 0) + (Number(p.gift_qty) || 0)) * CFG.suggested) + ' or more.');
     need(p, ['first', 'last', 'email']);
     p.proof = proofOf(buyProof, p.method); return p;
