@@ -7,7 +7,7 @@
 <title>Team · Nativity 2027</title>
 <!-- saved to the home screen: full screen, Wonder Worker icon (the page is opened through the GitHub loader) -->
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="WW Team"><meta name="theme-color" content="#3A1F4E">
+<meta name="apple-mobile-web-app-title" content="WW Team"><meta name="theme-color" content="#0B1530">
 <link rel="apple-touch-icon" href="https://thewonderworker.ca/icon-180.png"><link rel="icon" href="https://thewonderworker.ca/icon-180.png">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Ultra&family=Abril+Fatface&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>/* Shared look for the ticket pages (v2, Tamer 2026-09-24: "like my app" — light page, white cards with a coloured
@@ -22,7 +22,11 @@
   --ok:#1F7A55;--warn:#9A5A00;--bad:#B3261E;
   --radius:16px;--shadow:0 1px 2px rgba(16,24,40,.05),0 6px 20px rgba(16,24,40,.06);
   color-scheme:light}
-[data-theme=night]{--sky1:#0B1530;--sky2:#10203F;--sky3:#1A2D57;--gold:#F6CB5C;--cream:#FFF3D6}
+[data-theme=night]{--sky1:#0B1530;--sky2:#10203F;--sky3:#1A2D57;--gold:#F6CB5C;--cream:#FFF3D6;--accent:#1A2D57;--accent-2:#0B1530;--accent-tint:#EAF0FA}
+/* team page + dashboard header (Tamer 2026-09-25): white with a gold line underneath, like his app */
+.hero.light{background:#fff;color:#0B1530;border-bottom:4px solid var(--tab-gold);box-shadow:0 2px 10px rgba(11,21,48,.06)}
+.hero.light .bg,.hero.light .grade,.hero.light .fade{display:none}.hero.light .kick{color:#B7791F!important}.hero.light h1,.hero.light #hi{color:#0B1530}
+.hero.light .held{color:#0B1530}.hero.light .held small{color:#8A6A2A}
 [data-theme=night] .hero .grade{display:none}
 [data-theme=night] .hero .fade{background:linear-gradient(180deg,rgba(3,8,24,.25) 0%,rgba(3,10,30,.7) 100%)}
 [data-theme=night] .hero .bg{background-position:100% 55%}
@@ -166,35 +170,39 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 .hero .in{grid-template-columns:1fr auto}
 .held{font:400 34px/1 "Bebas Neue",Impact,sans-serif;color:var(--gold);text-align:right}
 .held small{display:block;font-size:13px;color:var(--cream);letter-spacing:2px}
+/* the ticket counter on the left (Tamer 2026-09-25) */
+@media (min-width:900px){main.teamgrid{display:grid;grid-template-columns:240px minmax(0,1fr);column-gap:18px;align-items:start}
+  main.teamgrid>#soldbar{grid-column:1;grid-row:1/span 30;position:sticky;top:14px;grid-template-columns:1fr!important;gap:14px;padding:16px 12px}
+  main.teamgrid>*:not(#soldbar){grid-column:2}}
+.soldbar{border-bottom:4px solid var(--tab-gold)}.soldbar>div:first-child>b{font-size:30px;color:#0B1530}
+/* paper sheet rows */
+.shrow{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0;background:#fff}
+.shrow.bad{border-color:#E7A39B;background:#FFF8F7}.shrow.done{background:#EAF6F0;border-color:#9FD2B7}
+.shh{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}.okt{color:#1F7A55;font-weight:700}
+.shg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.shg label{display:flex;flex-direction:column;font-size:12.5px;color:var(--soft);gap:3px}
+.shg .w2{grid-column:span 2}.shg input,.shg select{font:15px Inter,system-ui,sans-serif;padding:8px 9px;border:1px solid var(--fieldline);border-radius:8px;min-width:0}
+.shrow .err{margin:6px 0 0}.shrow .hint{margin:6px 0 0}
+@media (max-width:640px){.shg{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
-<header class="hero"><div class="bg"></div><div class="grade"></div><div class="fade"></div>
-  <div class="in"><div><div class="bebas" style="font-size:14px;letter-spacing:3px;color:var(--gold)">WONDER WORKER · TEAM</div><div class="bebas" style="font-size:28px" id="hi">Loading…</div></div>
+<header class="hero light"><div class="bg"></div><div class="grade"></div><div class="fade"></div>
+  <div class="in"><div><div class="bebas kick" style="font-size:14px;letter-spacing:3px">WONDER WORKER · TEAM</div><div class="bebas" style="font-size:28px" id="hi">Loading…</div></div>
   <div class="held" id="held"></div></div>
 </header>
-<main>
-  <p class="tour-again" style="margin:0 0 -6px"><a class="link" href="https://thewonderworker.ca/team-help.html" target="_blank" rel="noopener">How to use this page</a></p>
+<main class="teamgrid">
   <!-- live counter (Tamer 2026-09-24): printed and e-tickets sold, gifted seats (not in the total), seats left -->
   <section class="soldbar hide" id="soldbar" aria-live="polite"></section>
-  <section class="card hide" id="collect">
-    <h2>Collect a cash booking</h2>
-    <p class="hint">Scan a buyer's booking code to collect cash, or a ticket's code at the door to check it. You can also type it (WW27-0007 or T377).</p>
-    <div class="row"><button type="button" class="btn" data-scan>Scan code</button><input class="s" data-code placeholder="WW27-0007" style="font:18px Arial;padding:10px;border:1px solid var(--line);border-radius:8px;width:150px;text-transform:uppercase"><button type="button" class="btn ghost" data-find>Find</button></div>
-    <div class="hide" data-cam><video playsinline muted style="width:100%;max-width:420px;border-radius:10px;background:#000"></video><p><button type="button" class="link" data-stop>Stop camera</button></p></div>
-    <div data-booking></div>
-  </section>
   <section class="card hide" id="notteam"><h2>This code is for the team</h2><p>Please show it to a Wonder Worker team member when you pay. They will scan it, and your tickets will arrive by email.</p></section>
   <form class="card hide" id="sale" novalidate>
     <h2>New sale</h2>
     <div class="two"><label class="f">First name<input name="first" autocomplete="off"></label><label class="f">Last name<input name="last" autocomplete="off"></label></div>
     <label class="f">Email <span style="font-weight:400">(tickets are emailed here; leave empty only if you hand over printed tickets)</span><input name="email" type="email" inputmode="email" autocomplete="off"></label>
     <label class="f">Mobile <span style="font-weight:400">(optional)</span><input name="phone" type="tel" inputmode="tel" autocomplete="off"></label>
-    <label class="pills" style="margin:0 0 6px"><label><input type="checkbox" name="no_receipt"> Buyer declines a tax receipt</label></label>
     <h3>Tickets</h3>
-    <div class="pills"><label><input type="radio" name="mode" value="printed" checked> Printed tickets handed over</label><label><input type="radio" name="mode" value="eticket"> Email e-tickets</label></div>
-    <div data-printed><label class="f">Printed ticket numbers you handed over<input name="numbers" placeholder="e.g. 42-45 or 42, 43" inputmode="text" autocomplete="off"></label><p class="hint" data-upto></p></div>
-    <div data-eticket class="hide row"><span>How many</span><div class="stepper"><button type="button" data-d="-1">−</button><input name="qty" type="number" min="1" max="20" value="1"><button type="button" data-d="1">+</button></div></div>
+    <div class="pills"><label><input type="radio" name="mode" value="eticket" checked> Email e-tickets</label><label><input type="radio" name="mode" value="printed"> Printed tickets handed over</label></div>
+    <div data-printed class="hide"><label class="f">Printed ticket numbers you handed over<input name="numbers" placeholder="e.g. 42-45 or 42, 43" inputmode="text" autocomplete="off"></label><p class="hint" data-upto></p></div>
+    <div data-eticket class="row"><span>How many</span><div class="stepper"><button type="button" data-d="-1">−</button><input name="qty" type="number" min="1" max="20" value="1"><button type="button" data-d="1">+</button></div></div>
     <h3>Received</h3>
     <div class="money"><b>$</b><input name="amount" type="number" min="1" step="1" inputmode="decimal"><span class="hint" data-suggest></span></div>
     <div class="pills"><label><input type="radio" name="method" value="Cash" checked> Cash</label><label><input type="radio" name="method" value="Cheque"> Cheque</label></div>
@@ -202,10 +210,25 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
     <button class="btn wide" type="submit">Submit purchase</button>
     <div data-result></div>
   </form>
+  <!-- paper sales sheet (Tamer 2026-09-25): write buyers on paper when it's busy, one photo later, check, record them all -->
+  <section class="card hide" id="sheet">
+    <h2>Busy? Add buyers from a paper sheet</h2>
+    <p class="hint">Write each buyer on the <a class="link" href="https://thewonderworker.ca/sales-sheet.pdf" target="_blank" rel="noopener">paper sales sheet</a> (8 per page; print a few). Later, take one photo of the sheet here: the system reads it, you check each row, then record them all. Each buyer gets their tickets by email.</p>
+    <div class="row"><label class="btn">Take a photo of the sheet<input type="file" accept="image/*" capture="environment" class="hide" data-sheetfile></label><button type="button" class="btn ghost hide" data-sheetsample>Try the sample sheet</button></div>
+    <div data-sheetstatus></div>
+    <div data-sheetrows></div>
+  </section>
   <section class="card hide" id="mine"><h2>My sales</h2><div data-list></div></section>
+  <section class="card hide" id="collect">
+    <h2>At the door (January 30)</h2>
+    <p class="hint">Scan the ticket's code (the QR on a printed ticket, or the door code in the ticket email), or type its number (like T377).</p>
+    <div class="row"><button type="button" class="btn" data-scan>Scan code</button><input class="s" data-code placeholder="WW27-0007" style="font:18px Arial;padding:10px;border:1px solid var(--line);border-radius:8px;width:150px;text-transform:uppercase"><button type="button" class="btn ghost" data-find>Find</button></div>
+    <div class="hide" data-cam><video playsinline muted style="width:100%;max-width:420px;border-radius:10px;background:#000"></video><p><button type="button" class="link" data-stop>Stop camera</button></p></div>
+    <div data-booking></div>
+  </section>
   <section class="card hide" id="bad"><h2>Link not valid</h2><p>This link is no longer valid. Please ask Tamer for a new one.</p></section>
 </main>
-<footer><span>Wonder Worker Art Team · team page</span><span class="ver">v1.27</span></footer>
+<footer><span>Wonder Worker Art Team · team page</span><span class="ver">v1.28</span></footer>
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
    Online demo (window.WW_DEMO): the engine runs in the page around this one; ask it by message. */
@@ -324,6 +347,145 @@ function QuickGuide(steps, o) {
   return { start: start, auto: function () { if (!flag(o.seen) && !flag(o.off)) setTimeout(start, 500); } };
 }
 </script>
+<script>// Paper sales sheet layout (made by tickets/sales_sheet.py; do not edit): corner-square centres and each box's writing area, sheet px
+var SHEET = {"marks":[[35,35],[781,35],[35,1021],[781,1021]],"fields":[{"row":1,"key":"first","x":84,"y":180,"w":180,"h":27},{"row":1,"key":"last","x":282,"y":180,"w":180,"h":27},{"row":1,"key":"qty","x":480,"y":180,"w":60,"h":27},{"row":1,"key":"amount","x":558,"y":180,"w":90,"h":27},{"row":1,"key":"paid","x":666,"y":180,"w":100,"h":27},{"row":1,"key":"email","x":84,"y":230,"w":430,"h":27},{"row":1,"key":"printed","x":532,"y":230,"w":236,"h":27},{"row":2,"key":"first","x":84,"y":284,"w":180,"h":27},{"row":2,"key":"last","x":282,"y":284,"w":180,"h":27},{"row":2,"key":"qty","x":480,"y":284,"w":60,"h":27},{"row":2,"key":"amount","x":558,"y":284,"w":90,"h":27},{"row":2,"key":"paid","x":666,"y":284,"w":100,"h":27},{"row":2,"key":"email","x":84,"y":334,"w":430,"h":27},{"row":2,"key":"printed","x":532,"y":334,"w":236,"h":27},{"row":3,"key":"first","x":84,"y":388,"w":180,"h":27},{"row":3,"key":"last","x":282,"y":388,"w":180,"h":27},{"row":3,"key":"qty","x":480,"y":388,"w":60,"h":27},{"row":3,"key":"amount","x":558,"y":388,"w":90,"h":27},{"row":3,"key":"paid","x":666,"y":388,"w":100,"h":27},{"row":3,"key":"email","x":84,"y":438,"w":430,"h":27},{"row":3,"key":"printed","x":532,"y":438,"w":236,"h":27},{"row":4,"key":"first","x":84,"y":492,"w":180,"h":27},{"row":4,"key":"last","x":282,"y":492,"w":180,"h":27},{"row":4,"key":"qty","x":480,"y":492,"w":60,"h":27},{"row":4,"key":"amount","x":558,"y":492,"w":90,"h":27},{"row":4,"key":"paid","x":666,"y":492,"w":100,"h":27},{"row":4,"key":"email","x":84,"y":542,"w":430,"h":27},{"row":4,"key":"printed","x":532,"y":542,"w":236,"h":27},{"row":5,"key":"first","x":84,"y":596,"w":180,"h":27},{"row":5,"key":"last","x":282,"y":596,"w":180,"h":27},{"row":5,"key":"qty","x":480,"y":596,"w":60,"h":27},{"row":5,"key":"amount","x":558,"y":596,"w":90,"h":27},{"row":5,"key":"paid","x":666,"y":596,"w":100,"h":27},{"row":5,"key":"email","x":84,"y":646,"w":430,"h":27},{"row":5,"key":"printed","x":532,"y":646,"w":236,"h":27},{"row":6,"key":"first","x":84,"y":700,"w":180,"h":27},{"row":6,"key":"last","x":282,"y":700,"w":180,"h":27},{"row":6,"key":"qty","x":480,"y":700,"w":60,"h":27},{"row":6,"key":"amount","x":558,"y":700,"w":90,"h":27},{"row":6,"key":"paid","x":666,"y":700,"w":100,"h":27},{"row":6,"key":"email","x":84,"y":750,"w":430,"h":27},{"row":6,"key":"printed","x":532,"y":750,"w":236,"h":27},{"row":7,"key":"first","x":84,"y":804,"w":180,"h":27},{"row":7,"key":"last","x":282,"y":804,"w":180,"h":27},{"row":7,"key":"qty","x":480,"y":804,"w":60,"h":27},{"row":7,"key":"amount","x":558,"y":804,"w":90,"h":27},{"row":7,"key":"paid","x":666,"y":804,"w":100,"h":27},{"row":7,"key":"email","x":84,"y":854,"w":430,"h":27},{"row":7,"key":"printed","x":532,"y":854,"w":236,"h":27},{"row":8,"key":"first","x":84,"y":908,"w":180,"h":27},{"row":8,"key":"last","x":282,"y":908,"w":180,"h":27},{"row":8,"key":"qty","x":480,"y":908,"w":60,"h":27},{"row":8,"key":"amount","x":558,"y":908,"w":90,"h":27},{"row":8,"key":"paid","x":666,"y":908,"w":100,"h":27},{"row":8,"key":"email","x":84,"y":958,"w":430,"h":27},{"row":8,"key":"printed","x":532,"y":958,"w":236,"h":27}],"w":816,"h":1056};
+</script>
+<script>// Paper sales sheet reader (Tamer 2026-09-25). A full-page photo is read out of order by the OCR (names end up next to
+// the wrong buyer), so the phone does the layout work: it finds the sheet's 4 corner squares, straightens the photo,
+// cuts out every box that has writing in it, and lays them out as ONE clean list picture with a printed label on each
+// line ("#3 EMAIL:"). The server reads that list (Google's OCR) line by line, so every value keeps its row and field.
+// Uses SHEET from sheet-layout.js (made by tickets/sales_sheet.py).
+var SheetReader = (function () {
+  var LABEL = { first: 'FIRST', last: 'LAST', qty: 'TICKETS', amount: 'AMOUNT', paid: 'PAID', email: 'EMAIL', printed: 'PRINTED' };
+
+  function loadImage(file) {   // the photo on a canvas, at most 2200 px on its long side
+    return new Promise(function (ok, no) {
+      var url = URL.createObjectURL(file), im = new Image();
+      im.onload = function () {
+        var k = Math.min(1, 2200 / Math.max(im.naturalWidth, im.naturalHeight)), cv = document.createElement('canvas');
+        cv.width = Math.round(im.naturalWidth * k); cv.height = Math.round(im.naturalHeight * k);
+        cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height); URL.revokeObjectURL(url); ok(cv);
+      };
+      im.onerror = function () { URL.revokeObjectURL(url); no(new Error('That file could not be opened as a picture.')); };
+      im.src = url;
+    });
+  }
+  function grayOf(ctx, w, h) {
+    var d = ctx.getImageData(0, 0, w, h).data, g = new Uint8Array(w * h);
+    for (var i = 0, j = 0; i < g.length; i++, j += 4) g[i] = (d[j] * 77 + d[j + 1] * 150 + d[j + 2] * 29) >> 8;
+    return g;
+  }
+  function otsu(g) {
+    var hist = new Array(256).fill(0), n = g.length, sum = 0, sumB = 0, wB = 0, best = 0, t = 128;
+    for (var i = 0; i < n; i++) hist[g[i]]++;
+    for (i = 0; i < 256; i++) sum += i * hist[i];
+    for (i = 0; i < 256; i++) {
+      wB += hist[i]; if (!wB) continue; var wF = n - wB; if (!wF) break;
+      sumB += i * hist[i]; var mB = sumB / wB, mF = (sum - sumB) / wF, v = wB * wF * (mB - mF) * (mB - mF);
+      if (v > best) { best = v; t = i; }
+    }
+    return t;
+  }
+  // the 4 solid black squares near the sheet's corners (in the full canvas' pixels), or null
+  function findMarks(cv) {
+    var k = Math.min(1, 900 / Math.max(cv.width, cv.height)), w = Math.round(cv.width * k), h = Math.round(cv.height * k);
+    var sm = document.createElement('canvas'); sm.width = w; sm.height = h; var sx = sm.getContext('2d'); sx.drawImage(cv, 0, 0, w, h);
+    var g = grayOf(sx, w, h), t = Math.min(otsu(g), 110), lab = new Int32Array(w * h), q = new Int32Array(w * h), found = [], id = 0;
+    function dark(i) { return g[i] < t; }
+    for (var s = 0; s < w * h; s++) {
+      if (!dark(s) || lab[s]) continue;
+      id++; var head = 0, tail = 0, area = 0, x0 = w, x1 = 0, y0 = h, y1 = 0; q[tail++] = s; lab[s] = id;
+      while (head < tail) {
+        var p = q[head++], x = p % w, y = (p - x) / w; area++;
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+        var nb = [p - 1, p + 1, p - w, p + w];
+        for (var z = 0; z < 4; z++) { var r = nb[z]; if (r < 0 || r >= w * h || lab[r] || !dark(r)) continue; if ((z < 2) && ((r / w | 0) !== y)) continue; lab[r] = id; q[tail++] = r; }
+      }
+      var bw = x1 - x0 + 1, bh = y1 - y0 + 1;
+      if (area < 12 || bw > w * 0.08 || bh > h * 0.08 || bw / bh < 0.6 || bw / bh > 1.6 || area / (bw * bh) < 0.72) continue;
+      if (x0 < 2 || y0 < 2 || x1 > w - 3 || y1 > h - 3) continue;
+      var ring = 0, light = 0, pad = Math.max(2, Math.round(bw * 0.45));   // a mark sits on white paper
+      for (var a = x0 - pad; a <= x1 + pad; a++) for (var b = y0 - pad; b <= y1 + pad; b++) {
+        if (a >= x0 - 1 && a <= x1 + 1 && b >= y0 - 1 && b <= y1 + 1) continue;
+        if (a < 0 || b < 0 || a >= w || b >= h) continue; ring++; if (!dark(b * w + a)) light++;
+      }
+      if (!ring || light / ring < 0.8) continue;
+      found.push({ x: (x0 + x1 + 1) / 2 / k, y: (y0 + y1 + 1) / 2 / k, area: area });
+    }
+    if (found.length < 4) return null;
+    function pick(f) { return found.reduce(function (a, b) { return f(b) > f(a) ? b : a; }); }
+    var m = [pick(function (c) { return -(c.x + c.y); }), pick(function (c) { return c.x - c.y; }), pick(function (c) { return c.y - c.x; }), pick(function (c) { return c.x + c.y; })];
+    if (m.some(function (a, i) { return m.indexOf(a) !== i; })) return null;
+    var areas = m.map(function (c) { return c.area; });
+    if (Math.max.apply(null, areas) > 4 * Math.min.apply(null, areas)) return null;
+    return m.map(function (c) { return [c.x, c.y]; });   // top-left, top-right, bottom-left, bottom-right
+  }
+  // 3x3 map from sheet points to photo points (4 pairs)
+  function homography(src, dst) {
+    var A = [], b = [];
+    for (var i = 0; i < 4; i++) {
+      var x = src[i][0], y = src[i][1], u = dst[i][0], v = dst[i][1];
+      A.push([x, y, 1, 0, 0, 0, -u * x, -u * y]); b.push(u);
+      A.push([0, 0, 0, x, y, 1, -v * x, -v * y]); b.push(v);
+    }
+    for (var c = 0; c < 8; c++) {   // Gaussian elimination
+      var piv = c; for (var r = c + 1; r < 8; r++) if (Math.abs(A[r][c]) > Math.abs(A[piv][c])) piv = r;
+      var tA = A[c]; A[c] = A[piv]; A[piv] = tA; var tb = b[c]; b[c] = b[piv]; b[piv] = tb;
+      for (r = 0; r < 8; r++) if (r !== c) { var f = A[r][c] / A[c][c]; for (var k2 = c; k2 < 8; k2++) A[r][k2] -= f * A[c][k2]; b[r] -= f * b[c]; }
+    }
+    var hh = b.map(function (v, i) { return v / A[i][i]; });
+    return function (x, y) { var d = hh[6] * x + hh[7] * y + 1; return [(hh[0] * x + hh[1] * y + hh[2]) / d, (hh[3] * x + hh[4] * y + hh[5]) / d]; };
+  }
+  // one box's writing area, straightened, grey, contrast stretched; also how much writing it holds
+  function cut(src, W, H, map, f, scale) {
+    var ow = Math.round(f.w * scale), oh = Math.round(f.h * scale), out = document.createElement('canvas'); out.width = ow; out.height = oh;
+    var ctx = out.getContext('2d'), img = ctx.createImageData(ow, oh), o = img.data, vals = new Uint8Array(ow * oh);
+    for (var j = 0; j < oh; j++) for (var i = 0; i < ow; i++) {
+      var p = map(f.x + (i + 0.5) / scale, f.y + (j + 0.5) / scale), x = p[0] - 0.5, y = p[1] - 0.5, xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, v = 255;
+      if (xi >= 0 && yi >= 0 && xi < W - 1 && yi < H - 1) {
+        var a = src[yi * W + xi], b = src[yi * W + xi + 1], c = src[(yi + 1) * W + xi], d = src[(yi + 1) * W + xi + 1];
+        v = (a * (1 - fx) + b * fx) * (1 - fy) + (c * (1 - fx) + d * fx) * fy;
+      }
+      vals[j * ow + i] = v;
+    }
+    var sorted = Array.prototype.slice.call(vals).sort(function (a, b) { return a - b; }), paper = sorted[Math.floor(sorted.length * 0.8)] || 255, inkPx = 0;
+    for (var n = 0; n < vals.length; n++) {
+      var t = Math.max(0, Math.min(255, 255 - (paper - vals[n]) * 255 / Math.max(40, paper * 0.6)));
+      if (t < 110) inkPx++;
+      o[n * 4] = o[n * 4 + 1] = o[n * 4 + 2] = t; o[n * 4 + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    return { canvas: out, ink: inkPx / vals.length };
+  }
+  function read(file) {
+    return loadImage(file).then(function (cv) {
+      var marks = findMarks(cv);
+      if (!marks) throw new Error('The 4 black corner squares of the sheet could not be found. Take the photo from straight above, with the whole sheet in the picture, on a darker table if you can.');
+      var map = homography(SHEET.marks, marks), W = cv.width, H = cv.height, src = grayOf(cv.getContext('2d'), W, H);
+      var scale = 2.4, cuts = SHEET.fields.map(function (f) { var c = cut(src, W, H, map, f, scale); c.f = f; return c; })
+        .filter(function (c) { return c.ink > 0.012; });
+      if (!cuts.length) throw new Error('No writing was found on the sheet.');
+      // each label sits right in front of its box, lines well apart, so the reader takes every line as one sentence
+      var lineH = 150, font = 'bold 40px Arial, Helvetica, sans-serif', meas = document.createElement('canvas').getContext('2d'); meas.font = font;
+      var labels = cuts.map(function (c) { return '#' + c.f.row + ' ' + LABEL[c.f.key] + ':'; });
+      var listW = Math.max.apply(null, cuts.map(function (c, n) { return 16 + meas.measureText(labels[n]).width + 24 + c.canvas.width; })) + 20;
+      var list = document.createElement('canvas'); list.width = Math.ceil(listW); list.height = cuts.length * lineH + 20;
+      var lx = list.getContext('2d'); lx.fillStyle = '#fff'; lx.fillRect(0, 0, list.width, list.height);
+      lx.fillStyle = '#000'; lx.font = font; lx.textBaseline = 'middle';
+      cuts.forEach(function (c, n) {
+        var y = 10 + n * lineH, tw = lx.measureText(labels[n]).width;
+        lx.fillText(labels[n], 16, y + lineH / 2);
+        lx.drawImage(c.canvas, 16 + tw + 24, y + (lineH - c.canvas.height) / 2);
+      });
+      var k = Math.min(1, 1600 / Math.max(W, H)), small = document.createElement('canvas');   // the photo kept with the sales, for checking later
+      small.width = Math.round(W * k); small.height = Math.round(H * k); small.getContext('2d').drawImage(cv, 0, 0, small.width, small.height);
+      return { list: list.toDataURL('image/jpeg', 0.9), photo: small.toDataURL('image/jpeg', 0.8), boxes: cuts.length,
+               rows: cuts.reduce(function (a, c) { if (a.indexOf(c.f.row) < 0) a.push(c.f.row); return a; }, []) };
+    });
+  }
+  return { read: read, findMarks: findMarks };
+})();
+</script>
 <script>
 (function () {
   // the personal key comes with the member's link once, then this phone remembers it (so a buyer's QR link opens straight here)
@@ -361,7 +523,7 @@ function QuickGuide(steps, o) {
     }).join('');
     $('[data-list]', $('#mine')).innerHTML = rows ? '<table class="t"><tr><th>When</th><th>Buyer</th><th>Tickets</th><th>Amount</th><th></th></tr>' + rows + '</table><p class="hint">You can undo a sale for 15 minutes. After that, ask Tamer.</p>' : '<p class="hint">No sales yet.</p>';
     $$('[data-undo]').forEach(function (b) { b.onclick = function () { if (!confirm('Undo this sale? The tickets will be cancelled.')) return; api('member_undo', { key: KEY, id: b.getAttribute('data-undo') }).then(load, function (x) { alert(x.message); }); }; });
-    sale.classList.remove('hide'); $('#mine').classList.remove('hide'); $('#collect').classList.remove('hide'); sync();
+    sale.classList.remove('hide'); $('#sheet').classList.remove('hide'); $('#mine').classList.remove('hide'); $('#collect').classList.remove('hide'); sync();
   }
 
   // ---- cash bookings ----
@@ -433,29 +595,97 @@ function QuickGuide(steps, o) {
     api('cash_sale', d).then(function (r) {
       $('[data-result]', sale).innerHTML = '<div class="okbox"><b>Done.</b> Tickets ' + esc(r.tickets.join(', ')) + (r.email ? ' emailed to ' + esc(r.email) : ' recorded (printed, no email)') + '. You now hold ' + money(r.cash) + '.</div>';
       $$('input[name=first],input[name=last],input[name=email],input[name=phone],input[name=numbers],input[name=amount]', sale).forEach(function (i) { i.value = ''; });
-      $('[name=no_receipt]', sale).checked = false;
       touched = false; sid = newId(); load();
     }, function (x) { err.textContent = x.message; }).then(function () { btn.disabled = false; btn.textContent = 'Submit purchase'; });
   };
+  // ---- paper sales sheet (Tamer 2026-09-25): one photo → rows to check → record them all (each a normal team sale) ----
+  var sh = $('#sheet'), shRows = [], shId = '', shUrl = '';
+  function shStatus(h) { $('[data-sheetstatus]', sh).innerHTML = h || ''; }
+  function nums(p) { var n = []; String(p || '').split(/[\s,;]+/).forEach(function (x) { var m = x.match(/^(\d+)(?:-(\d+))?$/); if (m) { for (var i = +m[1], b = m[2] ? +m[2] : +m[1]; i <= b && n.length < 60; i++) n.push(i); } }); return n; }
+  function check(r) {   // what still needs fixing (the engine checks everything again when recording)
+    var p = [], np = nums(r.printed);
+    if (!r.first || !r.last) p.push('the first and last name');
+    if (r.email && !/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(r.email)) p.push('the email');
+    if (!r.email && !np.length) p.push('the email (or the printed ticket numbers)');
+    if (!np.length && !(Number(r.qty) >= 1 && Number(r.qty) <= 20)) p.push('how many tickets');
+    if (!(Number(r.amount) > 0)) p.push('the amount');
+    return p;
+  }
+  function note(r) {
+    var np = nums(r.printed), q = np.length || Number(r.qty) || 0, w = [];
+    if (np.length && r.qty && Number(r.qty) !== np.length) w.push(r.qty + ' tickets but ' + np.length + ' printed number' + (np.length > 1 ? 's' : '') + ': the printed numbers count');
+    if (q && Number(r.amount) > 0 && Number(r.amount) < q * SUG) w.push('less than the suggested ' + money(q * SUG));
+    return w;
+  }
+  function drawRows() {
+    var box = $('[data-sheetrows]', sh), todo = shRows.filter(function (r) { return !r.done; });
+    if (!shRows.length) { box.innerHTML = ''; return; }
+    box.innerHTML = shRows.map(function (r, i) {
+      var p = r.done ? [] : check(r), w = r.done ? [] : note(r), v = function (k) { return esc(r[k] == null ? '' : r[k]); };
+      return '<div class="shrow' + (r.done ? ' done' : p.length || r.error ? ' bad' : '') + '" data-i="' + i + '"><div class="shh"><b>#' + r.row + (r.done ? ' ' + esc(r.first + ' ' + r.last) : '') + '</b>' +
+        (r.done ? '<span class="okt">✓ ' + esc(r.done) + '</span>' : '<button type="button" class="link" data-del>Remove</button>') + '</div>' + (r.done ? '' :
+        '<div class="shg"><label>First name<input data-k="first" value="' + v('first') + '"></label><label>Last name<input data-k="last" value="' + v('last') + '"></label>' +
+        '<label class="w2">Email<input data-k="email" type="email" inputmode="email" value="' + v('email') + '"></label>' +
+        '<label>E-tickets<input data-k="qty" type="number" min="1" max="20" inputmode="numeric" value="' + v('qty') + '"></label><label>Printed Nos<input data-k="printed" placeholder="if handed over" value="' + v('printed') + '"></label>' +
+        '<label>Amount $<input data-k="amount" type="number" min="1" inputmode="decimal" value="' + v('amount') + '"></label><label>Paid<select data-k="method"><option' + (r.method === 'Cheque' ? '' : ' selected') + '>Cash</option><option' + (r.method === 'Cheque' ? ' selected' : '') + '>Cheque</option></select></label></div>' +
+        (p.length ? '<p class="err">Check ' + p.join(', ') + '.</p>' : '') + (w.length ? '<p class="hint">' + esc(w.join(' · ')) + '</p>' : '') + (r.error ? '<p class="err">' + esc(r.error) + '</p>' : '')) + '</div>';
+    }).join('') + (todo.length ? '<p><button type="button" class="link" data-add>+ Add a row</button></p><button type="button" class="btn wide" data-recordall>Record ' + (todo.length === 1 ? 'this buyer' : 'all ' + todo.length + ' buyers') + '</button>'
+      : '<div class="okbox"><b>All recorded.</b> Each buyer got their tickets by email.</div>');
+  }
+  function readSheet(f) {
+    shStatus('<p class="hint">Reading the sheet… (about 10 seconds)</p>'); shRows = []; drawRows();
+    SheetReader.read(f).then(function (r) { return api('member_sheet_read', { key: KEY, image: r.list, photo: r.photo }); }).then(function (x) {
+      shId = 'sheet-' + newId(); shUrl = x.sheet || '';
+      shRows = x.rows.map(function (r) { r.qty = r.qty || ''; r.amount = r.amount || ''; return r; });
+      shStatus(shRows.length ? '<div class="okbox">Found <b>' + shRows.length + '</b> buyer' + (shRows.length > 1 ? 's' : '') + '. Check each row against the sheet, fix anything in red, then tap <b>Record</b>.</div>'
+        : '<div class="warn">No buyers could be read. Take the photo again from straight above, with the whole sheet and its 4 corner squares in the picture.</div>');
+      drawRows();
+    }, function (e) { shStatus('<div class="warn">' + esc(e.message) + '</div>'); });
+  }
+  function recordAll(btn) {
+    var todo = shRows.filter(function (r) { return !r.done; });
+    if (todo.some(function (r) { return check(r).length; })) { shStatus('<div class="warn">Some rows still need fixing (in red).</div>'); return; }
+    btn.disabled = true; shStatus('');
+    var i = 0;
+    (function next() {
+      if (i >= todo.length) { drawRows(); load(); return; }
+      var r = todo[i++], np = nums(r.printed); btn.textContent = 'Recording ' + i + ' of ' + todo.length + '…';
+      api('cash_sale', { key: KEY, first: r.first, last: r.last, email: r.email, phone: '', amount: r.amount, method: r.method, mode: np.length ? 'printed' : 'eticket',
+        numbers: r.printed, qty: r.qty, submit_id: shId + '-' + r.row, sheet: shUrl })
+        .then(function (x) { r.done = 'No. ' + x.tickets.join(', ') + (x.email ? ' · emailed' : ' · recorded'); r.error = ''; }, function (x) { r.error = x.message; }).then(next);
+    })();
+  }
+  sh.addEventListener('input', function (e) { var k = e.target.getAttribute('data-k'), row = e.target.closest('.shrow'); if (k && row) shRows[+row.getAttribute('data-i')][k] = e.target.value.trim(); });
+  sh.addEventListener('change', function (e) { if (e.target.getAttribute('data-k')) drawRows(); });
+  sh.addEventListener('click', function (e) {
+    var t = e.target, row = t.closest('.shrow');
+    if (t.hasAttribute('data-del') && row) { shRows.splice(+row.getAttribute('data-i'), 1); drawRows(); }
+    else if (t.hasAttribute('data-add')) { shRows.push({ row: shRows.reduce(function (m, r) { return Math.max(m, r.row); }, 0) + 1, first: '', last: '', email: '', qty: '', amount: '', method: 'Cash', printed: '' }); drawRows(); }
+    else if (t.hasAttribute('data-recordall')) recordAll(t);
+  });
+  $('[data-sheetfile]', sh).onchange = function () { var f = this.files && this.files[0]; this.value = ''; if (f) readSheet(f); };
+  if (window.WW_DEMO) {   // the team demo: try it with the sample sheet (any photo reads as the sample there)
+    var sb = $('[data-sheetsample]', sh); sb.classList.remove('hide');
+    sb.onclick = function () { fetch('/demo-assets/sheet-sample.jpg').then(function (r) { return r.blob(); }).then(readSheet); };
+  }
+
   // quick guide for the team page (Tamer 2026-09-24): same look and switch as the public page's; the full guide is
-  // thewonderworker.ca/team-help.html ("How to use this page")
+  // thewonderworker.ca/team-help.html; opens only from the Help button (Tamer 2026-09-25)
   var TEAM_TOUR = [
-    { el: null, t: 'Welcome to your team page', d: 'This quick guide shows you how to sell tickets, collect cash bookings and check tickets at the door. We recommend not skipping it.', go: 'Start' },
+    { el: null, t: 'Welcome to your team page', d: 'This quick guide shows you how to sell tickets, add buyers from a paper sheet and check tickets at the door.', go: 'Start' },
     { el: '#held', t: 'Cash you hold', d: 'Adds up the cash you collect. Give it to Hany; Tamer records the hand-over.' },
-    { el: '#soldbar', t: 'Tickets sold', d: 'Printed and e-tickets sold so far, gifted seats (not in the total) and seats left. A warning shows when seats run low.' },
-    { el: '[data-scan]', t: 'Collect a cash booking', d: 'Buyer booked online? Tap <b>Scan code</b> and point at their QR, or type their code and tap <b>Find</b>. Check the amount, collect the cash, tap <b>Paid</b>.' },
-    { el: '[data-code]', t: 'At the door', d: 'Scan the ticket\'s door code, or type it (like <b>T377</b>). <b>✓ registered</b>: welcome them in.' },
+    { el: '#soldbar', t: 'Tickets sold', d: 'Tickets sold so far (printed and e-tickets), gifted seats (not in the total) and seats left. A warning shows when seats run low.' },
     { el: '#sale .two', t: 'Selling on the spot', d: 'Under <b>New sale</b>, type the buyer\'s name and email.' },
-    { el: function () { var c = $('#sale [name=no_receipt]'); return c && c.closest('.pills'); }, t: 'No tax receipt?', d: 'Tick this only if the buyer doesn\'t need one.' },
-    { el: function () { var r = $('#sale [name=mode]'); return r && r.closest('.pills'); }, t: 'Printed or e-tickets', d: '<b>Printed</b>: type the numbers you hand over (No. 1 to 377). <b>E-tickets</b>: choose how many; they get their own numbers (1001 and up) and arrive by email.' },
+    { el: function () { var r = $('#sale [name=mode]'); return r && r.closest('.pills'); }, t: 'E-tickets or printed', d: '<b>E-tickets</b> (the usual): choose how many; they arrive by email. <b>Printed</b>: type the numbers you hand over (No. 1 to 377).' },
     { el: '#sale .money', t: 'Amount and payment', d: 'Enter the amount received, choose <b>Cash</b> or <b>Cheque</b>, then tap <b>Submit purchase</b>. The buyer gets the email right away.' },
-    { el: '#mine', t: 'My sales', d: 'Your sales show here. Made a mistake? <b>Undo</b> within 15 minutes.' }
+    { el: '#sheet', t: 'Busy? Use the paper sheet', d: 'Write buyers on the paper sheet, then take one photo of it here. Check each row and tap <b>Record all</b>.' },
+    { el: '#mine', t: 'My sales', d: 'Your sales show here. Made a mistake? <b>Undo</b> within 15 minutes.' },
+    { el: '#collect', t: 'At the door', d: 'On January 30: tap <b>Scan code</b> and point at the ticket\'s code, or type its number (like <b>T377</b>).' }
   ];
   load().then(function () {
     if (sale.classList.contains('hide')) return;
     var tg, help = HelpButton(function () { tg.start(true); });
     tg = QuickGuide(TEAM_TOUR, { seen: 'ww27-team-tour-seen', off: 'ww27-team-tour-off', fab: help });
-    tg.auto();
   });
 })();
 </script>

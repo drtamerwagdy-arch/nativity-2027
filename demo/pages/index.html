@@ -18,7 +18,11 @@
   --ok:#1F7A55;--warn:#9A5A00;--bad:#B3261E;
   --radius:16px;--shadow:0 1px 2px rgba(16,24,40,.05),0 6px 20px rgba(16,24,40,.06);
   color-scheme:light}
-[data-theme=night]{--sky1:#0B1530;--sky2:#10203F;--sky3:#1A2D57;--gold:#F6CB5C;--cream:#FFF3D6}
+[data-theme=night]{--sky1:#0B1530;--sky2:#10203F;--sky3:#1A2D57;--gold:#F6CB5C;--cream:#FFF3D6;--accent:#1A2D57;--accent-2:#0B1530;--accent-tint:#EAF0FA}
+/* team page + dashboard header (Tamer 2026-09-25): white with a gold line underneath, like his app */
+.hero.light{background:#fff;color:#0B1530;border-bottom:4px solid var(--tab-gold);box-shadow:0 2px 10px rgba(11,21,48,.06)}
+.hero.light .bg,.hero.light .grade,.hero.light .fade{display:none}.hero.light .kick{color:#B7791F!important}.hero.light h1,.hero.light #hi{color:#0B1530}
+.hero.light .held{color:#0B1530}.hero.light .held small{color:#8A6A2A}
 [data-theme=night] .hero .grade{display:none}
 [data-theme=night] .hero .fade{background:linear-gradient(180deg,rgba(3,8,24,.25) 0%,rgba(3,10,30,.7) 100%)}
 [data-theme=night] .hero .bg{background-position:100% 55%}
@@ -441,7 +445,7 @@ aside.steps.light li::after{border-color:#C8843A!important}aside.steps.light li:
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.27</span></footer>
+<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.28</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3089,7 +3093,7 @@ var qrcode = function() {
       'In the message write:<div class="copy"><span>Wonder Worker</span><button type="button">Copy</button></div>' +
       '</div>';
   }
-  // everyone gets a tax receipt unless they tick "No tax receipt needed"
+  // everyone gets a tax receipt (Tamer 2026-09-25: the "No tax receipt needed" box is gone)
   $$('[data-person]').forEach(function (d) {
     var f = d.closest('form'), id = f && f.id;
     d.innerHTML = id === 'give' ? PERSON.replace('your tickets and receipt go here', 'your receipt goes here')
@@ -3156,7 +3160,7 @@ var qrcode = function() {
     if (method === 'Cash') return null;
     if (box.busy()) throw new Error('One moment: still checking your screenshot.');
     var v = box.value();
-    if (!v) throw new Error('Please add your ' + (method === 'Cheque' ? 'cheque photo' : 'e-Transfer screenshot') + ', or tap "Skip, I\'ve paid".');
+    if (!v) throw new Error('Please add your e-Transfer screenshot, or tap "Skip, I\'ve paid".');
     return v;
   }
 
@@ -3321,7 +3325,7 @@ var qrcode = function() {
   }
 
   // ---- start ----
-  // ---- quick guide (Tamer 2026-09-24): a welcome note, then eight brief bubbles on how to pay; the Guide switch turns it off.
+  // ---- quick guide: opens only from the Help button (Tamer 2026-09-25); it walks through the steps shown on each page.
   // Shown once, automatically, on a first visit; the Help button brings it back at any time.
   function payCopy(k) { var c = $$('#buy [data-payhow] .copy'); return c[k] || null; }
   // wording from Tamer 2026-09-24 ("start like any app … several ways to pay …")

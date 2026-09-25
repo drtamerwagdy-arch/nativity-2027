@@ -19,7 +19,11 @@
   --ok:#1F7A55;--warn:#9A5A00;--bad:#B3261E;
   --radius:16px;--shadow:0 1px 2px rgba(16,24,40,.05),0 6px 20px rgba(16,24,40,.06);
   color-scheme:light}
-[data-theme=night]{--sky1:#0B1530;--sky2:#10203F;--sky3:#1A2D57;--gold:#F6CB5C;--cream:#FFF3D6}
+[data-theme=night]{--sky1:#0B1530;--sky2:#10203F;--sky3:#1A2D57;--gold:#F6CB5C;--cream:#FFF3D6;--accent:#1A2D57;--accent-2:#0B1530;--accent-tint:#EAF0FA}
+/* team page + dashboard header (Tamer 2026-09-25): white with a gold line underneath, like his app */
+.hero.light{background:#fff;color:#0B1530;border-bottom:4px solid var(--tab-gold);box-shadow:0 2px 10px rgba(11,21,48,.06)}
+.hero.light .bg,.hero.light .grade,.hero.light .fade{display:none}.hero.light .kick{color:#B7791F!important}.hero.light h1,.hero.light #hi{color:#0B1530}
+.hero.light .held{color:#0B1530}.hero.light .held small{color:#8A6A2A}
 [data-theme=night] .hero .grade{display:none}
 [data-theme=night] .hero .fade{background:linear-gradient(180deg,rgba(3,8,24,.25) 0%,rgba(3,10,30,.7) 100%)}
 [data-theme=night] .hero .bg{background-position:100% 55%}
@@ -160,8 +164,8 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 @media (max-width:560px){.soldbar{grid-template-columns:repeat(3,1fr)}}
 
 /* team guide (Tamer 2026-09-24): how to use the team page, and which emails go out when */
-.gh{background:linear-gradient(180deg,#0B1530,#1A2D57);color:#FFF3D6;padding:22px 16px}
-.gh .in{max-width:860px;margin:0 auto}.gh small{font:400 14px/1 "Bebas Neue",Impact,sans-serif;letter-spacing:3px;color:#F2C14E}
+.gh{background:#fff;color:#0B1530;padding:22px 16px;border-bottom:4px solid var(--tab-gold)}
+.gh .in{max-width:860px;margin:0 auto}.gh small{font:400 14px/1 "Bebas Neue",Impact,sans-serif;letter-spacing:3px;color:#B7791F}
 .gh h1{margin:4px 0 0;font:400 34px/1.05 "Bebas Neue",Impact,sans-serif;letter-spacing:1px}
 .gw{max-width:860px;margin:0 auto;padding:18px 16px 40px;display:flex;flex-direction:column;gap:16px}
 .gs{background:#fff;border:1px solid var(--line);border-top:4px solid var(--tab-gold);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px}
@@ -188,14 +192,23 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 <section class="gs"><h2><span class="n">1</span>Selling tickets on the spot</h2>
 <ol>
 <li>Under <b>New sale</b>, type the buyer's first and last name and email (mobile is optional).</li>
-<li><b>Printed tickets handed over</b>: type their numbers (e.g. <b>12-14</b>). Printed tickets are No. 1 to 377.<br><b>Email e-tickets</b>: choose how many; they get their own numbers (1001 and up) and arrive by email.</li>
+<li><b>Email e-tickets</b> (the usual, already selected): choose how many; they get their own numbers (1001 and up) and arrive by email.<br><b>Printed tickets handed over</b>: type their numbers (e.g. <b>12-14</b>). Printed tickets are No. 1 to 377.</li>
 <li>Enter the amount received, choose <b>Cash</b> or <b>Cheque</b>, and submit.</li>
 </ol>
 <p class="tip">Made a mistake? <b>Undo</b> it under <b>My sales</b> within 15 minutes.</p></section>
 
-<section class="gs"><h2><span class="n">2</span>At the door</h2>
+<section class="gs"><h2><span class="n">2</span>Busy? Add buyers from a paper sheet</h2>
 <ol>
-<li>Tap <b>Scan code</b> and point at the ticket's <b>door code</b> (in the ticket email) or the QR on a printed ticket. Typing <b>T377</b> works too.</li>
+<li>Print a few <a href="https://thewonderworker.ca/sales-sheet.pdf">paper sales sheets</a> (8 buyers per page).</li>
+<li>When it's busy, write each buyer in CAPITAL LETTERS: first and last name, email (very clearly), how many tickets, the amount, cash or cheque, and the printed ticket numbers if you hand any over.</li>
+<li>Later, on your team page: <b>Take a photo of the sheet</b> from straight above, with the 4 black corner squares in the picture.</li>
+<li>The system reads it and lists the buyers. Check each row against the paper, fix anything in red, then tap <b>Record all</b>. Each buyer gets their tickets by email.</li>
+</ol>
+<p class="tip">Keep the paper sheet until Tamer has checked the day's sales. The photo is kept with the sales.</p></section>
+
+<section class="gs"><h2><span class="n">3</span>At the door (January 30)</h2>
+<ol>
+<li>At the bottom of your team page, tap <b>Scan code</b> and point at the ticket's <b>door code</b> (in the ticket email) or the QR on a printed ticket. Typing <b>T377</b> works too.</li>
 <li><b>✓ registered</b>: welcome them in. <b>Not registered</b>: ask Tamer.</li>
 </ol></section>
 
@@ -205,7 +218,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 <li>When seats run low a warning shows, and artteam@ gets an email at 50, 25 and 10 seats left. Check with Tamer before handing out more printed tickets.</li>
 </ul></section>
 
-<section class="gs"><h2><span class="n">3</span>Your cash</h2>
+<section class="gs"><h2><span class="n">4</span>Your cash</h2>
 <ul>
 <li><b>Cash you hold</b> (top right) adds up what you collected.</li>
 <li>Give the cash to Hany (treasurer). Tamer records the hand-over and your total goes back down.</li>
@@ -215,6 +228,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 <table class="mails">
 <tr><td>Buyer pays by e-Transfer and adds the screenshot</td><td>Tickets by email at once: the ticket pictures, the <b>door codes</b> and a calendar invite.</td></tr>
 <tr><td>Buyer taps "Skip, I've paid"</td><td>Tickets still go out at once; artteam@ gets a <b>Check needed</b> email so the payment can be matched.</td></tr>
+<tr><td>You add buyers from a paper sheet</td><td>Each buyer gets the tickets email, the same as a sale on the spot.</td></tr>
 <tr><td>You record a sale on the spot</td><td>E-tickets: the tickets email. Printed tickets: a copy by email if you typed an email.</td></tr>
 <tr><td>Donation · Sponsorship</td><td>A thank-you email. A sponsor's logo shows on the page after Tamer approves it.</td></tr>
 </table>

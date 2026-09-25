@@ -3029,6 +3029,7 @@ var Core = (function () {
     var printed = p.mode === 'printed';
     if (!printed && !email) throw err('No email? Then hand over printed tickets and choose "Printed tickets".');
     return env.lock(function () {
+      var again = findBySubmit(env, p.submit_id); if (again) return outcome(again, null, { cash: cashHeld(env, m) });   // same request sent twice
       var nums;
       if (printed) {
         nums = parseNumbers(p.numbers);
@@ -3044,7 +3045,8 @@ var Core = (function () {
         nums = take(env, s, q);
       }
       var e = mk(env, who, { kind: 'cash', qty: nums.length, amount: amount, method: method, tickets: nums.join(', '), recorded_by: m.name, member_id: m.id,
-        proof_status: 'none', submit_id: str(p.submit_id), note: printed ? 'printed tickets handed over' : 'e-tickets' });
+        proof_status: 'none', submit_id: str(p.submit_id), note: (printed ? 'printed tickets handed over' : 'e-tickets') + (p.sheet !== undefined ? ' · from a paper sales sheet' : ''),
+        proof: /^https:\/\/drive\.google\.com\//.test(str(p.sheet)) ? str(p.sheet) : '' });
       env.append('entries', e);
       finishSale(env, s, e, 'Thank you for your donation of <b>' + money(amount) + '</b>, received by ' + esc(m.name) + '. ' + (printed ? 'Here is a copy of your printed ticket' + (nums.length > 1 ? 's' : '') + '.' : 'Your tickets are below.'), [], 'cash sale');
       return outcome(e, null, { cash: cashHeld(env, m) });
@@ -3165,13 +3167,40 @@ var Core = (function () {
     var s = settings(env), m = memberByKey(env, p.key), owner = !m && s.owner_key && str(p.key) === String(s.owner_key);
     if (!m && !owner) throw err('This link is no longer valid. Please ask Tamer for a new one.');
     if (!p.image) throw err('Please take a photo of the sheet.');
-    var text = env.ocr(p.image);
+    var text = env.ocrSheet ? env.ocrSheet(p.image) : env.ocr(p.image);   // ocrSheet: the demo's sample sheet
     if (text == null) throw err('The sheet cannot be read here: please type the buyers in.');
-    var r = { ok: true, rows: parseSheet(text) };
+    var rows = parseSheet(text), url = '';
+    if (p.photo && rows.length && !p.debug) {   // the photo is kept (private Drive folder) with the sales it produced
+      try { url = env.saveProof(p.photo, 'sales sheet - ' + (m ? m.name : 'Tamer') + ' - ' + env.now().toISOString().slice(0, 16).replace('T', ' ')) || ''; } catch (x) { }
+    }
+    var r = { ok: true, rows: rows, sheet: url };
     if (owner && p.debug) r.text = text;
     return r;
   }
-  function parseSheet(text) { return []; }
+  // "#3 EMAIL: MINA.HANNA@OUTLOOK.COM" lines (the phone's list picture, read by Google) → one row per buyer, tidied
+  function parseSheet(text) {
+    var KEY = { FIRST: 'first', LAST: 'last', TICKETS: 'qty', AMOUNT: 'amount', PAID: 'paid', EMAIL: 'email', PRINTED: 'printed' }, rows = {};
+    var lines = String(text || '').split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+    var tag = /^[#H]?\s*([1-8])\s*(FIRST|LAST|TICKETS|AMOUNT|PAID|EMAIL|PRINTED)\b\s*[:;.]?\s*(.*)$/i;
+    for (var i = 0; i < lines.length; i++) {
+      var m = lines[i].match(tag); if (!m) continue;
+      var v = m[3];
+      if (!v && lines[i + 1] && !tag.test(lines[i + 1])) v = lines[++i];   // the value came out on the next line
+      var n = Number(m[1]); rows[n] = rows[n] || { row: n }; rows[n][KEY[m[2].toUpperCase()]] = v.trim();
+    }
+    function title(x) { return str(x).toLowerCase().replace(/[^a-z\u00c0-\u024f' .-]/g, '').replace(/(^|[\s'-])([a-z\u00c0-\u024f])/g, function (a, b, c) { return b + c.toUpperCase(); }).trim(); }
+    function digits(x) { return str(x).replace(/[oO]/g, '0').replace(/[Il|!]/g, '1').replace(/[sS$]/g, function (c, k) { return k ? '5' : ''; }); }
+    return Object.keys(rows).sort(function (a, b) { return a - b; }).map(function (k) {
+      var r = rows[k], out = { row: r.row };
+      out.first = title(r.first); out.last = title(r.last);
+      out.email = str(r.email).toLowerCase().replace(/\s+/g, '').replace(/,/g, '.').replace(/[.;:]+$/, '');
+      var q = parseInt(digits(r.qty).replace(/[^0-9]/g, ''), 10); out.qty = q > 0 ? q : '';
+      var a = Number(digits(r.amount).replace(/[^0-9.]/g, '')); out.amount = a > 0 ? a : '';
+      out.method = /ch|cq|che|chq|check/i.test(str(r.paid)) ? 'Cheque' : 'Cash';
+      out.printed = str(r.printed).replace(/[oO]/g, '0').replace(/[^0-9,\- ]/g, '').replace(/\s*-\s*/g, '-').replace(/\s*,\s*/g, ', ').trim();
+      return out;
+    }).filter(function (r) { return r.first || r.last || r.email || r.qty || r.amount || r.printed; });
+  }
   function ownerResend(env, p) {
     var s = requireOwner(env, p.key);
     var e = env.list('entries').filter(function (x) { return x.id === p.id; })[0]; if (!e) throw err('Not found.');
@@ -3297,6 +3326,7 @@ if (typeof module !== 'undefined') module.exports = Core;
     textBlob: function (name) { return { name: name }; },
     saveProof: function () { return ''; },                 // the demo keeps no images
     ocr: function () { return null; },                     // the phone's reading is used in the demo
+    ocrSheet: function () { return "#1 FIRST: MARY\n#1 LAST: GIRGIS\n#1 TICKETS: 2\n#1 AMOUNT: 40\n#1 PAID: CASH\n#1 EMAIL: MARY.GIRGIS@EXAMPLE.COM\n#2 FIRST: JOHN\n#2 LAST: SMITH\n#2 TICKETS: 1\n#2 AMOUNT: 20\n#2 PAID: CASH\n#2 EMAIL: JSMITH77@EXAMPLE.COM\n#2 PRINTED: 12\n#3 FIRST: MINA\n#3 LAST: HANNA\n#3 TICKETS: 4\n#3 AMOUNT: 100\n#3 PAID: CHEQUE\n#3 EMAIL: MINA.HANNA@EXAMPLE.COM\n#4 FIRST: SARAH\n#4 LAST: ABDELMALAK\n#4 TICKETS: 3\n#4 AMOUNT: 60\n#4 PAID: CASH\n#4 EMAIL: SARAH.A@EXAMPLE.COM\n#4 PRINTED: 20-22\n#5 FIRST: PETER\n#5 LAST: WASSEF\n#5 TICKETS: 1\n#5 AMOUNT: 25\n#5 PAID: CASH\n#5 EMAIL: PWASSEF@EXAMPLE.COM"; },   // paper sheet: any photo reads as the sample sheet (what Google read from it)
     saveLogo: function (dataUrl) { return dataUrl; },      // the resized logo is kept in the demo
     makeXlsx: function (head, rows, name) { return { name: name + '.xlsx' }; },
     pageUrl: function (page, key) { return page + '.html?k=' + key; },
