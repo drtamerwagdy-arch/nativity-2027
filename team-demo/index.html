@@ -2735,28 +2735,31 @@ var Core = (function () {
 
   // a large scannable code per ticket (WW27-T377): the QR printed on the ticket image is too small to scan from a
   // phone screen, so the door team scans these with the team page (Tamer 2026-09-24)
-  function doorCodes(env, cids, numbers) {
+  function doorCodes(env, cids, numbers, demo) {
     return '<p style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:1.5px;color:#8A3B2E;margin:14px 0 6px">DOOR CODE' + (numbers.length > 1 ? 'S' : '') + '</p><div>' +
       numbers.map(function (n) {
         return '<div style="display:inline-block;vertical-align:top;margin:0 10px 10px 0;padding:8px;background:#fff;border:1px solid #E3D6BF;border-radius:8px;text-align:center">' +
-          qrImg(env, cids, 'd' + n, 'WW27-T' + n, 150) + '<div style="font-family:Arial,sans-serif;font-size:14px;font-weight:bold;margin-top:6px">No. ' + n + '</div></div>';
+          (demo ? '<div style="width:150px;height:150px;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,#f3f3f3 0 8px,#e6e6e6 8px 16px);border:2px solid #C0392B;color:#C0392B;font:bold 20px Arial,sans-serif">DEMO<br>no code</div>' : qrImg(env, cids, 'd' + n, 'WW27-T' + n, 150)) + '<div style="font-family:Arial,sans-serif;font-size:14px;font-weight:bold;margin-top:6px">No. ' + n + '</div></div>';
       }).join('') + '</div>';
   }
   function ticketsEmail(env, s, e, numbers, gifts, opening) {
     // one ticket shows large; several show smaller so the email stays short — Tamer 2026-09-24. Each ticket appears once:
     // no attached copies (Tamer 2026-09-24: the email came with 2 copies of the tickets); the calendar invite is the only attachment
+    // demo (Tamer 2026-09-25): tickets DEMO 1 … DEMO N, "DEMO" pictures with no real code, nothing recorded
+    var demo = !!e.demo, lab = function (n) { return demo ? 'DEMO ' + n : 'No. ' + n; };
     var cids = {}, imgs = '', w = numbers.length > 1 ? 380 : 560;
     numbers.forEach(function (n) {
-      var blob = env.ticketImage(n); if (!blob) return;
+      var blob = env.ticketImage(demo ? 'demo-' + ('0' + n).slice(-2) : n); if (!blob) return;
       cids['t' + n] = blob;
-      imgs += '<div style="margin:0 0 10px"><img src="cid:t' + n + '" alt="Ticket No. ' + n + '" width="' + w + '" style="width:100%;max-width:' + w + 'px;height:auto;border-radius:8px;display:block"></div>';
+      imgs += '<div style="margin:0 0 10px"><img src="cid:t' + n + '" alt="Ticket ' + lab(n) + '" width="' + w + '" style="width:100%;max-width:' + w + 'px;height:auto;border-radius:8px;display:block"></div>';
     });
     // wording set by Tamer 2026-09-24 (the church sends receipts at the end of the tax year); none for people who declined
     var receiptLine = e.receipt === 'N' ? '' : 'You will get a tax receipt for your donations.';
     var html = shell(
+      (demo ? '<p style="background:#FDECEA;border:2px solid #C0392B;border-radius:8px;padding:10px 12px;color:#8A1C12"><b>DEMO ONLY.</b> These are not real tickets and nothing was recorded. This shows what a buyer receives.</p>' : '') +
       '<p>Dear ' + esc(e.first) + ',</p><p>' + opening + '</p>' +
-      '<p style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:1.5px;color:#8A3B2E;margin:18px 0 8px">YOUR TICKET' + (numbers.length > 1 ? 'S' : '') + ' · NO. ' + numbers.join(', ') + '</p>' +
-      imgs + doorCodes(env, cids, numbers) +
+      '<p style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:1.5px;color:#8A3B2E;margin:18px 0 8px">YOUR TICKET' + (numbers.length > 1 ? 'S' : '') + ' · ' + (demo ? numbers.map(lab).join(', ') : 'NO. ' + numbers.join(', ')) + '</p>' +
+      imgs + doorCodes(env, cids, numbers, demo) +
       '<p style="font-size:15px">' + (numbers.length > 1 ? 'Show them on your phone at the door or print them. Each ticket is one seat.' : 'Show it on your phone at the door or print it.') + '</p>' +
       (gifts.length ? '<p>Your ' + gifts.length + ' gifted seat' + (gifts.length > 1 ? 's' : '') + ' will be given quietly to a senior. Thank you.</p>' : '') +
       '<table style="border-collapse:collapse;font-size:15px;margin:10px 0 14px">' +
@@ -2768,7 +2771,7 @@ var Core = (function () {
       (receiptLine ? '<p style="font-size:15px">' + receiptLine + '</p>' : '') +
       '<p>See you there,<br>The Wonder Worker Art Team<br>St. Mina Coptic Orthodox Church</p>');
     var atts = [env.textBlob('nativity-2027.ics', 'text/calendar', ics())];
-    env.mail({ to: e.email, subject: 'Your tickets · Nativity Celebration 2027 (No. ' + numbers.join(', ') + ')', html: html, inline: cids, attachments: atts, replyTo: s.team_email, name: s.from_name });
+    env.mail({ to: e.email, subject: (demo ? 'DEMO · ' : '') + 'Your tickets · Nativity Celebration 2027 (' + (demo ? numbers.map(lab).join(', ') : 'No. ' + numbers.join(', ')) + ')', html: html, inline: cids, attachments: atts, replyTo: s.team_email, name: s.from_name });
   }
 
   function teamAlert(env, s, e, reasons, what) {
@@ -2828,6 +2831,20 @@ var Core = (function () {
     var hour = env.now().getTime() - 3600e3, email = str(p.email).toLowerCase();
     var recent = env.list('entries').filter(function (e) { return e.email === email && new Date(e.created).getTime() > hour; }).length;
     if (recent >= 6) throw err('Too many submissions from this email in the last hour. Please contact the team.');
+  }
+  // ---------- demo (Tamer 2026-09-25): the team tries the public page; a real email from artteam@ with tickets DEMO 1 … DEMO N.
+  // Nothing is recorded, no real ticket number is used and the seats don't change, so nothing builds up however many try it.
+  function demoOrder(env, p) {
+    if (str(p.website)) throw err('Sorry, something went wrong.');   // honeypot
+    checkForm(env, p);
+    var s = settings(env), who = person(p), qty = Math.floor(num(p.qty)), amount = num(p.amount);
+    if (qty < 1 || qty > 10) throw err('For the demo, choose between 1 and 10 tickets.');
+    if (env.hit && (!env.hit('demo:' + who.email, 3, 86400) || !env.hit('demo:all', 150, 86400)))
+      throw err('That is enough demo emails for today. Please try again tomorrow.');
+    var nums = []; for (var i = 1; i <= qty; i++) nums.push(i);
+    var e = { demo: true, first: who.first, last: who.last, email: who.email, amount: amount > 0 ? amount : qty * num(s.suggested), method: 'e-Transfer', receipt: 'N' };
+    ticketsEmail(env, s, e, nums, [], 'Thank you for your donation of <b>' + money(e.amount) + '</b>. Your tickets are below.');
+    return { ok: true, demo: true, tickets: nums.map(function (n) { return 'DEMO ' + n; }), gift_count: 0, amount: e.amount, first: who.first, email: who.email };
   }
   function outcome(e, checked, extra) {
     var r = { ok: true, id: e.id, tickets: list(e.tickets), gift_count: list(e.gift_numbers).length, order: e.order_code, amount: num(e.amount), first: e.first, email: e.email,
@@ -3266,7 +3283,7 @@ var Core = (function () {
   }
 
   var ACTIONS = { config: config, order: order, donate: donate, sponsor: sponsor, waitlist: waitlist, ticket_status: ticketStatus,
-    member_me: memberMe, cash_sale: cashSale, member_sheet_read: memberSheetRead, member_undo: memberUndo, member_booking: memberBooking, member_paid: memberPaid,
+    member_me: memberMe, cash_sale: cashSale, demo_order: demoOrder, member_sheet_read: memberSheetRead, member_undo: memberUndo, member_booking: memberBooking, member_paid: memberPaid,
     owner_data: ownerData, owner_member_add: ownerMemberAdd, owner_member_reissue: ownerMemberReissue, owner_member_revoke: ownerMemberRevoke,
     owner_void: ownerVoid, owner_clear: ownerClear, owner_sponsor_show: ownerSponsorShow, owner_handover: ownerHandover, owner_setting: ownerSetting, owner_resend: ownerResend, owner_test_email: ownerTestEmail,
     owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); } };
@@ -3349,8 +3366,20 @@ if (typeof module !== 'undefined') module.exports = Core;
   db = load(); if (!db || !db.settings) fresh();
 
   // ---------- pages talk to the engine by message ----------
+  // Tamer 2026-09-25: "connect the demo to the art team": a demo order is sent to the real engine as demo_order, which emails
+  // tickets DEMO 1 … DEMO N from artteam@ and records nothing (no numbers used, no seats taken, nothing builds up)
+  var LIVE = 'https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec', liveForm = '';
+  if (LIVE) fetch(LIVE, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'config', payload: {} }) })
+    .then(function (r) { return r.json(); }).then(function (c) { liveForm = c.form || ''; }, function () { });
   window.addEventListener('message', function (ev) {
     var d = ev.data || {};
+    if (d.ww === 'api' && d.action === 'order' && LIVE) {
+      var pl = JSON.parse(JSON.stringify(d.payload || {})); pl.form = liveForm; delete pl.proof;
+      fetch(LIVE, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'demo_order', payload: pl }) })
+        .then(function (r) { return r.json(); }, function () { return { ok: false, error: 'Connection problem. Please try again.' }; })
+        .then(function (res) { ev.source.postMessage({ ww: 'api-reply', id: d.id, result: res }, '*'); });
+      return;
+    }
     if (d.ww === 'api') {
       var res; try { res = Core.handle(ENV, d.action, d.payload); } catch (e) { res = { ok: false, error: String(e.message || e) }; }
       save(); ev.source.postMessage({ ww: 'api-reply', id: d.id, result: JSON.parse(JSON.stringify(res)) }, '*');

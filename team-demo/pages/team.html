@@ -182,6 +182,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 .shg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.shg label{display:flex;flex-direction:column;font-size:12.5px;color:var(--soft);gap:3px}
 .shg .w2{grid-column:span 2}.shg input,.shg select{font:15px Inter,system-ui,sans-serif;padding:8px 9px;border:1px solid var(--fieldline);border-radius:8px;min-width:0}
 .shrow .err{margin:6px 0 0}.shrow .hint{margin:6px 0 0}
+#mine [data-list]{overflow-x:auto}   /* the sales table scrolls on narrow phones */
 @media (max-width:640px){.shg{grid-template-columns:1fr 1fr}}
 </style>
 </head>
@@ -228,7 +229,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   </section>
   <section class="card hide" id="bad"><h2>Link not valid</h2><p>This link is no longer valid. Please ask Tamer for a new one.</p></section>
 </main>
-<footer><span>Wonder Worker Art Team · team page</span><span class="ver">v1.28</span></footer>
+<footer><span>Wonder Worker Art Team · team page</span><span class="ver">v1.30</span></footer>
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
    Online demo (window.WW_DEMO): the engine runs in the page around this one; ask it by message. */

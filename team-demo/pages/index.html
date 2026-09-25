@@ -445,7 +445,7 @@ aside.steps.light li::after{border-color:#C8843A!important}aside.steps.light li:
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.28</span></footer>
+<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.30</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3094,6 +3094,7 @@ var qrcode = function() {
       '</div>';
   }
   // everyone gets a tax receipt (Tamer 2026-09-25: the "No tax receipt needed" box is gone)
+  setTimeout(demoSetup, 0);
   $$('[data-person]').forEach(function (d) {
     var f = d.closest('form'), id = f && f.id;
     d.innerHTML = id === 'give' ? PERSON.replace('your tickets and receipt go here', 'your receipt goes here')
@@ -3165,6 +3166,30 @@ var qrcode = function() {
   }
 
   // ---- GET TICKETS ----
+  // the demo (Tamer 2026-09-25): names filled in as "Demo"; "Upload your screenshot" attaches a sample e-Transfer screenshot showing
+  // the amount entered, so the team sees how it works; the order then emails tickets DEMO 1 … DEMO N from artteam@ (demo_order)
+  function demoSetup() {
+    if (!window.WW_DEMO) return;
+    var f = $('#buy');
+    [['first', 'Demo'], ['last', 'Demo']].forEach(function (x) { var i = $('[name=' + x[0] + ']', f); if (i && !i.value) i.value = x[1]; });
+    var em = $('[name=email]', f); if (em) { em.value = ''; em.placeholder = 'Enter your email to get a demo email of the tickets'; }
+    var up = $('#buy [data-proof] [data-upload]');
+    if (up) up.addEventListener('click', function (ev) {
+      ev.preventDefault(); ev.stopPropagation();
+      var im = new Image(); im.onload = function () {
+        var c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
+        var x = c.getContext('2d'), a = Number($('[name=amount]', f).value) || 20;
+        x.drawImage(im, 0, 0); x.fillStyle = '#222'; x.font = '600 54px "Avenir Next","Helvetica Neue",Arial,sans-serif'; x.textBaseline = 'alphabetic';
+        x.fillText('$' + a.toFixed(2), 87, 700);
+        x.fillText(new Date().toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }), 708, 700);
+        c.toBlob(function (b) {
+          var inp = $('[data-file]', up), dt = new DataTransfer(); dt.items.add(new File([b], 'demo-etransfer.jpg', { type: 'image/jpeg' }));
+          inp.files = dt.files; inp.onchange();
+        }, 'image/jpeg', 0.9);
+      };
+      im.src = '/demo-assets/etransfer-demo.jpg';
+    }, true);
+  }
   var buy = $('#buy'), buyProof = new ProofBox($('[data-proof]', buy), { expected: function () { return $('[name=amount]', buy).value; } }), buyTouched = false;
   function minimumFor(q, g) {
     var t = String(CFG.minTable).split(/[\s,]+/).map(Number).filter(function (n) { return n > 0; });
@@ -3317,7 +3342,8 @@ var qrcode = function() {
         (r.tickets && r.tickets.length ? '<p>Your ticket' + (r.tickets.length > 1 ? 's' : '') + ':</p><div class="tix">' + r.tickets.map(function (n) { return '<span>No. ' + n + '</span>'; }).join('') + '</div>' +
           '<p>We\'ve emailed ' + (r.tickets.length > 1 ? 'them' : 'it') + ' to <b>' + esc(r.email) + '</b>. Show the email at the door or print it. Not there in a few minutes? Check your spam or junk folder and mark it <b>Not spam</b>, so our next emails reach you.</p>' : '') +
         (r.gift_count ? '<p>Your ' + r.gift_count + ' gifted seat' + (r.gift_count > 1 ? 's' : '') + ' will go quietly to a senior. Thank you.</p>' : '') +
-        (r.order ? '<p class="hint">Reference ' + esc(r.order) + '</p>' : '');
+        (r.order ? '<p class="hint">Reference ' + esc(r.order) + '</p>' : '') +
+        (r.demo ? '<div class="okbox"><b>This was a demo:</b> nothing was recorded. The demo email with your tickets is on its way from artteam@stminacalgary.ca (check Spam or Junk too).</div>' : '');
     }
     if (r.contact) h += '<div class="okbox">Someone from the Wonder Worker Art Team will get in touch with you.</div>';
     h += '<p><button type="button" class="btn ghost" onclick="location.reload()">Back to start</button></p>';
