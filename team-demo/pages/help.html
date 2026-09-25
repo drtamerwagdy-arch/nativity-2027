@@ -19,6 +19,11 @@
   --ok:#1F7A55;--warn:#9A5A00;--bad:#B3261E;
   --radius:16px;--shadow:0 1px 2px rgba(16,24,40,.05),0 6px 20px rgba(16,24,40,.06);
   color-scheme:light}
+[data-theme=night]{--sky1:#0B1530;--sky2:#10203F;--sky3:#1A2D57;--gold:#F6CB5C;--cream:#FFF3D6}
+[data-theme=night] .hero .grade{display:none}
+[data-theme=night] .hero .fade{background:linear-gradient(180deg,rgba(3,8,24,.25) 0%,rgba(3,10,30,.7) 100%)}
+[data-theme=night] .hero .bg{background-position:100% 55%}
+[data-theme=night] .ultra{font-family:"Abril Fatface",Georgia,serif;color:var(--cream);text-shadow:0 2px 0 rgba(90,10,10,.55),0 5px 10px rgba(0,0,0,.35)}
 [data-theme=daylight]{--sky1:#2F78B8;--sky2:#23609A;--sky3:#1A4B7C;--accent:#1F5F9E;--accent-2:#2A6DA8;--accent-tint:#EDF4FB;
   --grade:linear-gradient(180deg,#2F86D6 0%,#58A6E6 40%,#A9D2F0 62%,#D9B77A 78%,#B08A55 100%)}
 *{box-sizing:border-box}
@@ -155,7 +160,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 @media (max-width:560px){.soldbar{grid-template-columns:repeat(3,1fr)}}
 
 /* team guide (Tamer 2026-09-24): how to use the team page, and which emails go out when */
-.gh{background:linear-gradient(180deg,#3A1F4E,#5A2447);color:#F4EEDC;padding:22px 16px}
+.gh{background:linear-gradient(180deg,#0B1530,#1A2D57);color:#FFF3D6;padding:22px 16px}
 .gh .in{max-width:860px;margin:0 auto}.gh small{font:400 14px/1 "Bebas Neue",Impact,sans-serif;letter-spacing:3px;color:#F2C14E}
 .gh h1{margin:4px 0 0;font:400 34px/1.05 "Bebas Neue",Impact,sans-serif;letter-spacing:1px}
 .gw{max-width:860px;margin:0 auto;padding:18px 16px 40px;display:flex;flex-direction:column;gap:16px}

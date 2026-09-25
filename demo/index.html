@@ -2501,7 +2501,8 @@ var Core = (function () {
 
   var ENTRY_COLS = ['id', 'created', 'kind', 'status', 'first', 'last', 'email', 'phone', 'tickets', 'gift_numbers', 'qty', 'gift_qty',
     'amount', 'method', 'order_code', 'interac_ref', 'proof', 'proof_status', 'flags', 'recorded_by', 'member_id',
-    'receipt', 'address', 'city', 'postal', 'note', 'submit_id', 'emailed', 'token', 'business', 'website', 'logo', 'shown', 'ad_text'];
+    'receipt', 'address', 'city', 'postal', 'note', 'submit_id', 'emailed', 'token', 'business', 'website', 'logo', 'shown', 'ad_text',
+    'proof_hash'];   // fingerprint of the uploaded receipt, so the same one cannot be used twice (Tamer 2026-09-24)
   var MEMBER_COLS = ['id', 'name', 'key', 'active', 'created'];
   var HANDOVER_COLS = ['id', 'created', 'member_id', 'name', 'amount', 'note'];
 
@@ -2619,8 +2620,19 @@ var Core = (function () {
 
   // ---------- proof (screenshot) ----------
   // p.proof = { dataUrl, text (read on the phone), found:[…] (sensitive hits on the phone), skipped, error }
+  // One receipt, one order (Tamer 2026-09-24): the same screenshot file, or the same Interac reference number, is refused
+  // when it is already on an order that was not cancelled.
+  var DUPLICATE = 'This receipt was already used for another order. Please upload the screenshot (or cheque photo) of this payment.';
+  function fingerprint(s) {   // cyrb53: a quick 53-bit hash, the same in Apps Script, Node and the browser
+    var h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (var i = 0, ch; i < s.length; i++) { ch = s.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
+  }
+  function receiptUsed(env, test) { return env.list('entries').some(function (e) { return e.status !== 'void' && test(e); }); }
   function checkProof(env, p, expected) {
-    var pr = p.proof || {}, res = { status: 'none', url: '', facts: {}, reasons: [] };
+    var pr = p.proof || {}, res = { status: 'none', url: '', facts: {}, reasons: [], hash: '' };
     if (pr.skipped || pr.error || !pr.dataUrl) {
       res.status = pr.skipped ? 'skipped' : 'failed';
       res.reasons.push(pr.error ? 'upload problem: ' + pr.error
@@ -2630,6 +2642,8 @@ var Core = (function () {
       res.reasons.push(pr.contact_me ? 'the buyer asked to be contacted' : 'the buyer did not ask to be contacted');
       return res;
     }
+    res.hash = fingerprint(String(pr.dataUrl));
+    if (receiptUsed(env, function (e) { return e.proof_hash === res.hash; })) throw err(DUPLICATE);
     var text = '', serverRead = false;
     try { var t = env.ocr(pr.dataUrl); if (t != null) { text = t; serverRead = true; } } catch (e) { res.reasons.push('server could not read the image'); }
     if (!serverRead) text = str(pr.text);
@@ -2645,8 +2659,7 @@ var Core = (function () {
       if (!f.recipient) res.reasons.push('recipient donations@stminacalgary.ca not visible');
       if (expected > 0 && f.amount + 0.001 < expected) res.reasons.push('amount on screenshot ' + (f.amount ? money(f.amount) : 'not found') + ', expected ' + money(expected));
       if (!f.keyword) res.reasons.push('message does not mention Wonder Worker / Art Team / Nativity');
-      if (f.ref && env.list('entries').some(function (e) { return e.interac_ref && e.interac_ref === f.ref; }))
-        res.reasons.push('this Interac reference ' + f.ref + ' was already used on another order');
+      if (f.ref && receiptUsed(env, function (e) { return e.interac_ref && e.interac_ref === f.ref; })) throw err(DUPLICATE);
     }
     res.url = env.saveProof(pr.dataUrl, p.nameForFile);
     res.status = res.reasons.length ? 'flagged' : 'ok';
@@ -2847,7 +2860,7 @@ var Core = (function () {
       p.nameForFile = code + ' - ' + who.last + ' - ' + money(amount);
       var checked = checkProof(env, p, amount);
       var e = mk(env, who, { kind: 'order', qty: qty, gift_qty: gq, amount: amount, method: method, order_code: code, submit_id: str(p.submit_id),
-        interac_ref: checked.facts.ref || '', proof: checked.url, proof_status: checked.status, flags: checked.reasons.join(' | ') });
+        interac_ref: checked.facts.ref || '', proof: checked.url, proof_hash: checked.hash, proof_status: checked.status, flags: checked.reasons.join(' | ') });
       e.tickets = take(env, s, qty).join(', ');
       e.gift_numbers = gq ? takeGift(env, s, gq).join(', ') : '';
       e.status = checked.status === 'ok' ? 'ok' : 'flagged';
@@ -2944,7 +2957,7 @@ var Core = (function () {
       var checked = checkProof(env, p, tier);
       var logo = env.saveLogo(p.logo, code + ' - ' + business);
       var e = mk(env, who, { kind: 'sponsor', amount: tier, method: method, order_code: code, submit_id: str(p.submit_id), business: business,
-        website: str(p.website), logo: logo, shown: 'N', ad_text: str(p.ad_text).slice(0, 120), interac_ref: checked.facts.ref || '', proof: checked.url, proof_status: checked.status, flags: checked.reasons.join(' | ') });
+        website: str(p.website), logo: logo, shown: 'N', ad_text: str(p.ad_text).slice(0, 120), interac_ref: checked.facts.ref || '', proof: checked.url, proof_hash: checked.hash, proof_status: checked.status, flags: checked.reasons.join(' | ') });
       e.status = checked.status === 'ok' ? 'ok' : 'flagged';
       env.append('entries', e);
       env.mail({ to: e.email, subject: 'Thank you for sponsoring · Nativity Celebration 2027', name: s.from_name, replyTo: s.team_email,
@@ -3121,6 +3134,18 @@ var Core = (function () {
     if (allowed.indexOf(p.name) < 0) throw err('That setting cannot be changed here.');
     env.setSetting(p.name, str(p.value)); return { ok: true };
   }
+  // Deliverability test (Tamer 2026-09-24): a sample tickets email (the real format, nothing recorded) or a bare "Test"
+  // email, from the same sender, to Tamer's own address or a church address only
+  function ownerTestEmail(env, p) {
+    requireOwner(env, p.key);
+    var s = settings(env), to = str(p.to);
+    if (to !== s.error_email && !/^[^@\s]+@stminacalgary\.ca$/i.test(to)) throw err('Test emails go to your own address or a church address only.');
+    if (p.which === 'plain') { env.mail({ to: to, subject: 'Test', html: 'Test', replyTo: s.team_email, name: s.from_name }); return { ok: true }; }
+    var nums = [1001, 1002, 1003, 1004], amount = nums.length * num(s.suggested);
+    var e = { first: 'Tamer', last: 'Test', email: to, amount: amount, method: 'e-Transfer', order_code: 'WW27-TEST', receipt: 'Y', tickets: nums.join(', ') };
+    ticketsEmail(env, s, e, nums, [], 'Thank you for your donation of <b>' + money(amount) + '</b>. Your tickets are below.');
+    return { ok: true };
+  }
   function ownerResend(env, p) {
     var s = requireOwner(env, p.key);
     var e = env.list('entries').filter(function (x) { return x.id === p.id; })[0]; if (!e) throw err('Not found.');
@@ -3188,7 +3213,7 @@ var Core = (function () {
   var ACTIONS = { config: config, order: order, donate: donate, sponsor: sponsor, waitlist: waitlist, ticket_status: ticketStatus,
     member_me: memberMe, cash_sale: cashSale, member_undo: memberUndo, member_booking: memberBooking, member_paid: memberPaid,
     owner_data: ownerData, owner_member_add: ownerMemberAdd, owner_member_reissue: ownerMemberReissue, owner_member_revoke: ownerMemberRevoke,
-    owner_void: ownerVoid, owner_clear: ownerClear, owner_sponsor_show: ownerSponsorShow, owner_handover: ownerHandover, owner_setting: ownerSetting, owner_resend: ownerResend,
+    owner_void: ownerVoid, owner_clear: ownerClear, owner_sponsor_show: ownerSponsorShow, owner_handover: ownerHandover, owner_setting: ownerSetting, owner_resend: ownerResend, owner_test_email: ownerTestEmail,
     owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); } };
 
   var PUBLIC_WRITES = { order: 1, donate: 1, sponsor: 1, waitlist: 1 };
