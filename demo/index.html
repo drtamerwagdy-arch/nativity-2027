@@ -43,7 +43,6 @@ iframe.page{position:absolute;inset:0;width:100%;height:100%;border:0;background
   </div>
   <nav class="tabs" role="tablist" aria-label="Demo pages">
     <button type="button" role="tab" id="tab-index" data-tab="index" aria-selected="true">Public page</button>
-    <button type="button" role="tab" id="tab-outbox" data-tab="outbox" aria-selected="false">Your emails <span class="count" id="count">0</span></button>
   </nav>
 </header>
 <main>
@@ -2754,8 +2753,8 @@ var Core = (function () {
       }).join('') + '</div>';
   }
   function ticketsEmail(env, s, e, numbers, gifts, opening) {
-    // one ticket shows large; several show smaller so the email stays short — Tamer 2026-09-24. Each ticket appears once:
-    // no attached copies (Tamer 2026-09-24: the email came with 2 copies of the tickets); the calendar invite is the only attachment
+    // one ticket shows large; several show smaller so the email stays short — Tamer 2026-09-24. No attached picture copies
+    // (Tamer 2026-09-24: the email came with 2 copies of the tickets); attachments: the calendar invite and, since 2026-09-25, one PDF of the tickets
     // demo (Tamer 2026-09-25): tickets DEMO 1 … DEMO N, "DEMO" pictures with no real code, nothing recorded
     var demo = !!e.demo, lab = function (n) { return demo ? 'DEMO ' + n : 'No. ' + n; };
     var cids = {}, imgs = '', w = numbers.length > 1 ? 380 : 560;
@@ -2782,7 +2781,41 @@ var Core = (function () {
       (receiptLine ? '<p style="font-size:15px">' + receiptLine + '</p>' : '') +
       '<p>See you there,<br>The Wonder Worker Art Team<br>St. Mina Coptic Orthodox Church</p>');
     var atts = [env.textBlob('nativity-2027.ics', 'text/calendar', ics())];
+    var pdf = ticketsPdf(env, e, numbers, cids, demo); if (pdf) atts.push(pdf);   // the tickets as a PDF too (Tamer 2026-09-25)
     env.mail({ to: e.email, subject: (demo ? 'DEMO · ' : '') + 'Your tickets · Nativity Celebration 2027 (' + (demo ? numbers.map(lab).join(', ') : 'No. ' + numbers.join(', ')) + ')', html: html, inline: cids, attachments: atts, replyTo: s.team_email, name: s.from_name });
+  }
+
+  // The tickets as one PDF to open, save or print: one page per ticket, with its door code (Tamer 2026-09-25: "make the barcode
+  // PDF in the email so it is open", after the tickets had been sent without attachments). Plain HTML: Google's PDF maker reads it.
+  function ticketsPdf(env, e, numbers, cids, demo) {
+    if (!env.pdfFromHtml || !env.dataUri || !numbers.length) return null;
+    var who = str((e.first || '') + ' ' + (e.last || ''));
+    var pages = numbers.map(function (n, i) {
+      var t = cids['t' + n], q = cids['d' + n], lab = demo ? 'DEMO ' + n : 'No. ' + n;
+      return '<div style="' + (i ? 'page-break-before:always;' : '') + 'font-family:Arial,sans-serif;color:#1B2233;text-align:center;padding-top:10px">' +
+        '<div style="font-size:12px;letter-spacing:3px;color:#8A3B2E">NATIVITY CELEBRATION 2027 · TICKET ' + esc(lab.toUpperCase()) + '</div>' +
+        (t ? '<img src="' + env.dataUri(t) + '" width="600" style="width:600px;margin:14px auto 22px;display:block">' : '<div style="height:20px"></div>') +
+        '<table style="margin:0 auto;border-collapse:collapse"><tr><td style="padding:0 24px 0 0;vertical-align:middle">' +
+        (q ? '<img src="' + env.dataUri(q) + '" width="210" height="210" style="width:210px;height:210px">'
+           : '<div style="width:200px;height:200px;border:3px solid #C0392B;color:#C0392B;font-size:26px;font-weight:bold;line-height:200px;text-align:center">DEMO</div>') +
+        '</td><td style="text-align:left;vertical-align:middle;font-size:16px;line-height:1.5">' +
+        '<div style="font-size:12px;letter-spacing:2px;color:#8A3B2E">DOOR CODE</div><div style="font-size:30px;font-weight:bold">' + esc(lab) + '</div>' +
+        (who ? esc(who) + '<br>' : '') + (e.order_code ? 'Ref. ' + esc(e.order_code) + '<br>' : '') + 'Show this page at the door,<br>on your phone or printed. One seat.</td></tr></table>' +
+        '<p style="font-size:15px;line-height:1.5;margin-top:24px">' + EVENT.when + '<br>' + EVENT.where + '</p>' +
+        (demo ? '<p style="color:#C0392B;font-weight:bold;font-size:18px">DEMO ONLY · NOT A REAL TICKET</p>' : '') + '</div>';
+    }).join('');
+    var name = (demo ? 'DEMO - ' : '') + 'Nativity 2027 tickets - ' + (e.order_code || (demo ? 'DEMO ' : 'No. ') + numbers.join(', ')) + '.pdf';
+    return env.pdfFromHtml('<html><head><meta charset="utf-8"></head><body style="margin:0">' + pages + '</body></html>', name);
+  }
+  // Tamer's dashboard key only: a sample tickets PDF sent back to the caller (nothing emailed), to check how it looks
+  function ownerTestPdf(env, p) {
+    requireOwner(env, p.key);
+    var demo = !!p.demo, numbers = demo ? [1, 2] : [1001, 1002], cids = {};
+    numbers.forEach(function (n) {
+      var b = env.ticketImage(demo ? 'demo-0' + n : n); if (b) cids['t' + n] = b;
+      if (!demo) cids['d' + n] = env.pngBlob(qrPng('WW27-T' + n, 8, 3), 'd' + n + '.png');
+    });
+    return { ok: true, pdf: env.dataUri(ticketsPdf(env, { first: 'Sample', last: 'Buyer', order_code: demo ? '' : 'WW27-TEST' }, numbers, cids, demo)) };
   }
 
   function teamAlert(env, s, e, reasons, what) {
@@ -3341,7 +3374,7 @@ var Core = (function () {
     member_me: memberMe, cash_sale: cashSale, demo_order: demoOrder, member_sheet_read: memberSheetRead, member_undo: memberUndo, member_booking: memberBooking, member_paid: memberPaid,
     owner_data: ownerData, owner_member_add: ownerMemberAdd, owner_member_reissue: ownerMemberReissue, owner_member_revoke: ownerMemberRevoke,
     owner_void: ownerVoid, owner_clear: ownerClear, owner_sponsor_show: ownerSponsorShow, owner_handover: ownerHandover, owner_setting: ownerSetting, owner_resend: ownerResend, owner_test_email: ownerTestEmail,
-    owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); }, owner_sheet_key: ownerSheetKey, sheet_rows: sheetRows };
+    owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); }, owner_sheet_key: ownerSheetKey, sheet_rows: sheetRows, owner_test_pdf: ownerTestPdf };
 
   var PUBLIC_WRITES = { order: 1, donate: 1, sponsor: 1, waitlist: 1 };
   function handle(env, action, payload) {
@@ -3465,7 +3498,7 @@ if (typeof module !== 'undefined') module.exports = Core;
 
   // ---------- emails sent ----------
   var openNo = null;
-  function count() { document.getElementById('count').textContent = db.outbox.length; }
+  function count() { var c = document.getElementById('count'); if (c) c.textContent = db.outbox.length; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function when(iso) { return new Date(iso).toLocaleString('en-CA', { timeZone: 'America/Edmonton', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
   function renderOutbox() {
