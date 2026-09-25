@@ -2673,7 +2673,7 @@ var Core = (function () {
     // the phone scrambles private details before sending; anything private still readable here → the picture is not kept
     var hits = Proof.sensitive(text, expected);
     if (hits.length) res.reasons.push('the screenshot still showed ' + hits.map(function (h) { return h.label.replace(/^your /, 'the buyer\'s '); }).join(', ') +
-      ' (not scrambled on the phone), so the picture was deleted and not kept. Read from it first: ' +
+      ' (not blacked out on the phone), so the picture was deleted and not kept. Read from it first: ' +
       [f.amount ? money(f.amount) : 'amount not readable', f.recipient ? 'paid to donations@stminacalgary.ca' : 'recipient not visible', f.ref ? 'reference ' + f.ref : 'no reference found'].join(', '));
     else res.url = env.saveProof(pr.dataUrl, p.nameForFile);
     res.status = res.reasons.length ? 'flagged' : 'ok';
@@ -3318,11 +3318,32 @@ var Core = (function () {
     return { n: n, registered: !!e, printed: n >= 1 && n < GIFT_MIN };
   }
 
+  // ---------- read-only sales list for Tamer's Excel sheet on his Mac (Tamer 2026-09-25) ----------
+  // A separate key that can only READ the sales (tools/sales_sheet_sync.py keeps it in the Mac's Keychain), so the dashboard
+  // key never sits on the Mac. The dashboard key makes a new one (owner_sheet_key), which also cancels the old one.
+  function ownerSheetKey(env, p) { requireOwner(env, p.key); var k = env.random(32); env.setSetting('sheet_key', k); return { ok: true, sheet_key: k }; }
+  function sheetRows(env, p) {
+    var s = settings(env);
+    if (!s.sheet_key || str(p.key) !== String(s.sheet_key)) throw err('Not allowed.');
+    var names = {}; env.list('members').forEach(function (m) { names[m.id] = m.name; });
+    var sc = seatCount(env, s), tv = num(s.receipt_ticket_value);
+    var t = { capacity: num(s.capacity), reserved: num(s.reserved), seatsUsed: Object.keys(usedNumbers(env)).length, seatsLeft: sc.left, printed: sc.printed, eticket: sc.eticket,
+      gifts: sc.gift, goal: num(s.goal), total: 0, byKind: {}, byMethod: {} };
+    live(env).forEach(function (e) { t.total += num(e.amount); t.byMethod[e.method] = (t.byMethod[e.method] || 0) + num(e.amount); t.byKind[e.kind] = (t.byKind[e.kind] || 0) + num(e.amount); });
+    var rows = env.list('entries').filter(function (e) { return e.kind !== 'waitlist' && e.kind !== 'booking'; }).map(function (e) {
+      return { id: e.id, created: e.created, date: localDate(e.created), kind: e.kind, for: EXPORT_COLS.kind[1](e), status: e.status, first: e.first, last: e.last, email: e.email, phone: e.phone,
+        qty: num(e.qty), gift_qty: num(e.gift_qty), tickets: e.tickets, gift_numbers: e.gift_numbers, amount: num(e.amount), method: e.method, order: e.order_code, interac_ref: e.interac_ref,
+        proof: e.proof, proof_status: e.proof_status, flags: e.flags, recorded_by: e.recorded_by || names[e.member_id] || '', business: e.business, silent: e.silent === 'Y',
+        receipt: EXPORT_COLS.receipt[1](e), receiptable: sponsorNoReceipt(e) ? 0 : Math.max(0, num(e.amount) - tv * (list(e.tickets).length + list(e.gift_numbers).length)) };
+    });
+    return { ok: true, now: env.now().toISOString(), totals: t, rows: rows };
+  }
+
   var ACTIONS = { config: config, order: order, donate: donate, sponsor: sponsor, waitlist: waitlist, ticket_status: ticketStatus,
     member_me: memberMe, cash_sale: cashSale, demo_order: demoOrder, member_sheet_read: memberSheetRead, member_undo: memberUndo, member_booking: memberBooking, member_paid: memberPaid,
     owner_data: ownerData, owner_member_add: ownerMemberAdd, owner_member_reissue: ownerMemberReissue, owner_member_revoke: ownerMemberRevoke,
     owner_void: ownerVoid, owner_clear: ownerClear, owner_sponsor_show: ownerSponsorShow, owner_handover: ownerHandover, owner_setting: ownerSetting, owner_resend: ownerResend, owner_test_email: ownerTestEmail,
-    owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); } };
+    owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); }, owner_sheet_key: ownerSheetKey, sheet_rows: sheetRows };
 
   var PUBLIC_WRITES = { order: 1, donate: 1, sponsor: 1, waitlist: 1 };
   function handle(env, action, payload) {

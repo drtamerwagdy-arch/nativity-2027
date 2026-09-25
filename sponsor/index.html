@@ -414,7 +414,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
     <div class="fgrid">
       <div class="panel2 b-tix">
         <div class="row qrow"><span class="big">Tickets</span><div class="stepper"><button type="button" data-d="-1" aria-label="fewer">−</button><input name="qty" id="b-qty" type="number" min="0" max="20" value="0" inputmode="numeric" aria-label="Tickets"><button type="button" data-d="1" aria-label="more">+</button></div></div>
-        <div class="row qrow don"><span class="big">Your donation</span><div class="money"><b>$</b><input name="amount" id="b-amount" type="number" min="1" step="1" inputmode="decimal" aria-label="Donation amount"></div>
+        <div class="row qrow don"><span class="big">Your donation</span><div class="money"><b>$</b><input name="amount" id="b-amount" type="text" inputmode="decimal" autocomplete="off" data-money aria-label="Donation amount"></div>
           <button type="button" class="sugtag hide" data-sugtag aria-live="polite"><small>SUGGESTED</small><b data-sugamt></b></button></div>
         <div class="sgline" data-suggest>★ Suggested $20 per ticket ★<small>Every dollar beyond that supports the service.</small></div>   <!-- on the page from the first moment (Tamer 2026-09-25) -->
       </div>
@@ -450,7 +450,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
     <div class="fgrid">
       <div class="panel2 g-amt">
         <h3>Your donation</h3>
-        <div class="money"><b>$</b><input name="amount" id="g-amount" type="number" min="1" step="1" inputmode="decimal" aria-label="Donation amount" placeholder="50"></div>
+        <div class="money"><b>$</b><input name="amount" id="g-amount" type="text" inputmode="decimal" autocomplete="off" data-money aria-label="Donation amount" placeholder="50"></div>
         <div class="pills qamts" data-quick></div>
         <p class="okbox hide" data-preview></p>
       </div>
@@ -484,7 +484,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
         <h3>Select your sponsorship amount</h3>
         <div class="pills tiers" data-tiers></div>
         <div class="gen"><b>Feeling generous today?</b><p class="hint">Type any amount over <span data-genmin>$500</span>.</p>
-          <div class="money"><b>$</b><input name="tier_other" id="sp-other" type="number" min="1" step="1" inputmode="decimal" aria-label="Your own sponsorship amount"></div>
+          <div class="money"><b>$</b><input name="tier_other" id="sp-other" type="text" inputmode="decimal" autocomplete="off" data-money aria-label="Your own sponsorship amount"></div>
           <p class="generr hide" data-generr role="alert"></p></div>
         <label class="silent"><input type="checkbox" name="silent" data-silent><span class="sw" aria-hidden="true"></span><span><b>I want to be a silent sponsor</b>
           <small>Choose this if you want to sponsor the team without your name being shown. Your name, logo and website will not appear anywhere, and you get an official donation receipt for the full amount.</small></span></label>
@@ -521,7 +521,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.45</span></footer>
+<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.46</span></footer>
 
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -559,6 +559,14 @@ document.addEventListener('click', function (ev) {
   var i = b.parentNode.querySelector('input'), v = (Number(i.value) || 0) + Number(b.getAttribute('data-d'));
   v = Math.max(Number(i.min || 0), Math.min(Number(i.max || 999), v)); i.value = v; i.dispatchEvent(new Event('input', { bubbles: true }));
 });
+// amount boxes are plain boxes to type in: no up/down arrows, no mouse-wheel changes (Tamer 2026-09-25: "very sensitive");
+// they keep only digits and one decimal point, and phones still show the number keypad (inputmode="decimal")
+document.addEventListener('input', function (ev) {
+  var i = ev.target; if (!i || !i.hasAttribute || !i.hasAttribute('data-money')) return;
+  var v = i.value.replace(/[^\d.]/g, ''), d = v.indexOf('.');
+  if (d > -1) v = v.slice(0, d + 1) + v.slice(d + 1).replace(/\./g, '').slice(0, 2);
+  if (v !== i.value) i.value = v;
+}, true);
 function copyBtn(root) {
   $$('.copy button', root).forEach(function (b) {
     b.onclick = function () {
@@ -716,23 +724,20 @@ function ProofBox(root, opts) {
     // wording reworked with Tamer 2026-09-24: what to show first, then one short request. 2026-09-25: the screenshot step moved
     // here from the e-Transfer box, one yellow section with what the screenshot needs; the upload button blue like Copy and Submit.
     // 2026-09-25: a screenshot is required (no more "Skip, I've paid"), any screenshot is accepted, and private details on it are
-    // scrambled on the phone before it is sent (Proof.sensitiveLines); nothing to crop or cover by hand.
+    // blacked out on the phone before it is sent (Proof.sensitiveLines); nothing to crop or cover by hand. Wording "blacked out" (Tamer).
     '<div class="warn"><p class="shotstep">Then take a screenshot of the confirmation screen and add it below.<br>Once submitted, ' + (opts.done || 'you will get your tickets by email.') + '</p>' +
     '<b>Your screenshot only needs:</b> who you paid (<b>donations@stminacalgary.ca</b>), the <b>amount</b>, the <b>date</b> and your <b>message</b>. ' +
-    'Anything else, such as account or card numbers, your balance, address or phone, will be scrambled automatically.</div>' +
+    'Anything else, such as account or card numbers, your balance, address or phone, will be blacked out automatically.</div>' +
     '<label class="btn wide" style="text-align:center" data-upload>Upload your screenshot<input type="file" accept="image/*" class="hide" data-file></label>' +
     '<div data-status></div><div class="shot hide" data-shot><canvas></canvas></div>';
   var file = $('[data-file]', root), status = $('[data-status]', root), shot = $('[data-shot]', root), cv = $('canvas', root);
   var state = { dataUrl: '', text: '', scrambled: [], error: '' }, busy = false;
 
   function say(cls, html) { status.innerHTML = '<div class="' + cls + '">' + html + '</div>'; }
-  // paint a box of random grey blocks over one line: unreadable, and nothing of the original is left to recover
+  // paint a solid black box over one line: nothing of the original is left to recover
   function scramble(ctx, b) {
-    var pad = 6, x = Math.max(0, b.x0 - pad), y = Math.max(0, b.y0 - pad), w = Math.min(cv.width, b.x1 + pad) - x, h = Math.min(cv.height, b.y1 + pad) - y, s = 8;
-    for (var i = 0; i < w; i += s) for (var j = 0; j < h; j += s) {
-      var g = 60 + Math.floor(Math.random() * 120); ctx.fillStyle = 'rgb(' + g + ',' + g + ',' + g + ')';
-      ctx.fillRect(x + i, y + j, Math.min(s, w - i), Math.min(s, h - j));
-    }
+    var pad = 6, x = Math.max(0, b.x0 - pad), y = Math.max(0, b.y0 - pad);
+    ctx.fillStyle = '#000'; ctx.fillRect(x, y, Math.min(cv.width, b.x1 + pad) - x, Math.min(cv.height, b.y1 + pad) - y);
   }
   function load(f) {
     var r = new FileReader();
@@ -763,7 +768,7 @@ function ProofBox(root, opts) {
       if (!f.amount) notes.push('we could not read the amount');
       if (!f.keyword) notes.push('the message doesn\'t say "Wonder Worker"');
       say('okbox', '<b>Screenshot ready.</b> ' + (f.amount ? 'Amount ' + money(f.amount) + '. ' : '') +
-        (state.scrambled.length ? '<br>Private details on it (' + esc(state.scrambled.join(', ')) + ') have been scrambled, so no one can see them.' : '') +
+        (state.scrambled.length ? '<br>Private details on it (' + esc(state.scrambled.join(', ')) + ') have been blacked out, so no one can see them.' : '') +
         (notes.length ? '<br>Note: ' + esc(notes.join('; ')) + '. That\'s OK: you can still submit and the team will check.' : (state.scrambled.length ? '' : ' Everything we need is visible.')));
     }, function () {
       busy = false;
@@ -3544,7 +3549,7 @@ var qrcode = function() {
     if (cur === 'buy' && (CFG.seatsLeft <= 0 || !CFG.open)) show('wait', true);
     var tl = $('[data-tierlist]', spon); if (tl && CFG.tiers.length) tl.textContent = CFG.tiers.map(money).join(', ').replace(/, ([^,]*)$/, ' or $1');
     $('[data-tiers]', spon).innerHTML = CFG.tiers.map(function (t) { return '<label><input type="radio" name="tier" value="' + t + '"> ' + money(t) + '</label>'; }).join('');
-    if (CFG.tiers.length) { $('[data-sponsub]', spon).textContent = CFG.tiers.map(money).join(', ') + ' or more'; $$('[data-genmin]', spon).forEach(function (x) { x.textContent = money(sponMost()); }); $('#sp-other').min = sponMost() + 1; }
+    if (CFG.tiers.length) { $('[data-sponsub]', spon).textContent = CFG.tiers.map(money).join(', ') + ' or more'; $$('[data-genmin]', spon).forEach(function (x) { x.textContent = money(sponMost()); }); }
     $('[data-sponsors]', spon).innerHTML = sponsorsHtml(CFG.sponsors);
     buySync(); thermo(); sponSync(); sponSpot(); tourStart();
   }, function () { buySync(); thermo(); sponSync(); sponSpot(); tourStart(); });

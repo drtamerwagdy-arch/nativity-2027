@@ -205,7 +205,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
     <div data-printed class="hide"><label class="f">Printed ticket numbers you handed over<input name="numbers" placeholder="e.g. 42-45 or 42, 43" inputmode="text" autocomplete="off"></label><p class="hint" data-upto></p></div>
     <div data-eticket class="row"><span>How many</span><div class="stepper"><button type="button" data-d="-1">−</button><input name="qty" type="number" min="1" max="20" value="1"><button type="button" data-d="1">+</button></div></div>
     <h3>Received</h3>
-    <div class="money"><b>$</b><input name="amount" type="number" min="1" step="1" inputmode="decimal"><span class="hint" data-suggest></span></div>
+    <div class="money"><b>$</b><input name="amount" type="text" inputmode="decimal" autocomplete="off" data-money><span class="hint" data-suggest></span></div>
     <div class="pills"><label><input type="radio" name="method" value="Cash" checked> Cash</label><label><input type="radio" name="method" value="Cheque"> Cheque</label></div>
     <div class="err" data-err></div>
     <button class="btn wide" type="submit">Submit purchase</button>
@@ -229,7 +229,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   </section>
   <section class="card hide" id="bad"><h2>Link not valid</h2><p>This link is no longer valid. Please ask Tamer for a new one.</p></section>
 </main>
-<footer><span>Wonder Worker Art Team · team page</span><span class="ver">v1.45</span></footer>
+<footer><span>Wonder Worker Art Team · team page</span><span class="ver">v1.46</span></footer>
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
    Online demo (window.WW_DEMO): the engine runs in the page around this one; ask it by message. */
@@ -266,6 +266,14 @@ document.addEventListener('click', function (ev) {
   var i = b.parentNode.querySelector('input'), v = (Number(i.value) || 0) + Number(b.getAttribute('data-d'));
   v = Math.max(Number(i.min || 0), Math.min(Number(i.max || 999), v)); i.value = v; i.dispatchEvent(new Event('input', { bubbles: true }));
 });
+// amount boxes are plain boxes to type in: no up/down arrows, no mouse-wheel changes (Tamer 2026-09-25: "very sensitive");
+// they keep only digits and one decimal point, and phones still show the number keypad (inputmode="decimal")
+document.addEventListener('input', function (ev) {
+  var i = ev.target; if (!i || !i.hasAttribute || !i.hasAttribute('data-money')) return;
+  var v = i.value.replace(/[^\d.]/g, ''), d = v.indexOf('.');
+  if (d > -1) v = v.slice(0, d + 1) + v.slice(d + 1).replace(/\./g, '').slice(0, 2);
+  if (v !== i.value) i.value = v;
+}, true);
 function copyBtn(root) {
   $$('.copy button', root).forEach(function (b) {
     b.onclick = function () {
@@ -533,7 +541,7 @@ var SheetReader = (function () {
     if (b.state === 'paid') { box.innerHTML = '<div class="okbox"><b>' + esc(b.order) + ' is already paid.</b> Tickets ' + esc(b.tickets) + ' went to ' + esc(b.email) + ' (by ' + esc(b.by) + ').</div>'; return; }
     if (b.state === 'cancelled') { box.innerHTML = '<div class="badbox"><b>' + esc(b.order) + ' was cancelled.</b> Make a new sale below instead.</div>'; return; }
     box.innerHTML = '<div class="pay"><div class="big">' + esc(b.order) + '</div><p><b>' + esc(b.name) + '</b> · ' + esc(b.email) + '<br>' + b.qty + ' ticket' + (b.qty > 1 ? 's' : '') + (b.gift_qty ? ' + ' + b.gift_qty + ' gifted seat' + (b.gift_qty > 1 ? 's' : '') : '') + ' · booked ' + esc(when(b.created)) + (b.receipt === 'N' ? ' · no tax receipt' : '') + '</p>' +
-      '<div class="money"><b>$</b><input data-amt type="number" min="1" step="1" inputmode="decimal" value="' + b.amount + '"><span class="hint">received (booked ' + money(b.amount) + ')</span></div>' +
+      '<div class="money"><b>$</b><input data-amt type="text" inputmode="decimal" autocomplete="off" data-money value="' + b.amount + '"><span class="hint">received (booked ' + money(b.amount) + ')</span></div>' +
       '<div class="pills"><label><input type="radio" name="bmethod" value="Cash" checked> Cash</label><label><input type="radio" name="bmethod" value="Cheque"> Cheque</label></div>' +
       '<div class="err" data-berr></div><button type="button" class="btn wide" data-paid>Paid, send the tickets</button></div>';
     $('[data-paid]', box).onclick = function () {
@@ -628,7 +636,7 @@ var SheetReader = (function () {
         '<div class="shg"><label>First name<input data-k="first" value="' + v('first') + '"></label><label>Last name<input data-k="last" value="' + v('last') + '"></label>' +
         '<label class="w2">Email<input data-k="email" type="email" inputmode="email" value="' + v('email') + '"></label>' +
         '<label>E-tickets<input data-k="qty" type="number" min="1" max="20" inputmode="numeric" value="' + v('qty') + '"></label><label>Printed Nos<input data-k="printed" placeholder="if handed over" value="' + v('printed') + '"></label>' +
-        '<label>Amount $<input data-k="amount" type="number" min="1" inputmode="decimal" value="' + v('amount') + '"></label><label>Paid<select data-k="method"><option' + (r.method === 'Cheque' ? '' : ' selected') + '>Cash</option><option' + (r.method === 'Cheque' ? ' selected' : '') + '>Cheque</option></select></label></div>' +
+        '<label>Amount $<input data-k="amount" type="text" inputmode="decimal" autocomplete="off" data-money value="' + v('amount') + '"></label><label>Paid<select data-k="method"><option' + (r.method === 'Cheque' ? '' : ' selected') + '>Cash</option><option' + (r.method === 'Cheque' ? ' selected' : '') + '>Cheque</option></select></label></div>' +
         (p.length ? '<p class="err">Check ' + p.join(', ') + '.</p>' : '') + (w.length ? '<p class="hint">' + esc(w.join(' · ')) + '</p>' : '') + (r.error ? '<p class="err">' + esc(r.error) + '</p>' : '')) + '</div>';
     }).join('') + (todo.length ? '<p><button type="button" class="link" data-add>+ Add a row</button></p><button type="button" class="btn wide" data-recordall>Record ' + (todo.length === 1 ? 'this buyer' : 'all ' + todo.length + ' buyers') + '</button>'
       : '<div class="okbox"><b>All recorded.</b> Each buyer got their tickets by email.</div>');
