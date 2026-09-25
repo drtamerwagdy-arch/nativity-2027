@@ -192,7 +192,7 @@ input.s{font:15px Arial,sans-serif;padding:7px 10px;border:1px solid var(--line)
   <section id="t-settings" class="hide"></section>
   <section class="card hide" id="bad"><h2>Link not valid</h2></section>
 </main>
-<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.34</span></footer>
+<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.36</span></footer>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -297,13 +297,13 @@ function copyBtn(root) {
 
   function sponsorsTab() {
     var list = D.entries.filter(function (e) { return e.kind === 'sponsor'; });
-    $('#t-sponsors').innerHTML = '<div class="card"><h2>Sponsors</h2><p class="hint">A sponsor appears on the public page only after you tap "Show on page". Look at the logo first.</p>' +
+    $('#t-sponsors').innerHTML = '<div class="card"><h2>Sponsors</h2><p class="hint">A sponsor appears on the tickets page only after you tap "Show on page". Look at the logo and the name first. Silent sponsors are never shown. To change how a name shows, edit its show_as cell in the sheet.</p>' +
       (list.length ? '<table class="t"><tr><th>Logo</th><th>Business</th><th>Amount</th><th>Payment</th><th></th></tr>' + list.map(function (e) {
         var on = String(e.shown) === 'Y';
         return '<tr><td>' + (e.logo ? '<img src="' + esc(e.logo) + '" alt="" style="max-width:120px;max-height:70px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:6px;padding:4px">' : '') + '</td>' +
-          '<td><b>' + esc(e.business) + '</b>' + (e.ad_text ? '<div>“' + esc(e.ad_text) + '”</div>' : '') + '<span class="hint">' + esc(e.first + ' ' + e.last) + ' · ' + esc(e.email) + (e.website ? ' · ' + esc(e.website) : '') + '</span></td>' +
+          '<td><b>' + esc(e.business || (e.first + ' ' + e.last)) + '</b>' + (e.silent === 'Y' ? ' <span class="pill">silent sponsor</span>' : e.show_as ? '<div>On the page as: <b>' + esc(e.show_as) + '</b></div>' : '') + (e.ad_text ? '<div>“' + esc(e.ad_text) + '”</div>' : '') + '<span class="hint">' + esc(e.first + ' ' + e.last) + ' · ' + esc(e.email) + (e.website ? ' · ' + esc(e.website) : '') + '</span></td>' +
           '<td>' + money(e.amount) + '</td><td>' + esc(e.method) + ' <span class="pill ' + esc(e.status) + '">' + esc(e.status) + '</span>' + (e.flags ? '<div class="flag">' + esc(e.flags) + '</div>' : '') + '</td>' +
-          '<td style="white-space:nowrap">' + (e.status === 'void' ? '' : '<button class="btn' + (on ? ' ghost' : '') + '" style="min-height:0;padding:7px 12px;font-size:16px" data-show="' + e.id + '" data-on="' + (on ? 0 : 1) + '">' + (on ? 'Hide from page' : 'Show on page') + '</button>') + '</td></tr>';
+          '<td style="white-space:nowrap">' + (e.status === 'void' ? '' : e.silent === 'Y' ? '<span class="hint">Not shown (silent)</span>' : '<button class="btn' + (on ? ' ghost' : '') + '" style="min-height:0;padding:7px 12px;font-size:16px" data-show="' + e.id + '" data-on="' + (on ? 0 : 1) + '">' + (on ? 'Hide from page' : 'Show on page') + '</button>') + '</td></tr>';
       }).join('') + '</table>' : '<p class="hint">No sponsors yet.</p>') + '</div>';
     $$('[data-show]').forEach(function (b) { b.onclick = function () { run('owner_sponsor_show', { id: b.getAttribute('data-show'), on: b.getAttribute('data-on') === '1' }).then(reload); }; });
   }
