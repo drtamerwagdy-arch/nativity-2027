@@ -283,7 +283,14 @@ aside.steps.dark .cash{background:#8E2226;color:#FFF3D6;border:1px solid rgba(24
 /* the suggested donation (Tamer 2026-09-25, mockup A): a gold price tag next to the box that follows the tickets and swings in each
    time the number changes; tap it to use it. Under it a shiny gold banner. The box itself starts empty and never fills itself in. */
 #buy .qrow.don{grid-template-columns:270px 172px auto}
-@media (max-width:760px){#buy .qrow.don{grid-template-columns:1fr 150px}#buy .qrow.don>.sugtag{grid-column:1/-1;justify-self:start}}
+/* on a phone (Tamer 2026-09-25): under the amount box on the right, as wide as the box, pointing up at it and swinging from that point */
+@media (max-width:760px){#buy .qrow.don{grid-template-columns:1fr auto}
+  #buy .qrow.don>.sugtag{grid-column:2;justify-self:stretch;height:auto;padding:20px 8px 9px;align-items:center;text-align:center;
+    clip-path:polygon(0 13px,50% 0,100% 13px,100% 100%,0 100%);transform-origin:50% 8px}
+  #buy .qrow.don>.sugtag::before{left:50%;top:8px;margin:0 0 0 -3.5px}
+  #buy .qrow.don>.sugtag b{font-size:17px}
+  #buy .qrow.don>.sugtag.swing{animation-name:tagdrop}}
+@keyframes tagdrop{0%{opacity:0;transform:translateY(-16px) rotate(0)}30%{opacity:1;transform:translateY(0) rotate(-12deg)}50%{transform:rotate(8deg)}68%{transform:rotate(-5deg)}84%{transform:rotate(2deg)}100%{transform:none}}
 .sugtag{position:relative;display:inline-flex;flex-direction:column;justify-content:center;height:50px;padding:0 16px 0 26px;background:linear-gradient(135deg,#F6CB5C,#E9B347);color:#0B1530;border:0;cursor:pointer;
   clip-path:polygon(14px 0,100% 0,100% 100%,14px 100%,0 50%);font:inherit;text-align:left;transform-origin:12px 50%}
 .sugtag::before{content:"";position:absolute;left:12px;top:50%;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;background:#fff}
@@ -326,6 +333,8 @@ a.spp:hover{border-color:#C8843A;background:#FFF8EC}
 .spcta b{display:block;font:400 21px/1 "Bebas Neue",Impact,sans-serif;letter-spacing:1.2px;color:#8E2226;margin-bottom:4px}.spcta span{font-size:13.5px;color:#5B6477}
 @keyframes spglow{0%,100%{box-shadow:0 0 0 0 rgba(200,132,58,0)}50%{box-shadow:0 0 0 6px rgba(200,132,58,.18)}}
 @media (prefers-reduced-motion:reduce){.spcta{animation:none}}
+@media (min-width:900px){.spot-phone{display:none}}   /* computer: under the steps; phone: under the Submit button */
+@media (max-width:899px){.leftcol [data-sponspot]{display:none}}
 /* Become a sponsor: where the name shows, "Feeling generous today?" always open, silent sponsor (Tamer 2026-09-25) */
 #spon .intro{background:#EAF0FA;border:1px solid #C9D6EE;border-left:5px solid #1A2D57;border-radius:12px;padding:12px 16px;font-size:15.5px;line-height:1.5;margin:0 0 16px}#spon .intro p{margin:0}#spon .intro p+p{margin-top:8px;font-size:14.5px}
 #spon .gen{margin:14px 0 0;border:2px solid #C8843A;background:#FFF6E3;border-radius:12px;padding:10px 12px}
@@ -418,6 +427,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
     </div>
     <div class="err" data-err></div>
     <button class="btn wide" type="submit">Submit and get my tickets</button>
+    <div data-sponspot class="spot-phone"></div>   <!-- the sponsors and the gold box, under Submit on a phone -->
   </form>
 
   <!-- ============ DONATE ============ -->
@@ -508,7 +518,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.43</span></footer>
+<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.44</span></footer>
 
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3406,13 +3416,15 @@ var qrcode = function() {
   // Get tickets: approved sponsors (name, logo, link to their website) and the gold box; before any sponsor, only the gold box
   function sponSpot() {
     var list = CFG.sponsors || [];
-    var cta = '<button type="button" class="spcta" data-tospon><b>★ Your business here?</b><span>Your business name, logo and a link to your website will show on this page, and on the day of the celebration.</span></button>';
-    $('[data-sponspot]').innerHTML = !list.length ? cta : '<div class="spbox"><h4>Thank you to our sponsors</h4>' + list.map(function (x) {
+    var cta = '<button type="button" class="spcta" data-tospon><b>★ For sponsors: your business here?</b><span>Your business name, logo and a link to your website will show on this page, and on the day of the celebration.</span></button>';
+    var html = !list.length ? cta : '<div class="spbox"><h4>Thank you to our sponsors</h4>' + list.map(function (x) {
       var img = x.logo ? '<img src="' + esc(x.logo) + '" alt="">' : '';
       return x.website ? '<a class="spp" href="' + esc(/^https?:/.test(x.website) ? x.website : 'https://' + x.website) + '" target="_blank" rel="noopener">' + img + '<span>' + esc(x.business) + '</span><i>↗</i></a>'
         : '<div class="spp">' + img + '<span>' + esc(x.business) + '</span></div>';
     }).join('') + cta + '</div>';
-    $('[data-tospon]').onclick = function () { show('spon'); };
+    // two places: under the steps on a computer, under the Submit button on a phone (Tamer 2026-09-25)
+    $$('[data-sponspot]').forEach(function (el) { el.innerHTML = html; });
+    $$('[data-tospon]').forEach(function (b) { b.onclick = function () { show('spon'); }; });
   }
   $('[data-logo]', spon).onchange = function () {
     var f = this.files[0]; this.value = ''; if (!f) return;
