@@ -2751,11 +2751,12 @@ var Core = (function () {
 
   // a large scannable code per ticket (WW27-T377): the QR printed on the ticket image is too small to scan from a
   // phone screen, so the door team scans these with the team page (Tamer 2026-09-24)
+  // door codes 220 px (were 150; Tamer 2026-09-25: with no PDF, the email is the only copy, so make them larger)
   function doorCodes(env, cids, numbers, demo) {
     return '<p style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:1.5px;color:#8A3B2E;margin:14px 0 6px">DOOR CODE' + (numbers.length > 1 ? 'S' : '') + '</p><div>' +
       numbers.map(function (n) {
         return '<div style="display:inline-block;vertical-align:top;margin:0 10px 10px 0;padding:8px;background:#fff;border:1px solid #E3D6BF;border-radius:8px;text-align:center">' +
-          (demo ? '<div style="width:150px;height:150px;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,#f3f3f3 0 8px,#e6e6e6 8px 16px);border:2px solid #C0392B;color:#C0392B;font:bold 20px Arial,sans-serif">DEMO<br>no code</div>' : qrImg(env, cids, 'd' + n, 'WW27-T' + n, 150)) + '<div style="font-family:Arial,sans-serif;font-size:14px;font-weight:bold;margin-top:6px">' + (demo ? 'DEMO ' : 'No. ') + n + '</div></div>';
+          (demo ? '<div style="width:220px;height:220px;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,#f3f3f3 0 8px,#e6e6e6 8px 16px);border:2px solid #C0392B;color:#C0392B;font:bold 24px Arial,sans-serif">DEMO<br>no code</div>' : qrImg(env, cids, 'd' + n, 'WW27-T' + n, 220)) + '<div style="font-family:Arial,sans-serif;font-size:14px;font-weight:bold;margin-top:6px">' + (demo ? 'DEMO ' : 'No. ') + n + '</div></div>';
       }).join('') + '</div>';
   }
   function ticketsEmail(env, s, e, numbers, gifts, opening) {
@@ -2847,7 +2848,8 @@ var Core = (function () {
     var s = requireOwner(env, p.key);
     if (!env.walletPkpass || !env.walletReady()) throw err('The Apple Wallet certificate is not set up yet.');
     if (!str(s.wallet_pass_type) || !str(s.wallet_team)) throw err('Set wallet_pass_type and wallet_team first.');
-    return { ok: true, pass: env.dataUri(walletPass(env, s, { first: 'Sample', last: 'Buyer', order_code: 'WW27-TEST' }, 1001)) };
+    try { return { ok: true, pass: env.dataUri(walletPass(env, s, { first: 'Sample', last: 'Buyer', order_code: 'WW27-TEST' }, 1001)) }; }
+    catch (x) { return { ok: false, error: 'Wallet test failed: ' + String(x && (x.stack || x.message) || x).slice(0, 1500) }; }   // owner only: the cause, for setting up
   }
   // Tamer's dashboard key only: a sample tickets PDF sent back to the caller (nothing emailed), to check how it looks
   function ownerTestPdf(env, p) {
