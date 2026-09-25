@@ -2,20 +2,20 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
-/* Single deliberate look: the ticket's plum night bar around the real pages (which carry their own design). */
-:root{--bar:#2A1233;--bar2:#3A1F4E;--gold:#F2C14E;--cream:#F4EEDC;--muted:#C9B8C9;--page:#F6EFE3;--ink:#2A1A2E;--line:#E6D8C3;--ok:#2E6B45;color-scheme:light}
+/* Tamer 2026-09-25: the bar is white with a gold border underneath, navy lettering (like the team page and his app). */
+:root{--bar:#0B1530;--bar2:#1A2D57;--gold:#C8843A;--cream:#FFF3D6;--muted:#5B6477;--page:#F3F5F9;--ink:#0B1530;--line:#E3E8F0;--ok:#2E6B45;color-scheme:light}
 html,body{height:100%}
 body{margin:0;background:var(--page);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column}
-.bar{background:linear-gradient(180deg,var(--bar2),var(--bar));color:var(--cream);padding:8px 16px 0;padding-top:calc(8px + env(safe-area-inset-top,0px))}
+.bar{background:#fff;color:var(--ink);border-bottom:4px solid var(--gold);box-shadow:0 2px 10px rgba(11,21,48,.06);padding:8px 16px 0;padding-top:calc(8px + env(safe-area-inset-top,0px))}
 .bar .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.bar h1{margin:0;font:400 20px/1 "Bebas Neue",Impact,"Arial Narrow",sans-serif;letter-spacing:1.5px;color:var(--cream)}
-.pill{background:var(--gold);color:var(--bar);font:700 11px/1 system-ui,sans-serif;letter-spacing:1px;padding:4px 7px;border-radius:999px}
-.note{color:var(--cream);font-weight:700;font-size:13px;flex:1 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar h1{margin:0;font:400 20px/1 "Bebas Neue",Impact,"Arial Narrow",sans-serif;letter-spacing:1.5px;color:var(--ink)}
+.pill{background:#C0392B;color:#fff;font:700 11px/1 system-ui,sans-serif;letter-spacing:1px;padding:4px 7px;border-radius:999px}
+.note{color:#8E2226;font-weight:700;font-size:13px;flex:1 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tabs{display:flex;gap:2px;overflow-x:auto;margin-top:8px;scrollbar-width:none}
 .tabs button{flex:0 0 auto;border:0;background:transparent;color:var(--muted);font:400 17px/1 "Bebas Neue",Impact,sans-serif;letter-spacing:1.2px;padding:10px 12px;border-bottom:3px solid transparent;cursor:pointer}
-.tabs button[aria-selected=true]{color:var(--gold);border-bottom-color:var(--gold)}
+.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--gold)}
 .tabs button:focus-visible,.reset:focus-visible,.mail:focus-visible,.btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-.tabs .count{display:inline-block;min-width:18px;margin-left:4px;padding:2px 5px;border-radius:9px;background:var(--gold);color:var(--bar);font:700 11px/1.2 system-ui,sans-serif}
+.tabs .count{display:inline-block;min-width:18px;margin-left:4px;padding:2px 5px;border-radius:9px;background:var(--gold);color:#fff;font:700 11px/1.2 system-ui,sans-serif}
 .reset{margin-left:auto;background:transparent;border:1px solid var(--muted);color:var(--muted);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer}
 main{flex:1;min-height:0;position:relative}
 iframe.page{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--page)}
@@ -2725,7 +2725,7 @@ var Core = (function () {
   function shell(inner) {
     return '<div style="background:#F4EEDC;padding:18px 10px;font-family:Georgia,serif;color:#2A1A2E">' +
       '<div style="max-width:620px;margin:0 auto;background:#fff;border-radius:10px;overflow:hidden;border:1px solid #E3D6BF">' +
-      '<div style="background:#3A1F4E;background:linear-gradient(180deg,#3A1F4E,#5A2447);padding:14px 20px 16px;color:#F2C14E;font-family:Arial,sans-serif;letter-spacing:2px;font-weight:bold;font-size:13px"><div style="color:#F4EEDC;font-size:11px;letter-spacing:2.5px;margin-bottom:5px">ST. MINA COPTIC ORTHODOX CHURCH</div>WONDER WORKER ART TEAM · NATIVITY CELEBRATION 2027</div>' +
+      '<div style="background:#0B1530;background:linear-gradient(180deg,#0B1530,#1A2D57);padding:14px 20px 16px;color:#F2C14E;font-family:Arial,sans-serif;letter-spacing:2px;font-weight:bold;font-size:13px"><div style="color:#F4EEDC;font-size:11px;letter-spacing:2.5px;margin-bottom:5px">ST. MINA COPTIC ORTHODOX CHURCH</div>WONDER WORKER ART TEAM · NATIVITY CELEBRATION 2027</div>' +
       '<div style="padding:20px 22px;font-size:16px;line-height:1.5">' + inner + '</div>' +
       '<div style="padding:12px 22px 18px;font-family:Arial,sans-serif;font-size:12px;color:#7A6A5A;border-top:1px solid #EFE6D6">Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary · reply to this email for any question.<br><b>Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b></div>' +
       '</div></div>';
@@ -2737,7 +2737,7 @@ var Core = (function () {
     return '<p style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:1.5px;color:#8A3B2E;margin:14px 0 6px">DOOR CODE' + (numbers.length > 1 ? 'S' : '') + '</p><div>' +
       numbers.map(function (n) {
         return '<div style="display:inline-block;vertical-align:top;margin:0 10px 10px 0;padding:8px;background:#fff;border:1px solid #E3D6BF;border-radius:8px;text-align:center">' +
-          (demo ? '<div style="width:150px;height:150px;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,#f3f3f3 0 8px,#e6e6e6 8px 16px);border:2px solid #C0392B;color:#C0392B;font:bold 20px Arial,sans-serif">DEMO<br>no code</div>' : qrImg(env, cids, 'd' + n, 'WW27-T' + n, 150)) + '<div style="font-family:Arial,sans-serif;font-size:14px;font-weight:bold;margin-top:6px">No. ' + n + '</div></div>';
+          (demo ? '<div style="width:150px;height:150px;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,#f3f3f3 0 8px,#e6e6e6 8px 16px);border:2px solid #C0392B;color:#C0392B;font:bold 20px Arial,sans-serif">DEMO<br>no code</div>' : qrImg(env, cids, 'd' + n, 'WW27-T' + n, 150)) + '<div style="font-family:Arial,sans-serif;font-size:14px;font-weight:bold;margin-top:6px">' + (demo ? 'DEMO ' : 'No. ') + n + '</div></div>';
       }).join('') + '</div>';
   }
   function ticketsEmail(env, s, e, numbers, gifts, opening) {
@@ -2765,7 +2765,7 @@ var Core = (function () {
       '<tr><td style="padding:3px 12px 3px 0;color:#7A6A5A">Where</td><td>' + EVENT.where + ' · <a href="' + EVENT.map + '">map</a></td></tr>' +
       '<tr><td style="padding:3px 12px 3px 0;color:#7A6A5A">Donation</td><td>' + money(e.amount) + ' by ' + esc(e.method) + (e.order_code ? ' · ref. ' + esc(e.order_code) : '') + '</td></tr>' +
       '</table>' +
-      '<p style="margin:0 0 6px"><a href="' + calendarLink() + '" style="display:inline-block;background:#3A1F4E;color:#F4EEDC;text-decoration:none;padding:9px 14px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px">Add to Google Calendar</a> &nbsp; <span style="font-size:13px;color:#7A6A5A">(iPhone: open the attached nativity-2027.ics)</span></p>' +
+      '<p style="margin:0 0 6px"><a href="' + calendarLink() + '" style="display:inline-block;background:#1A2D57;color:#FFF3D6;text-decoration:none;padding:9px 14px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px">Add to Google Calendar</a> &nbsp; <span style="font-size:13px;color:#7A6A5A">(iPhone: open the attached nativity-2027.ics)</span></p>' +
       (receiptLine ? '<p style="font-size:15px">' + receiptLine + '</p>' : '') +
       '<p>See you there,<br>The Wonder Worker Art Team<br>St. Mina Coptic Orthodox Church</p>');
     var atts = [env.textBlob('nativity-2027.ics', 'text/calendar', ics())];
