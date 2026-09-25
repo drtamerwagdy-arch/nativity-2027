@@ -2987,8 +2987,10 @@ var Core = (function () {
       env.append('entries', e);
       env.mail({ to: e.email, subject: 'Thank you for sponsoring · Nativity Celebration 2027', name: s.from_name, replyTo: s.team_email,
         html: shell('<p>Dear ' + esc(e.first) + ',</p><p>Thank you for sponsoring the Nativity Celebration 2027' + (business ? ' on behalf of <b>' + esc(business) + '</b>' : '') + ' (' + money(tier) + ', ref. ' + code + ').</p>' +
-          (silent ? '<p>As you asked, you are a <b>silent sponsor</b>: your name will not be shown on our website or at the celebration.</p>'
-            : '<p>Your name, logo and a link to your website will show on our tickets page (thewonderworker.ca) once the team has approved them, and at the celebration on January 30, 2027.</p>' +
+          // CRA: a sponsorship that advertises the business gets no donation receipt; a silent sponsor's gift does (Tamer 2026-09-25)
+          (silent ? '<p>As you asked, you are a <b>silent sponsor</b>: your name will not be shown on our website or at the celebration. You will get an official donation receipt for your gift.</p>'
+            : '<p>Your name, logo and a link to your website will show on our tickets page (thewonderworker.ca) once the team has approved them, and on the day of the celebration, January 30, 2027.</p>' +
+              '<p>Because a sponsorship advertises your business, it does not receive an official donation receipt (Canada Revenue Agency rules). Please keep this email as your confirmation of payment; your business may be able to claim it as an advertising expense.</p>' +
               (showAs ? '<p>How you asked us to show your name: <b>' + esc(showAs) + '</b></p>' : '')) +
           '<p>The Wonder Worker Art Team<br>St. Mina Coptic Orthodox Church</p>') });
       teamAlert(env, s, e, [silent ? 'new SILENT sponsor: ' + label + ' (' + money(tier) + '). Do not show the name anywhere.'
@@ -3257,10 +3259,12 @@ var Core = (function () {
     business: ['Business', function (e) { return e.business; }],
     tickets: ['Tickets', function (e) { return [e.tickets, e.gift_numbers ? 'gift ' + e.gift_numbers : ''].filter(Boolean).join(' · '); }],
     by: ['Recorded by', function (e) { return e.recorded_by; }],
-    receipt: ['Tax receipt', function (e) { return e.receipt === 'N' ? 'No (declined)' : 'Yes'; }],
+    receipt: ['Tax receipt', function (e) { return sponsorNoReceipt(e) ? 'No (sponsorship: advertising)' : e.receipt === 'N' ? 'No (declined)' : 'Yes'; }],
     receiptable: ['Receiptable amount', null],
     status: ['Status', function (e) { return e.status; }]
   };
+  // CRA: a sponsor whose business is advertised (name, logo, link) gets no donation receipt; a silent sponsor made a gift and does
+  function sponsorNoReceipt(e) { return e.kind === 'sponsor' && e.silent !== 'Y'; }
   function exportRows(env, p) {
     var s = requireOwner(env, p.key), cols = (p.cols && p.cols.length ? p.cols : ['date', 'name', 'email', 'amount', 'method']).filter(function (c) { return EXPORT_COLS[c]; });
     var tv = num(s.receipt_ticket_value);
@@ -3272,7 +3276,7 @@ var Core = (function () {
       return true;
     }).map(function (e) {
       return cols.map(function (c) {
-        if (c === 'receiptable') return Math.max(0, num(e.amount) - tv * (list(e.tickets).length + list(e.gift_numbers).length));
+        if (c === 'receiptable') return sponsorNoReceipt(e) ? 0 : Math.max(0, num(e.amount) - tv * (list(e.tickets).length + list(e.gift_numbers).length));
         return EXPORT_COLS[c][1](e);
       });
     });
