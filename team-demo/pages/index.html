@@ -269,6 +269,7 @@ aside.steps.dark .cash{background:#8E2226;color:#FFF3D6;border:1px solid rgba(24
   #buy,#spon{display:grid;grid-template-columns:330px minmax(0,1fr);column-gap:22px;align-items:start}
   #buy>*,#spon>*{grid-column:2}#buy>.sechead,#spon>.sechead{grid-column:1/-1}#buy>.leftcol{grid-column:1;grid-row:2/span 8}#spon>.intro{grid-column:1/-1}#spon>aside.steps{grid-column:1;grid-row:3/span 8}}
 #buy .fgrid{grid-template-columns:1fr}
+#give .span2 .fgrid,#spon .span2 .fgrid{grid-template-columns:1fr}   /* Pay: e-Transfer box, then the screenshot, as on Get tickets (Tamer 2026-09-25) */
 /* Get tickets: "Tickets", "Your donation" and "Gift a seat to a senior", their controls the same size, lined up */
 #buy .qrow{display:grid;grid-template-columns:270px 172px;align-items:center;gap:14px;margin:6px 0}
 #buy .qrow>span:first-child{min-width:0}
@@ -422,7 +423,7 @@ a.spp:hover{border-color:#C8843A;background:#FFF8EC}
         <p class="okbox hide" data-preview></p>
       </div>
       <div class="panel2"><div data-person></div></div>
-      <div class="span2"><div class="fgrid"><div data-payhow></div><div data-proof></div></div></div>   <!-- the screenshot, as for tickets (Tamer 2026-09-25) -->
+      <div class="panel2 span2"><h3>Pay</h3><div class="fgrid"><div data-payhow></div><div data-proof></div></div></div>   <!-- the screenshot, as for tickets (Tamer 2026-09-25) -->
     </div>
     <div class="err" data-err></div>
     <button class="btn wide" type="submit">Submit my donation</button>
@@ -487,7 +488,7 @@ a.spp:hover{border-color:#C8843A;background:#FFF8EC}
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.37</span></footer>
+<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.38</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3126,12 +3127,12 @@ var qrcode = function() {
     '<label class="f">Email (your tickets and receipt go here)<input name="email" type="email" inputmode="email" autocomplete="email"></label>' +
     '<label class="f">Mobile <span style="font-weight:400">(optional)</span><input name="phone" type="tel" inputmode="tel" autocomplete="tel"></label>' +
     '<div class="hp"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>';
-  function payHow(amount, amountOnly, stepText) {
+  function payHow(amountOnly, stepText) {
     // wording and order set by Tamer 2026-09-24: the heading, then straight away the bold screenshot step, then the details
     return '<div class="pay"><b>Send an Interac e-Transfer</b>' +
       (amountOnly ? '' : '<p class="step">Then take a screenshot of the confirmation screen and add it below.<br>' + (stepText || 'Once submitted, you will get your tickets by email.') + '</p>') +
       '<div class="copy"><span>' + esc(CFG.etransfer) + '</span><button type="button">Copy</button></div>' +
-      '<div class="row" style="margin:2px 0"><span>Amount</span><b class="bebas" style="font-size:22px" data-payamt>' + money(amount) + '</b></div>' +
+      '<div class="row" style="margin:2px 0"><span>Amount</span><b class="bebas" style="font-size:22px" data-payamt>—</b></div>' +   // always a dash, on all three pages: the amount is the one chosen above (Tamer 2026-09-25: "so we don't confuse people")
       'In the message write:<div class="copy"><span>Wonder Worker</span><button type="button">Copy</button></div>' +
       '</div>';
   }
@@ -3259,10 +3260,10 @@ var qrcode = function() {
     $('[data-suggest]', buy).textContent = 'Suggested ' + money(CFG.suggested) + ' per ticket · Every donation beyond that supports the service.';
     $('[data-giftnote]', buy).textContent = money(CFG.suggested) + ' donation · optional';
     if (!buyTouched) $('[name=amount]', buy).value = s;
-    $('[data-payhow]', buy).innerHTML = payHow($('[name=amount]', buy).value);   // e-Transfer only online (Tamer 2026-09-25)
+    $('[data-payhow]', buy).innerHTML = payHow();   // e-Transfer only online (Tamer 2026-09-25)
     copyBtn(buy);
   }
-  $('[name=amount]', buy).addEventListener('input', function () { buyTouched = true; var a = $('[data-payamt]', buy); if (a) a.textContent = money(this.value); buySync(); });
+  $('[name=amount]', buy).addEventListener('input', function () { buyTouched = true; buySync(); });
   buy.addEventListener('input', function (e) { if (e.target.name === 'qty' || e.target.name === 'gift_qty') buySync(); });
   buy.addEventListener('change', function (e) { if (e.target.name === 'method') buySync(); });
   submit(buy, 'order', function (p) {
@@ -3318,8 +3319,7 @@ var qrcode = function() {
     $('[data-banner]', give).innerHTML = banner(CFG.raised, a, goal, CFG.givers);
     var pv = $('[data-preview]', give);
     pv.classList.add('hide'); pv.innerHTML = '';
-    $('[data-payhow]', give).innerHTML = payHow(a || 0, false, 'Once submitted, you will get a thank-you email.'); copyBtn(give);
-    if (!a) { var pa = $('[data-payamt]', give); if (pa) pa.textContent = '—'; }   // no amount chosen yet
+    $('[data-payhow]', give).innerHTML = payHow(false, 'Once submitted, you will get a thank-you email.'); copyBtn(give);
   }
   var giveProof = new ProofBox($('[data-proof]', give), { expected: function () { return $('[name=amount]', give).value; } });
   $('[data-quick]', give).innerHTML = [20, 50, 100, 150, 200, 250, 500, 1000].map(function (v) { return '<label><input type="radio" name="quick" value="' + v + '"> $' + v.toLocaleString('en-CA') + '</label>'; }).join('');   // Tamer 2026-09-25: more buttons
@@ -3337,12 +3337,11 @@ var qrcode = function() {
   function sponAmt() { var d = data(spon); return Number(d.tier_other) || Number(d.tier) || 0; }
   function sponMost() { return Math.max.apply(null, CFG.tiers.length ? CFG.tiers : [500]); }   // a typed amount must be over this (Tamer 2026-09-25)
   function sponSync() {
-    var t = sponAmt(), silent = $('[data-silent]', spon).checked;
+    var silent = $('[data-silent]', spon).checked;
     $('[data-public]', spon).classList.toggle('hide', silent);        // a silent sponsor: nothing to show, so no name note, website, ad or logo
     $('[data-bizopt]', spon).classList.toggle('hide', !silent);
     // the e-Transfer box shows from the start, as on Donate (Tamer 2026-09-25: "also add this part to the sponsor page")
-    $('[data-payhow]', spon).innerHTML = payHow(t, false, 'Once submitted, you will get a thank-you email.');
-    if (!t) { var pa = $('[data-payamt]', spon); if (pa) pa.textContent = '—'; }   // no sponsorship chosen yet
+    $('[data-payhow]', spon).innerHTML = payHow(false, 'Once submitted, you will get a thank-you email.');
     copyBtn(spon);
   }
   function sponsorsHtml(list) {
