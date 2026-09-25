@@ -277,7 +277,7 @@ aside.steps.dark .cash{background:#8E2226;color:#FFF3D6;border:1px solid rgba(24
 #buy .big small.sub{display:block;font:600 13.5px/1.3 Inter,sans-serif;color:#8E2226;margin-top:3px}
 #buy .qrow .stepper,#buy .qrow .money{width:172px;height:50px;box-sizing:border-box}
 #buy .qrow .stepper button{width:52px}#buy .qrow .stepper input{width:66px;font-size:22px}
-#buy .qrow .money{display:flex;align-items:center;gap:6px;border:1px solid var(--fieldline);border-radius:12px;background:#fff;padding:0 14px;flex-wrap:nowrap}
+#buy .qrow .money{display:flex;align-items:center;gap:6px;border:2px solid #C8843A;border-radius:12px;background:#fff;padding:0 14px;flex-wrap:nowrap}   /* gold edge like "Feeling generous today?" (Tamer 2026-09-25) */
 #buy .qrow .money b{font:800 22px/1 Inter,system-ui,sans-serif;color:var(--soft)}
 #buy .qrow .money input{border:0;width:100%;padding:0;font:800 22px/1 Inter,system-ui,sans-serif;text-align:center;box-shadow:none}
 #buy .b-tix .hint{margin:10px 0 0}
@@ -317,6 +317,7 @@ a.spp:hover{border-color:#C8843A;background:#FFF8EC}
 #spon .gen>b{display:block;font:800 17px Inter,sans-serif;color:#0B1530}#spon .gen .hint{margin:2px 0 8px}
 #spon .gen .money{display:flex;align-items:center;gap:8px}#spon .gen .money b{font:800 24px Inter,sans-serif;color:#5B6477}
 #spon .gen .money input{font:800 24px Inter,sans-serif;width:180px;padding:9px 14px;border:2px solid #C8843A;border-radius:12px;background:#fff}
+#spon .gen .generr{margin:8px 0 0;color:#B42318;font-weight:700;font-size:14px}
 #spon .silent{display:flex;gap:12px;align-items:flex-start;margin:16px 0 4px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer}
 #spon .silent input{position:absolute;opacity:0;pointer-events:none}
 #spon .silent .sw{flex:0 0 46px;height:26px;border-radius:999px;background:#C9D0DC;position:relative;transition:background .15s;margin-top:2px}
@@ -454,7 +455,8 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
         <h3>Select your sponsorship amount</h3>
         <div class="pills tiers" data-tiers></div>
         <div class="gen"><b>Feeling generous today?</b><p class="hint">Type any amount over <span data-genmin>$500</span>.</p>
-          <div class="money"><b>$</b><input name="tier_other" id="sp-other" type="number" min="1" step="1" inputmode="decimal" aria-label="Your own sponsorship amount"></div></div>
+          <div class="money"><b>$</b><input name="tier_other" id="sp-other" type="number" min="1" step="1" inputmode="decimal" aria-label="Your own sponsorship amount"></div>
+          <p class="generr hide" data-generr role="alert"></p></div>
         <label class="silent"><input type="checkbox" name="silent" data-silent><span class="sw" aria-hidden="true"></span><span><b>I want to be a silent sponsor</b>
           <small>Choose this if you want to sponsor the team without your name being shown. Your name, logo and website will not appear anywhere, and you get an official donation receipt for the full amount.</small></span></label>
         <h3 style="margin-top:14px">Your business</h3>
@@ -490,7 +492,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.40</span></footer>
+<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.41</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3363,7 +3365,16 @@ var qrcode = function() {
   });
   $('#sp-other').addEventListener('input', function () {             // … and a typed amount replaces the tier
     if (this.value) $$('[name=tier]', spon).forEach(function (r) { r.checked = false; });
+    $('[data-generr]', spon).classList.add('hide');
     sponSync();
+  });
+  // $500 or less is refused as soon as they leave the box (Tamer 2026-09-25: "this box should reject any amount less than 500")
+  $('#sp-other').addEventListener('change', function () {
+    var v = Number(this.value) || 0, m = $('[data-generr]', spon);
+    if (!v || v > sponMost()) { m.classList.add('hide'); return; }
+    this.value = '';
+    m.textContent = 'Please type an amount over ' + money(sponMost()) + '. For ' + CFG.tiers.map(money).join(', ').replace(/, ([^,]*)$/, ' or $1') + ', tap it above.';
+    m.classList.remove('hide'); sponSync();
   });
   // Get tickets: approved sponsors (name, logo, link to their website) and the gold box; before any sponsor, only the gold box
   function sponSpot() {
