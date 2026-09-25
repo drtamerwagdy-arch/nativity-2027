@@ -280,7 +280,22 @@ aside.steps.dark .cash{background:#8E2226;color:#FFF3D6;border:1px solid rgba(24
 #buy .qrow .money{display:flex;align-items:center;gap:6px;border:2px solid #C8843A;border-radius:12px;background:#fff;padding:0 14px;flex-wrap:nowrap}   /* gold edge like "Feeling generous today?" (Tamer 2026-09-25) */
 #buy .qrow .money b{font:800 22px/1 Inter,system-ui,sans-serif;color:var(--soft)}
 #buy .qrow .money input{border:0;width:100%;padding:0;font:800 22px/1 Inter,system-ui,sans-serif;text-align:center;box-shadow:none}
-#buy .b-tix .hint{margin:10px 0 0}
+/* the suggested donation (Tamer 2026-09-25, mockup A): a gold price tag next to the box that follows the tickets and swings in each
+   time the number changes; tap it to use it. Under it a shiny gold banner. The box itself starts empty and never fills itself in. */
+#buy .qrow.don{grid-template-columns:270px 172px auto}
+@media (max-width:760px){#buy .qrow.don{grid-template-columns:1fr 150px}#buy .qrow.don>.sugtag{grid-column:1/-1;justify-self:start}}
+.sugtag{position:relative;display:inline-flex;flex-direction:column;justify-content:center;height:50px;padding:0 16px 0 26px;background:linear-gradient(135deg,#F6CB5C,#E9B347);color:#0B1530;border:0;cursor:pointer;
+  clip-path:polygon(14px 0,100% 0,100% 100%,14px 100%,0 50%);font:inherit;text-align:left;transform-origin:12px 50%}
+.sugtag::before{content:"";position:absolute;left:12px;top:50%;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;background:#fff}
+.sugtag small{font:800 10.5px/1 Inter,sans-serif;letter-spacing:.12em;color:#7A4B12}.sugtag b{font:800 19px/1.1 Inter,sans-serif;white-space:nowrap}
+.sugtag.swing{animation:tagin 1s cubic-bezier(.3,1.3,.5,1) both}
+@keyframes tagin{0%{opacity:0;transform:translateX(46px) rotate(0)}30%{opacity:1;transform:translateX(0) rotate(-16deg)}50%{transform:rotate(10deg)}68%{transform:rotate(-6deg)}84%{transform:rotate(3deg)}100%{transform:none}}
+.sgline{margin:14px 0 0;border-radius:12px;padding:11px 14px;font:800 15.5px/1.35 Inter,sans-serif;position:relative;overflow:hidden;text-align:center;
+  background:linear-gradient(100deg,#F6CB5C,#FFE7A3 45%,#F6CB5C);color:#0B1530;border:1px solid #C8843A;box-shadow:0 3px 10px rgba(200,132,58,.25)}
+.sgline::after{content:"";position:absolute;top:0;bottom:0;width:60px;left:-80px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.75),transparent);transform:skewX(-20deg);animation:shine 3.2s ease-in-out infinite}
+@keyframes shine{0%{left:-80px}60%,100%{left:110%}}
+.sgline small{display:block;font-weight:600;font-size:13px;opacity:.85;margin-top:2px}
+@media (prefers-reduced-motion:reduce){.sugtag.swing,.sgline::after{animation:none}}
 @media (max-width:440px){#buy .qrow{grid-template-columns:1fr 150px;gap:10px}#buy .qrow .stepper,#buy .qrow .money{width:150px;height:48px}
   #buy .qrow .stepper button{width:44px}#buy .qrow .stepper input{width:60px}#buy .big{font-size:18px}}
 /* Donate: steps full height on the left; the goal bar across the top; the form below */
@@ -387,8 +402,9 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
     <div class="fgrid">
       <div class="panel2 b-tix">
         <div class="row qrow"><span class="big">Tickets</span><div class="stepper"><button type="button" data-d="-1" aria-label="fewer">−</button><input name="qty" id="b-qty" type="number" min="1" max="20" value="1" inputmode="numeric" aria-label="Tickets"><button type="button" data-d="1" aria-label="more">+</button></div></div>
-        <div class="row qrow"><span class="big">Your donation</span><div class="money"><b>$</b><input name="amount" id="b-amount" type="number" min="1" step="1" inputmode="decimal" aria-label="Donation amount"></div></div>
-        <p class="hint" data-suggest></p>
+        <div class="row qrow don"><span class="big">Your donation</span><div class="money"><b>$</b><input name="amount" id="b-amount" type="number" min="1" step="1" inputmode="decimal" aria-label="Donation amount"></div>
+          <button type="button" class="sugtag" data-sugtag aria-live="polite"><small>SUGGESTED</small><b data-sugamt></b></button></div>
+        <div class="sgline" data-suggest></div>
       </div>
       <div class="panel2 b-who"><div data-person></div></div>
       <div class="panel2 b-gift">
@@ -492,7 +508,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.41</span></footer>
+<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.42</span></footer>
 
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3238,7 +3254,7 @@ var qrcode = function() {
         ev.preventDefault(); ev.stopPropagation();
         var im = new Image(); im.onload = function () {
           var c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
-          var x = c.getContext('2d'), a = Number($('[name=amount]', form).value) || 20;
+          var x = c.getContext('2d'), a = Number($('[name=amount]', form).value) || (fid === '#buy' ? ((Number($('[name=qty]', form).value) || 1) + (Number($('[name=gift_qty]', form).value) || 0)) * CFG.suggested : 20);
           x.drawImage(im, 0, 0); x.fillStyle = '#222'; x.font = '600 54px "Avenir Next","Helvetica Neue",Arial,sans-serif'; x.textBaseline = 'alphabetic';
           x.fillText('$' + a.toFixed(2), 87, 700);
           x.fillText(new Date().toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }), 708, 700);
@@ -3263,16 +3279,23 @@ var qrcode = function() {
     if (buyTouched && a && a + 0.001 < least) lim = 'The minimum donation for ' + q + ' ticket' + (q > 1 ? 's' : '') + (g ? ' and ' + g + ' gifted seat' + (g > 1 ? 's' : '') : '') + ' is ' + money(least) + '.';
     $('[data-err]', buy).textContent = lim;
     // Tamer 2026-09-25: "Suggested $20 per ticket" under the donation; a gifted seat is a $20 donation (not "suggested")
-    $('[data-suggest]', buy).textContent = 'Suggested ' + money(CFG.suggested) + ' per ticket · Every donation beyond that supports the service.';
+    $('[data-suggest]', buy).innerHTML = '★ Suggested ' + money(CFG.suggested) + ' per ticket ★<small>Every dollar beyond that supports the service.</small>';
     $('[data-giftnote]', buy).textContent = money(CFG.suggested) + ' donation · optional';
-    if (!buyTouched) $('[name=amount]', buy).value = s;
+    // the tag follows the tickets and swings in again whenever the amount changes; the donation box is never filled in by itself
+    var tag = $('[data-sugtag]', buy), amt = money(s) + ' or more';
+    if ($('[data-sugamt]', tag).textContent !== amt) { $('[data-sugamt]', tag).textContent = amt; tag.classList.remove('swing'); void tag.offsetWidth; tag.classList.add('swing'); }
     $('[data-payhow]', buy).innerHTML = payHow();   // e-Transfer only online (Tamer 2026-09-25)
     copyBtn(buy);
   }
   $('[name=amount]', buy).addEventListener('input', function () { buyTouched = true; buySync(); });
+  $('[data-sugtag]', buy).addEventListener('click', function () {   // tap the tag: use the suggested amount
+    var q = Number($('[name=qty]', buy).value) || 0, g = Number($('[name=gift_qty]', buy).value) || 0;
+    $('[name=amount]', buy).value = (q + g) * CFG.suggested; buyTouched = true; buySync();
+  });
   buy.addEventListener('input', function (e) { if (e.target.name === 'qty' || e.target.name === 'gift_qty') buySync(); });
   buy.addEventListener('change', function (e) { if (e.target.name === 'method') buySync(); });
   submit(buy, 'order', function (p) {
+    if (!(Number(p.amount) > 0)) throw new Error('Please enter your donation. We suggest ' + money(((Number(p.qty) || 0) + (Number(p.gift_qty) || 0)) * CFG.suggested) + ' or more.');
     need(p, ['first', 'last', 'email']);
     p.proof = proofOf(buyProof, p.method); return p;
   });
