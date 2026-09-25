@@ -2502,7 +2502,8 @@ var Core = (function () {
   var ENTRY_COLS = ['id', 'created', 'kind', 'status', 'first', 'last', 'email', 'phone', 'tickets', 'gift_numbers', 'qty', 'gift_qty',
     'amount', 'method', 'order_code', 'interac_ref', 'proof', 'proof_status', 'flags', 'recorded_by', 'member_id',
     'receipt', 'address', 'city', 'postal', 'note', 'submit_id', 'emailed', 'token', 'business', 'website', 'logo', 'shown', 'ad_text',
-    'proof_hash'];   // fingerprint of the uploaded receipt, so the same one cannot be used twice (Tamer 2026-09-24)
+    'proof_hash',   // fingerprint of the uploaded receipt, so the same one cannot be used twice (Tamer 2026-09-24)
+    'show_as', 'silent'];   // sponsors: how they want their name shown; Y = silent sponsor, never shown (Tamer 2026-09-25)
   var MEMBER_COLS = ['id', 'name', 'key', 'active', 'created'];
   var HANDOVER_COLS = ['id', 'created', 'member_id', 'name', 'amount', 'note'];
 
@@ -2779,7 +2780,7 @@ var Core = (function () {
         ['Order', e.order_code], ['Proof', e.proof ? '<a href="' + esc(e.proof) + '">open screenshot</a>' : 'none kept']]
         .filter(function (r) { return str(r[1]); })
         .map(function (r) { return '<tr><td style="padding:2px 12px 2px 0;color:#7A6A5A">' + r[0] + '</td><td>' + (r[0] === 'Proof' ? r[1] : esc(r[1])) + '</td></tr>'; }).join('') +
-      '</table><p style="font-size:14px;color:#7A6A5A">' + (e.kind === 'donation' ? 'The thank-you email was already sent.' : 'The tickets were already sent to the buyer.') + '</p>');
+      '</table><p style="font-size:14px;color:#7A6A5A">' + (e.kind === 'donation' || e.kind === 'sponsor' ? 'The thank-you email was already sent.' : 'The tickets were already sent to the buyer.') + '</p>');
     env.mail({ to: s.team_email, subject: 'Check needed · ' + (e.order_code || 'ticket ' + e.tickets) + ' · ' + e.first + ' ' + e.last, html: html, replyTo: e.email || s.team_email, name: 'Nativity tickets' });
   }
 
@@ -2953,37 +2954,46 @@ var Core = (function () {
     }
   }
 
-  // ---------- public: Become a sponsor ($300 / $400 / $500; payment proof; logo; shown after Tamer approves) ----------
+  // ---------- public: Become a sponsor ($300 / $400 / $500 or any amount above; payment proof; logo; shown on the tickets page after Tamer approves) ----------
   function sponsorsShown(env) {
-    return env.list('entries').filter(function (e) { return e.kind === 'sponsor' && e.status !== 'void' && String(e.shown) === 'Y'; })
-      .map(function (e) { return { business: e.business, tier: num(e.amount), logo: e.logo, website: e.website, ad: e.ad_text }; })
+    return env.list('entries').filter(function (e) { return e.kind === 'sponsor' && e.status !== 'void' && String(e.shown) === 'Y' && e.silent !== 'Y'; })
+      .map(function (e) { return { business: e.show_as || e.business, tier: num(e.amount), logo: e.logo, website: e.website, ad: e.ad_text }; })
       .sort(function (a, b) { return b.tier - a.tier || (a.business < b.business ? -1 : 1); });
   }
   function sponsor(env, p) {
-    var prev = findBySubmit(env, p.submit_id); if (prev) return outcome(prev, { status: prev.proof_status }, { business: prev.business });
+    var prev = findBySubmit(env, p.submit_id); if (prev) return outcome(prev, { status: prev.proof_status }, { business: prev.business, silent: prev.silent === 'Y' });
     antiSpam(env, p);
-    var s = settings(env), who = person(p), business = str(p.business), tier = num(p.tier);
-    var tiers = String(s.sponsor_tiers).split(/[\s,]+/).map(Number);
-    if (!business) throw err('Please enter your business name.');
-    if (tiers.indexOf(tier) < 0) throw err('Please choose a sponsorship: ' + tiers.map(money).join(', ') + '.');
-    if (!p.logo) throw err('Please add your logo.');
+    var s = settings(env), who = person(p), business = str(p.business), tier = Math.round(num(p.tier) * 100) / 100;
+    var silent = p.silent === true || p.silent === 'true' || p.silent === 'Y';   // "I want to be a silent sponsor" (Tamer 2026-09-25)
+    var tiers = String(s.sponsor_tiers).split(/[\s,]+/).map(Number).filter(Boolean), most = Math.max.apply(null, tiers);
+    // $300, $400, $500, or "Feeling generous today?": any amount over the highest (Tamer 2026-09-25: "feeling generous is more than 500")
+    if (tiers.indexOf(tier) < 0 && !(tier > most)) throw err('Please choose ' + tiers.map(money).join(', ') + ', or an amount over ' + money(most) + '.');
+    if (tier > 100000) throw err('Please check the amount of your sponsorship.');
+    if (!silent && !business) throw err('Please enter your business name.');
+    if (!silent && !p.logo) throw err('Please add your logo.');
+    // the sponsor's website comes as "site": "website" is the hidden anti-bot field, which used to overwrite it (found 2026-09-25)
+    var showAs = silent ? '' : str(p.show_as).slice(0, 120), label = business || (str(p.first) + ' ' + str(p.last)).trim();
     var method = /cheque/i.test(p.method) ? 'Cheque' : 'e-Transfer';
     return env.lock(function () {
-      var again = findBySubmit(env, p.submit_id); if (again) return outcome(again, { status: again.proof_status }, { business: again.business });
+      var again = findBySubmit(env, p.submit_id); if (again) return outcome(again, { status: again.proof_status }, { business: again.business, silent: again.silent === 'Y' });
       var code = orderCode(env, s);
-      p.nameForFile = code + ' - ' + business + ' - ' + money(tier) + ' - sponsor';
+      p.nameForFile = code + ' - ' + label + ' - ' + money(tier) + ' - sponsor' + (silent ? ' (silent)' : '');
       var checked = checkProof(env, p, tier);
-      var logo = env.saveLogo(p.logo, code + ' - ' + business);
+      var logo = silent ? '' : env.saveLogo(p.logo, code + ' - ' + business);
       var e = mk(env, who, { kind: 'sponsor', amount: tier, method: method, order_code: code, submit_id: str(p.submit_id), business: business,
-        website: str(p.website), logo: logo, shown: 'N', ad_text: str(p.ad_text).slice(0, 120), interac_ref: checked.facts.ref || '', proof: checked.url, proof_hash: checked.hash, proof_status: checked.status, flags: checked.reasons.join(' | ') });
+        website: silent ? '' : str(p.site), logo: logo, shown: 'N', ad_text: silent ? '' : str(p.ad_text).slice(0, 120), show_as: showAs, silent: silent ? 'Y' : '',
+        interac_ref: checked.facts.ref || '', proof: checked.url, proof_hash: checked.hash, proof_status: checked.status, flags: checked.reasons.join(' | ') });
       e.status = checked.status === 'ok' ? 'ok' : 'flagged';
       env.append('entries', e);
       env.mail({ to: e.email, subject: 'Thank you for sponsoring · Nativity Celebration 2027', name: s.from_name, replyTo: s.team_email,
-        html: shell('<p>Dear ' + esc(e.first) + ',</p><p>Thank you for sponsoring the Nativity Celebration 2027 on behalf of <b>' + esc(business) + '</b> (' + money(tier) + ', ref. ' + code + ').</p>' +
-          '<p>Your business name and logo will be shown on our sponsors page and at the celebration on January 30, 2027.</p>' +
+        html: shell('<p>Dear ' + esc(e.first) + ',</p><p>Thank you for sponsoring the Nativity Celebration 2027' + (business ? ' on behalf of <b>' + esc(business) + '</b>' : '') + ' (' + money(tier) + ', ref. ' + code + ').</p>' +
+          (silent ? '<p>As you asked, you are a <b>silent sponsor</b>: your name will not be shown on our website or at the celebration.</p>'
+            : '<p>Your name, logo and a link to your website will show on our tickets page (thewonderworker.ca) once the team has approved them, and at the celebration on January 30, 2027.</p>' +
+              (showAs ? '<p>How you asked us to show your name: <b>' + esc(showAs) + '</b></p>' : '')) +
           '<p>The Wonder Worker Art Team<br>St. Mina Coptic Orthodox Church</p>') });
-      teamAlert(env, s, e, ['new sponsor: ' + business + ' (' + money(tier) + '). Please look at the logo and tap "Show on page" on your dashboard.'].concat(checked.reasons), 'sponsor ' + code);
-      return outcome(e, checked, { business: business, contact: !!(p.proof && p.proof.contact_me) });
+      teamAlert(env, s, e, [silent ? 'new SILENT sponsor: ' + label + ' (' + money(tier) + '). Do not show the name anywhere.'
+        : 'new sponsor: ' + business + ' (' + money(tier) + ')' + (showAs ? '; show the name as: "' + showAs + '"' : '') + '. Please look at the logo and tap "Show on page" on your dashboard.'].concat(checked.reasons), 'sponsor ' + code);
+      return outcome(e, checked, { business: label, silent: silent, contact: !!(p.proof && p.proof.contact_me) });
     });
   }
 
@@ -3145,7 +3155,12 @@ var Core = (function () {
   function ownerMemberRevoke(env, p) { requireOwner(env, p.key); env.update('members', p.id, { active: 'false' }); return { ok: true }; }
   function ownerVoid(env, p) { requireOwner(env, p.key); env.update('entries', p.id, { status: 'void' }); return { ok: true }; }
   function ownerClear(env, p) { requireOwner(env, p.key); env.update('entries', p.id, { status: 'ok' }); return { ok: true }; }
-  function ownerSponsorShow(env, p) { requireOwner(env, p.key); env.update('entries', p.id, { shown: p.on ? 'Y' : 'N' }); return { ok: true }; }
+  function ownerSponsorShow(env, p) {
+    requireOwner(env, p.key);
+    var e = env.list('entries').filter(function (x) { return String(x.id) === String(p.id); })[0];
+    if (p.on && e && e.silent === 'Y') throw err('This is a silent sponsor: their name is never shown.');
+    env.update('entries', p.id, { shown: p.on ? 'Y' : 'N' }); return { ok: true };
+  }
   function ownerHandover(env, p) {
     requireOwner(env, p.key);
     var m = env.list('members').filter(function (x) { return x.id === p.member_id; })[0]; if (!m) throw err('Member not found.');
