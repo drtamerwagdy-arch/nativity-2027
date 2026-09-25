@@ -2837,7 +2837,7 @@ var Core = (function () {
     checkForm(env, p);
     var s = settings(env), who = person(p), qty = Math.floor(num(p.qty)), amount = num(p.amount);
     if (qty < 1 || qty > 10) throw err('For the demo, choose between 1 and 10 tickets.');
-    if (env.hit && (!env.hit('demo:' + who.email, 3, 86400) || !env.hit('demo:all', 150, 86400)))
+    if (env.hit && (!env.hit('demo:' + who.email, 10, 86400) || !env.hit('demo:all', 300, 86400)))   // enough for the whole team to test
       throw err('That is enough demo emails for today. Please try again tomorrow.');
     var nums = []; for (var i = 1; i <= qty; i++) nums.push(i);
     var e = { demo: true, first: who.first, last: who.last, email: who.email, amount: amount > 0 ? amount : qty * num(s.suggested), method: 'e-Transfer', receipt: 'N' };
@@ -3367,17 +3367,19 @@ if (typeof module !== 'undefined') module.exports = Core;
     h('order', { first: 'Mark', last: 'Aziz', email: 'mark.example@example.com', qty: 4, gift_qty: 1, amount: 100, method: 'e-Transfer', proof: { skipped: true }, form: form, submit_id: 'seed4' });
     db.outbox = []; save();
   }
-  db = load(); if (!db || !db.settings) fresh();
+  fresh();   // Tamer 2026-09-25: every visit starts clean, so the whole team can test it
 
   // ---------- pages talk to the engine by message ----------
   // Tamer 2026-09-25: "connect the demo to the art team": a demo order is sent to the real engine as demo_order, which emails
   // tickets DEMO 1 … DEMO N from artteam@ and records nothing (no numbers used, no seats taken, nothing builds up)
-  var LIVE = 'https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec', liveForm = '';
+  var LIVE = 'https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec', liveForm = '', trialDone = false;
+  // after each trial (an order, donation, sponsorship or team sale), the next page load starts clean again ("Back to start")
+  document.getElementById('frame').addEventListener('load', function () { if (!trialDone) return; trialDone = false; fresh(); openNo = null; count(); toast('Demo reset: ready for the next try.'); });
   if (LIVE) fetch(LIVE, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'config', payload: {} }) })
     .then(function (r) { return r.json(); }).then(function (c) { liveForm = c.form || ''; }, function () { });
   window.addEventListener('message', function (ev) {
     var d = ev.data || {};
-    if (d.ww === 'api' && d.action === 'order' && LIVE) {
+    if (d.ww === 'api' && d.action === 'order' && LIVE) { trialDone = true;
       var pl = JSON.parse(JSON.stringify(d.payload || {})); pl.form = liveForm; delete pl.proof;
       fetch(LIVE, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'demo_order', payload: pl }) })
         .then(function (r) { return r.json(); }, function () { return { ok: false, error: 'Connection problem. Please try again.' }; })
@@ -3386,6 +3388,7 @@ if (typeof module !== 'undefined') module.exports = Core;
     }
     if (d.ww === 'api') {
       var res; try { res = Core.handle(ENV, d.action, d.payload); } catch (e) { res = { ok: false, error: String(e.message || e) }; }
+      if (res && res.ok && /^(donate|sponsor|cash_sale)$/.test(d.action)) trialDone = true;
       save(); ev.source.postMessage({ ww: 'api-reply', id: d.id, result: JSON.parse(JSON.stringify(res)) }, '*');
     } else if (d.ww === 'toast') toast(d.m);
   });
