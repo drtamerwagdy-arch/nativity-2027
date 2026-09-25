@@ -2656,18 +2656,44 @@ var Core = (function () {
   }
 
   // ---------- QR code as an HTML table: renders in every email app, needs no outside service ----------
-  function qrTable(text, cell) {
+  // QR codes in emails are small PNG pictures (Tamer 2026-09-24): drawn as HTML tables they made a 3-ticket email ~200 KB,
+  // which Gmail clips at 102 KB ("Message clipped") and spam filters dislike. 1-bit black and white, uncompressed: a few KB each.
+  var CRC = (function () { var t = []; for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  function crc32(bytes) { var c = 0xFFFFFFFF; for (var i = 0; i < bytes.length; i++) c = CRC[(c ^ bytes[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+  function u32(n) { return [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255]; }
+  function chunk(type, data) {
+    var td = [type.charCodeAt(0), type.charCodeAt(1), type.charCodeAt(2), type.charCodeAt(3)].concat(data);
+    return u32(data.length).concat(td, u32(crc32(td)));
+  }
+  function qrPng(text, scale, margin) {
     var q = qrcode(0, 'M'); q.addData(text); q.make();
-    var n = q.getModuleCount(), c = cell || 5, rows = '';
-    for (var r = -2; r < n + 2; r++) {
-      rows += '<tr>';
-      for (var k = -2; k < n + 2; k++) {
-        var dark = r >= 0 && k >= 0 && r < n && k < n && q.isDark(r, k);
-        rows += '<td width="' + c + '" height="' + c + '" style="width:' + c + 'px;height:' + c + 'px;padding:0;background:' + (dark ? '#000' : '#fff') + '" bgcolor="' + (dark ? '#000000' : '#ffffff') + '"></td>';
+    var n = q.getModuleCount(), size = (n + 2 * margin) * scale, per = Math.ceil(size / 8), raw = [];
+    for (var y = 0; y < size; y++) {
+      raw.push(0);   // no filter
+      var my = Math.floor(y / scale) - margin;
+      for (var bx = 0; bx < per; bx++) {
+        var byte = 0;
+        for (var bit = 0; bit < 8; bit++) {
+          var x = bx * 8 + bit, mx = Math.floor(x / scale) - margin;
+          if (!(x < size && my >= 0 && my < n && mx >= 0 && mx < n && q.isDark(my, mx))) byte |= 0x80 >> bit;   // 1 = white
+        }
+        raw.push(byte);
       }
-      rows += '</tr>';
     }
-    return '<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;line-height:0;font-size:0">' + rows + '</table>';
+    var z = [0x78, 0x01], a1 = 1, a2 = 0;
+    for (var i = 0; i < raw.length; i++) { a1 = (a1 + raw[i]) % 65521; a2 = (a2 + a1) % 65521; }
+    for (var p = 0; p < raw.length; p += 65535) {
+      var len = Math.min(65535, raw.length - p);
+      z.push(p + len >= raw.length ? 1 : 0, len & 255, len >>> 8, ~len & 255, (~len >>> 8) & 255);
+      for (var j = p; j < p + len; j++) z.push(raw[j]);
+    }
+    z = z.concat(u32(((a2 << 16) | a1) >>> 0));
+    return [137, 80, 78, 71, 13, 10, 26, 10].concat(chunk('IHDR', u32(size).concat(u32(size), [1, 0, 0, 0, 0])), chunk('IDAT', z), chunk('IEND', []));
+  }
+  // an email picture of a QR code: returns the <img> and adds the picture to the email's inline images
+  function qrImg(env, cids, cid, text, px) {
+    cids[cid] = env.pngBlob(qrPng(text, 8, 3), cid + '.png');
+    return '<img src="cid:' + cid + '" width="' + px + '" height="' + px + '" alt="QR code" style="display:block;width:' + px + 'px;height:' + px + 'px">';
   }
   // the QR on a cash booking opens the team page at that booking (the team member's phone already knows their key)
   function bookingLink(env, e) { var u = env.teamUrl(); return u + (u.indexOf('?') > -1 ? '&' : '?') + 'b=' + encodeURIComponent(e.order_code + '.' + e.token); }
@@ -2696,11 +2722,11 @@ var Core = (function () {
 
   // a large scannable code per ticket (WW27-T377): the QR printed on the ticket image is too small to scan from a
   // phone screen, so the door team scans these with the team page (Tamer 2026-09-24)
-  function doorCodes(numbers) {
+  function doorCodes(env, cids, numbers) {
     return '<p style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:1.5px;color:#8A3B2E;margin:14px 0 6px">DOOR CODE' + (numbers.length > 1 ? 'S' : '') + '</p><div>' +
       numbers.map(function (n) {
         return '<div style="display:inline-block;vertical-align:top;margin:0 10px 10px 0;padding:8px;background:#fff;border:1px solid #E3D6BF;border-radius:8px;text-align:center">' +
-          qrTable('WW27-T' + n, 4) + '<div style="font-family:Arial,sans-serif;font-size:14px;font-weight:bold;margin-top:6px">No. ' + n + '</div></div>';
+          qrImg(env, cids, 'd' + n, 'WW27-T' + n, 150) + '<div style="font-family:Arial,sans-serif;font-size:14px;font-weight:bold;margin-top:6px">No. ' + n + '</div></div>';
       }).join('') + '</div>';
   }
   function ticketsEmail(env, s, e, numbers, gifts, opening) {
@@ -2717,7 +2743,7 @@ var Core = (function () {
     var html = shell(
       '<p>Dear ' + esc(e.first) + ',</p><p>' + opening + '</p>' +
       '<p style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:1.5px;color:#8A3B2E;margin:18px 0 8px">YOUR TICKET' + (numbers.length > 1 ? 'S' : '') + ' · NO. ' + numbers.join(', ') + '</p>' +
-      imgs + doorCodes(numbers) +
+      imgs + doorCodes(env, cids, numbers) +
       '<p style="font-size:15px">' + (numbers.length > 1 ? 'Show them on your phone at the door or print them. Each ticket is one seat.' : 'Show it on your phone at the door or print it.') + '</p>' +
       (gifts.length ? '<p>Your ' + gifts.length + ' gifted seat' + (gifts.length > 1 ? 's' : '') + ' will be given quietly to a senior or a newcomer. Thank you.</p>' : '') +
       '<table style="border-collapse:collapse;font-size:15px;margin:10px 0 14px">' +
@@ -2842,12 +2868,12 @@ var Core = (function () {
       var e = mk(env, who, { kind: 'booking', status: 'pending', qty: qty, gift_qty: gq, amount: amount, method: 'Cash', order_code: orderCode(env, s),
         token: env.random(8), submit_id: str(p.submit_id), proof_status: 'none' });
       env.append('entries', e);
-      var link = bookingLink(env, e);
-      env.mail({ to: e.email, subject: 'Your booking · Nativity Celebration 2027 (' + e.order_code + ')', name: s.from_name, replyTo: s.team_email,
+      var link = bookingLink(env, e), qr = {};
+      env.mail({ to: e.email, inline: qr, subject: 'Your booking · Nativity Celebration 2027 (' + e.order_code + ')', name: s.from_name, replyTo: s.team_email,
         html: shell('<p>Dear ' + esc(e.first) + ',</p>' +
           '<p>Your <b>' + qty + ' ticket' + (qty > 1 ? 's' : '') + '</b>' + (gq ? ' and <b>' + gq + ' gifted seat' + (gq > 1 ? 's' : '') + '</b>' : '') + ' are booked.</p>' +
           '<p>They are pre-booked for ' + num(s.hold_days) + ' days. Within those ' + num(s.hold_days) + ' days, please see a member of the team who sells tickets and pay the amount you entered, <b>' + money(amount) + '</b>. They will scan this code and mark your tickets as booked, and you will get your tickets by email.</p>' +
-          '<div style="margin:16px 0;display:inline-block;padding:10px;background:#fff;border:1px solid #E3D6BF;border-radius:8px">' + qrTable(link, 4) + '</div>' +
+          '<div style="margin:16px 0;display:inline-block;padding:10px;background:#fff;border:1px solid #E3D6BF;border-radius:8px">' + qrImg(env, qr, 'code', link, 200) + '</div>' +
           '<p style="font-family:Arial,sans-serif;font-size:22px;letter-spacing:2px;margin:0 0 12px"><b>' + e.order_code + '</b></p>' +
           '<p style="font-size:14px;color:#7A6A5A">Can\'t find a team member? Reply to this email.</p>' +
           '<p>See you there,<br>The Wonder Worker Art Team<br>St. Mina Coptic Orthodox Church</p>') });
@@ -3218,6 +3244,7 @@ if (typeof module !== 'undefined') module.exports = Core;
     },
     ticketImage: function (n) { var f = 'ticket-' + ('000' + n).slice(-4) + '.jpg'; return TICKETS.indexOf(n) > -1 ? { url: BASE + '../demo-assets/tickets/' + f, name: f } : null; },
     renameBlob: function (b, name) { return { url: b.url, name: name }; },
+    pngBlob: function (bytes, name) { var s = ''; for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]); return { url: 'data:image/png;base64,' + btoa(s), name: name }; },
     textBlob: function (name) { return { name: name }; },
     saveProof: function () { return ''; },                 // the demo keeps no images
     ocr: function () { return null; },                     // the phone's reading is used in the demo
