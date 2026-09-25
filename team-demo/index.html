@@ -2781,7 +2781,7 @@ var Core = (function () {
         ['Order', e.order_code], ['Proof', e.proof ? '<a href="' + esc(e.proof) + '">open screenshot</a>' : 'none kept']]
         .filter(function (r) { return str(r[1]); })
         .map(function (r) { return '<tr><td style="padding:2px 12px 2px 0;color:#7A6A5A">' + r[0] + '</td><td>' + (r[0] === 'Proof' ? r[1] : esc(r[1])) + '</td></tr>'; }).join('') +
-      '</table><p style="font-size:14px;color:#7A6A5A">The tickets were already sent to the buyer.</p>');
+      '</table><p style="font-size:14px;color:#7A6A5A">' + (e.kind === 'donation' ? 'The thank-you email was already sent.' : 'The tickets were already sent to the buyer.') + '</p>');
     env.mail({ to: s.team_email, subject: 'Check needed · ' + (e.order_code || 'ticket ' + e.tickets) + ' · ' + e.first + ' ' + e.last, html: html, replyTo: e.email || s.team_email, name: 'Nativity tickets' });
   }
 
@@ -2998,8 +2998,12 @@ var Core = (function () {
     return env.lock(function () {
       var again = findBySubmit(env, p.submit_id); if (again) return outcome(again, null, { raised: raised(env) });   // same request sent twice
       var code = orderCode(env, s);
-      // No proof for donations (Tamer 2026-09-24): Hany matches each submission to the bank deposit.
-      var e = mk(env, who, { kind: 'donation', amount: amount, method: 'e-Transfer', order_code: code, submit_id: str(p.submit_id), proof_status: 'none' });
+      // Tamer 2026-09-25: donations need the e-Transfer screenshot too, checked like a ticket order (was: no proof, 2026-09-24)
+      p.nameForFile = code + ' - ' + who.last + ' - ' + money(amount) + ' - donation';
+      var checked = checkProof(env, p, amount);
+      var e = mk(env, who, { kind: 'donation', amount: amount, method: 'e-Transfer', order_code: code, submit_id: str(p.submit_id),
+        interac_ref: checked.facts.ref || '', proof: checked.url, proof_hash: checked.hash, proof_status: checked.status, flags: checked.reasons.join(' | ') });
+      e.status = checked.status === 'ok' ? 'ok' : 'flagged';
       env.append('entries', e);
       var total = raised(env);
       env.mail({ to: e.email, subject: 'Thank you · Nativity Celebration 2027 donation', name: s.from_name, replyTo: s.team_email,
@@ -3008,7 +3012,8 @@ var Core = (function () {
           '<p>Together we have now given <b>' + money(total) + '</b> of our <b>' + money(s.goal) + '</b> goal.</p>' +
           '<p>The Wonder Worker Art Team<br>St. Mina Coptic Orthodox Church</p>') });
       env.update('entries', e.id, { emailed: env.now().toISOString() });
-      return outcome(e, null, { raised: total, goal: num(s.goal) });
+      if (checked.reasons.length) teamAlert(env, s, e, checked.reasons, 'donation ' + code);
+      return outcome(e, checked, { raised: total, goal: num(s.goal), contact: !!(p.proof && p.proof.contact_me) });
     });
   }
 
