@@ -2927,7 +2927,10 @@ var Core = (function () {
     checkForm(env, p);
     var s = settings(env), who = person(p), qty = Math.floor(num(p.qty)), amount = num(p.amount);
     if (qty < 1 || qty > 10) throw err('For the demo, choose between 1 and 10 tickets.');
-    if (env.hit && (!env.hit('demo:' + who.email, 10, 86400) || !env.hit('demo:all', 300, 86400)))   // enough for the whole team to test
+    // enough for the whole team to test. Until demo_open_until (Tamer 2026-09-25: "no limit for demo email for the next week") there is
+    // no limit per person; the daily total stays under Google's own sending limit (about 1,500 a day) so real tickets always go out
+    var open = str(s.demo_open_until) && localDate(env.now().toISOString()) <= str(s.demo_open_until);
+    if (env.hit && ((!open && !env.hit('demo:' + who.email, 10, 86400)) || !env.hit('demo:all', open ? 1000 : 300, 86400)))
       throw err('That is enough demo emails for today. Please try again tomorrow.');
     var nums = []; for (var i = 1; i <= qty; i++) nums.push(i);
     var e = { demo: true, first: who.first, last: who.last, email: who.email, amount: amount > 0 ? amount : qty * num(s.suggested), method: 'e-Transfer', receipt: 'N' };
@@ -3261,7 +3264,7 @@ var Core = (function () {
   }
   function ownerSetting(env, p) {
     requireOwner(env, p.key);
-    var allowed = ['capacity', 'reserved', 'suggested', 'goal', 'given_before', 'tickets_pdf', 'wallet_on', 'wallet_pass_type', 'wallet_team', 'sales_close', 'receipt_ticket_value', 'void_numbers', 'paused', 'booking_max', 'min_table', 'order_max', 'hold_days', 'sponsor_tiers', 'gift_seats', 'team_page_url', 'owner_page_url', 'low_seats'];
+    var allowed = ['capacity', 'reserved', 'suggested', 'goal', 'given_before', 'demo_open_until', 'tickets_pdf', 'wallet_on', 'wallet_pass_type', 'wallet_team', 'sales_close', 'receipt_ticket_value', 'void_numbers', 'paused', 'booking_max', 'min_table', 'order_max', 'hold_days', 'sponsor_tiers', 'gift_seats', 'team_page_url', 'owner_page_url', 'low_seats'];
     if (allowed.indexOf(p.name) < 0) throw err('That setting cannot be changed here.');
     env.setSetting(p.name, str(p.value)); return { ok: true };
   }
