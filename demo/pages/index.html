@@ -330,7 +330,8 @@ a.spp:hover{border-color:#C8843A;background:#FFF8EC}
 .sponsors .sp a{color:var(--ink)}
 .logoprev{display:flex;align-items:center;gap:12px;margin:8px 0}
 .logoprev img{max-width:160px;max-height:100px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px}
-.step{font-weight:700;font-size:16px;border-left:4px solid var(--accent);padding:10px 13px;margin:12px 0 10px;background:#fff;border-radius:0 10px 10px 0}
+.pay .howto{display:block;font-size:13.5px;font-weight:400;color:var(--soft);margin:2px 0 10px}
+.warn .shotstep{font-weight:700;font-size:16px;margin:0 0 8px;color:var(--ink)}
 .thermo{height:22px;background:#EDE3D2;border-radius:11px;overflow:hidden;position:relative;margin:8px 0 4px}
 .thermo i{position:absolute;top:0;bottom:0;left:0;background:linear-gradient(90deg,var(--sky2),var(--red));border-radius:11px;transition:width .4s}
 .thermo i.next{background:repeating-linear-gradient(135deg,var(--gold) 0 6px,#F7D983 6px 12px);opacity:.9}
@@ -488,7 +489,7 @@ a.spp:hover{border-color:#C8843A;background:#FFF8EC}
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.38</span></footer>
+<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.39</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -646,7 +647,7 @@ var Proof = (function () {
 if (typeof module !== 'undefined') module.exports = Proof;
 </script>
 <script>/* ProofBox: the screenshot step, on the phone. Nothing leaves the phone until the check passes.
-   new ProofBox(el, { expected: () => amount }) · box.value() → {dataUrl, text, found, skipped, error} */
+   new ProofBox(el, { expected: () => amount, done: 'you will get …' }) · box.value() → {dataUrl, text, found, skipped, error} */
 var TESSERACT = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
 var _tess = null;
 function loadTesseract() {
@@ -662,10 +663,12 @@ function loadTesseract() {
 function ProofBox(root, opts) {
   var self = this; opts = opts || {};
   root.innerHTML =
-    // wording reworked with Tamer 2026-09-24: what to show first, then one short request
-    '<div class="warn"><b>Your screenshot only needs:</b> who you paid (<b>St. Mina donation / donations@stminacalgary.ca</b>), the <b>amount</b>, the <b>date</b> and your <b>message</b>. ' +
+    // wording reworked with Tamer 2026-09-24: what to show first, then one short request. 2026-09-25: the screenshot step moved
+    // here from the e-Transfer box, one yellow section with what the screenshot needs; the upload button blue like Copy and Submit
+    '<div class="warn"><p class="shotstep">Then take a screenshot of the confirmation screen and add it below.<br>Once submitted, ' + (opts.done || 'you will get your tickets by email.') + '</p>' +
+    '<b>Your screenshot only needs:</b> who you paid (<b>St. Mina donation / donations@stminacalgary.ca</b>), the <b>amount</b>, the <b>date</b> and your <b>message</b>. ' +
     'Please crop or cover anything else, such as account or card numbers, your balance, address or phone.</div>' +
-    '<label class="btn ghost wide" style="text-align:center" data-upload>Upload your screenshot<input type="file" accept="image/*" class="hide" data-file></label>' +
+    '<label class="btn wide" style="text-align:center" data-upload>Upload your screenshot<input type="file" accept="image/*" class="hide" data-file></label>' +
     '<div data-status></div><div class="shot hide" data-shot><canvas></canvas></div>' +
     '<div class="row hide" data-covertools><button type="button" class="btn" data-cover>Cover it</button><button type="button" class="link" data-undo>Undo last box</button><button type="button" class="btn ghost" data-recheck>Check again</button></div>' +
     '<p class="hint" style="margin-top:10px"><button type="button" class="link" data-skip>I can\'t upload a clean screenshot. Skip, I\'ve paid</button></p>' +
@@ -3127,10 +3130,10 @@ var qrcode = function() {
     '<label class="f">Email (your tickets and receipt go here)<input name="email" type="email" inputmode="email" autocomplete="email"></label>' +
     '<label class="f">Mobile <span style="font-weight:400">(optional)</span><input name="phone" type="tel" inputmode="tel" autocomplete="tel"></label>' +
     '<div class="hp"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>';
-  function payHow(amountOnly, stepText) {
-    // wording and order set by Tamer 2026-09-24: the heading, then straight away the bold screenshot step, then the details
-    return '<div class="pay"><b>Send an Interac e-Transfer</b>' +
-      (amountOnly ? '' : '<p class="step">Then take a screenshot of the confirmation screen and add it below.<br>' + (stepText || 'Once submitted, you will get your tickets by email.') + '</p>') +
+  function payHow() {
+    // Tamer 2026-09-25: the heading with "as you usually do through your online banking" in smaller type, then straight away the
+    // email and the message; the screenshot step moved into the yellow screenshot section below (ProofBox). The same on all three tabs.
+    return '<div class="pay"><b>Send an Interac e-Transfer</b><span class="howto">as you usually do through your online banking</span>' +
       '<div class="copy"><span>' + esc(CFG.etransfer) + '</span><button type="button">Copy</button></div>' +
       '<div class="row" style="margin:2px 0"><span>Amount</span><b class="bebas" style="font-size:22px" data-payamt>—</b></div>' +   // always a dash, on all three pages: the amount is the one chosen above (Tamer 2026-09-25: "so we don't confuse people")
       'In the message write:<div class="copy"><span>Wonder Worker</span><button type="button">Copy</button></div>' +
@@ -3245,7 +3248,7 @@ var qrcode = function() {
       }, true);
     });
   }
-  var buy = $('#buy'), buyProof = new ProofBox($('[data-proof]', buy), { expected: function () { return $('[name=amount]', buy).value; } }), buyTouched = false;
+  var buy = $('#buy'), buyProof = new ProofBox($('[data-proof]', buy), { expected: function () { return $('[name=amount]', buy).value; }, done: 'you will get your tickets by email.' }), buyTouched = false;
   function minimumFor(q, g) {
     var t = String(CFG.minTable).split(/[\s,]+/).map(Number).filter(function (n) { return n > 0; });
     return (q <= t.length ? t[q - 1] : CFG.suggested * q) + CFG.suggested * g;
@@ -3319,9 +3322,9 @@ var qrcode = function() {
     $('[data-banner]', give).innerHTML = banner(CFG.raised, a, goal, CFG.givers);
     var pv = $('[data-preview]', give);
     pv.classList.add('hide'); pv.innerHTML = '';
-    $('[data-payhow]', give).innerHTML = payHow(false, 'Once submitted, you will get a thank-you email.'); copyBtn(give);
+    $('[data-payhow]', give).innerHTML = payHow(); copyBtn(give);
   }
-  var giveProof = new ProofBox($('[data-proof]', give), { expected: function () { return $('[name=amount]', give).value; } });
+  var giveProof = new ProofBox($('[data-proof]', give), { expected: function () { return $('[name=amount]', give).value; }, done: 'you will get a thank-you email.' });
   $('[data-quick]', give).innerHTML = [20, 50, 100, 150, 200, 250, 500, 1000].map(function (v) { return '<label><input type="radio" name="quick" value="' + v + '"> $' + v.toLocaleString('en-CA') + '</label>'; }).join('');   // Tamer 2026-09-25: more buttons
   give.addEventListener('change', function (e) { if (e.target.name === 'quick') { $('[name=amount]', give).value = e.target.value; thermo(); } });
   $('[name=amount]', give).addEventListener('input', thermo);
@@ -3332,7 +3335,7 @@ var qrcode = function() {
   });
 
   // ---- BECOME A SPONSOR ----
-  var spon = $('#spon'), sponProof = new ProofBox($('[data-proof]', spon), { expected: function () { return sponAmt(); } }), logoData = '';
+  var spon = $('#spon'), sponProof = new ProofBox($('[data-proof]', spon), { expected: function () { return sponAmt(); }, done: 'you will get a thank-you email.' }), logoData = '';
   // the sponsorship: a tier, or the amount typed under "Feeling generous today?" (Tamer 2026-09-25)
   function sponAmt() { var d = data(spon); return Number(d.tier_other) || Number(d.tier) || 0; }
   function sponMost() { return Math.max.apply(null, CFG.tiers.length ? CFG.tiers : [500]); }   // a typed amount must be over this (Tamer 2026-09-25)
@@ -3341,7 +3344,7 @@ var qrcode = function() {
     $('[data-public]', spon).classList.toggle('hide', silent);        // a silent sponsor: nothing to show, so no name note, website, ad or logo
     $('[data-bizopt]', spon).classList.toggle('hide', !silent);
     // the e-Transfer box shows from the start, as on Donate (Tamer 2026-09-25: "also add this part to the sponsor page")
-    $('[data-payhow]', spon).innerHTML = payHow(false, 'Once submitted, you will get a thank-you email.');
+    $('[data-payhow]', spon).innerHTML = payHow();
     copyBtn(spon);
   }
   function sponsorsHtml(list) {
