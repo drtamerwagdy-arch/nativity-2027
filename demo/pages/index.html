@@ -342,7 +342,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.21</span></footer>
+<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.22</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -359,10 +359,10 @@ function api(action, payload) {
       var id = ++_wwSeq; _wwCalls[id] = done;
       parent.postMessage({ ww: 'api', id: id, action: action, payload: payload || {} }, '*');
     } else if (window.google && google.script && google.script.run) {
-      google.script.run.withSuccessHandler(done).withFailureHandler(function (e) { reject(new Error((e && e.message) || 'Connection problem. Please try again.')); }).api(action, payload || {});
+      google.script.run.withSuccessHandler(done).withFailureHandler(function (e) { var x = new Error((e && e.message) || 'Connection problem. Please try again.'); x.net = true; reject(x); }).api(action, payload || {});
     } else {
       fetch(WW_API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: action, payload: payload || {} }) })
-        .then(function (r) { return r.json(); }).then(done, function () { reject(new Error('Connection problem. Please try again.')); });
+        .then(function (r) { return r.json(); }).then(done, function () { var x = new Error('Connection problem. Please try again.'); x.net = true; reject(x); });
     }
   });
 }
@@ -3023,7 +3023,35 @@ var qrcode = function() {
       var p; try { p = build(data(form)); } catch (x) { errBox.textContent = x.message; return; }
       if (!p) return;
       p.submit_id = sid; p.form = CFG.form; btn.disabled = true; var label = btn.textContent; btn.textContent = 'Sending…';
-      api(action, p).then(function (r) { done(action, r); }, function (x) { errBox.textContent = x.message; btn.disabled = false; btn.textContent = label; });
+      // A phone pauses a page that goes to the background (or the screen locks) and the answer can get lost: the page then
+      // sends the same request again. Same submit_id, so the server returns the first result and never books twice (Tamer 2026-09-24).
+      var settled = false, tries = 0, open = 0, last = 0, timer;
+      function end() { settled = true; clearTimeout(timer); document.removeEventListener('visibilitychange', onVis); }
+      function giveUp() {
+        end(); errBox.textContent = 'We could not hear back. If your email arrives, you are all set; if not, tap the button again (it will not book twice).';
+        btn.disabled = false; btn.textContent = label;
+      }
+      function ok(r) {
+        if (settled) return; end();
+        try { done(action, r); } catch (x) { $('#done').innerHTML = '<h2>Thank you!</h2><p>It went through' + (r && r.order ? ' (reference ' + esc(r.order) + ')' : '') + '. Your email is on its way.</p>'; show('done'); }
+      }
+      function bad(x) {
+        open--; if (settled) return;
+        if (x.net && tries < 6) { clearTimeout(timer); timer = setTimeout(send, 3000); return; }
+        if (open > 0) return;   // an earlier try may still come back
+        if (x.net) return giveUp();
+        end(); errBox.textContent = x.message; btn.disabled = false; btn.textContent = label;
+      }
+      function send() {
+        if (settled || tries >= 6) return;
+        tries++; open++; last = Date.now();
+        if (tries > 1) btn.textContent = 'Still sending… please keep this page open';
+        api(action, p).then(ok, bad);
+        clearTimeout(timer); timer = setTimeout(function () { if (tries < 6) send(); else if (!settled) giveUp(); }, 25000);
+      }
+      function onVis() { if (document.visibilityState === 'visible' && Date.now() - last > 4000) send(); }
+      document.addEventListener('visibilitychange', onVis);
+      send();
     };
   }
   function need(p, keys) { keys.forEach(function (k) { if (!p[k]) throw new Error('Please fill in your ' + ({ first: 'first name', last: 'last name', email: 'email' })[k] + '.'); }); }

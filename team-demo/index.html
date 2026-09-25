@@ -2704,7 +2704,8 @@ var Core = (function () {
       }).join('') + '</div>';
   }
   function ticketsEmail(env, s, e, numbers, gifts, opening) {
-    // one ticket shows large; several show smaller so the email stays short (full-size copies are attached) — Tamer 2026-09-24
+    // one ticket shows large; several show smaller so the email stays short — Tamer 2026-09-24. Each ticket appears once:
+    // no attached copies (Tamer 2026-09-24: the email came with 2 copies of the tickets); the calendar invite is the only attachment
     var cids = {}, imgs = '', w = numbers.length > 1 ? 380 : 560;
     numbers.forEach(function (n) {
       var blob = env.ticketImage(n); if (!blob) return;
@@ -2727,8 +2728,7 @@ var Core = (function () {
       '<p style="margin:0 0 6px"><a href="' + calendarLink() + '" style="display:inline-block;background:#3A1F4E;color:#F4EEDC;text-decoration:none;padding:9px 14px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px">Add to Google Calendar</a> &nbsp; <span style="font-size:13px;color:#7A6A5A">(iPhone: open the attached nativity-2027.ics)</span></p>' +
       (receiptLine ? '<p style="font-size:15px">' + receiptLine + '</p>' : '') +
       '<p>See you there,<br>The Wonder Worker Art Team<br>St. Mina Coptic Orthodox Church</p>');
-    var atts = numbers.map(function (n) { return cids['t' + n] ? env.renameBlob(cids['t' + n], 'Nativity-2027-ticket-' + n + '.jpg') : null; }).filter(Boolean);
-    atts.push(env.textBlob('nativity-2027.ics', 'text/calendar', ics()));
+    var atts = [env.textBlob('nativity-2027.ics', 'text/calendar', ics())];
     env.mail({ to: e.email, subject: 'Your tickets · Nativity Celebration 2027 (No. ' + numbers.join(', ') + ')', html: html, inline: cids, attachments: atts, replyTo: s.team_email, name: s.from_name });
   }
 
@@ -2817,6 +2817,7 @@ var Core = (function () {
     }
     var method = /cheque/i.test(p.method) ? 'Cheque' : 'e-Transfer';
     return env.lock(function () {
+      var again = findBySubmit(env, p.submit_id); if (again) return outcome(again, { status: again.proof_status });   // same request sent twice
       if (!fits(env, s, qty, gq)) throw err('Sorry, only ' + Math.max(0, seatsLeft(env, s)) + ' seats are left. You can join the waitlist.');
       var code = orderCode(env, s);
       p.nameForFile = code + ' - ' + who.last + ' - ' + money(amount);
@@ -2827,7 +2828,7 @@ var Core = (function () {
       e.gift_numbers = gq ? takeGift(env, s, gq).join(', ') : '';
       e.status = checked.status === 'ok' ? 'ok' : 'flagged';
       env.append('entries', e);
-      finishSale(env, s, e, 'Thank you for your donation of <b>' + money(amount) + '</b>. Your tickets are below and attached.', checked.reasons, 'online order ' + code);
+      finishSale(env, s, e, 'Thank you for your donation of <b>' + money(amount) + '</b>. Your tickets are below.', checked.reasons, 'online order ' + code);
       return outcome(e, checked, { contact: !!(p.proof && p.proof.contact_me) });
     });
   }
@@ -2836,6 +2837,7 @@ var Core = (function () {
   // Seats are held (hold_days); the buyer gets a QR code by email; a team member scans it, takes the cash and taps Paid.
   function book(env, s, who, qty, gq, amount, p) {
     return env.lock(function () {
+      var again = findBySubmit(env, p.submit_id); if (again) return bookingOutcome(env, again);   // same request sent twice
       if (!fits(env, s, qty, gq)) throw err('Sorry, only ' + Math.max(0, seatsLeft(env, s)) + ' seats are left. You can join the waitlist.');
       var e = mk(env, who, { kind: 'booking', status: 'pending', qty: qty, gift_qty: gq, amount: amount, method: 'Cash', order_code: orderCode(env, s),
         token: env.random(8), submit_id: str(p.submit_id), proof_status: 'none' });
@@ -2853,7 +2855,7 @@ var Core = (function () {
     });
   }
   function bookingOutcome(env, e) {
-    lowSeatsCheck(env, s);   // a booking holds seats too
+    lowSeatsCheck(env, settings(env));   // a booking holds seats too
     return { ok: true, booking: true, order: e.order_code, link: bookingLink(env, e), amount: num(e.amount), qty: num(e.qty), gift_qty: num(e.gift_qty), first: e.first, email: e.email };
   }
 
@@ -2912,6 +2914,7 @@ var Core = (function () {
     if (!p.logo) throw err('Please add your logo.');
     var method = /cheque/i.test(p.method) ? 'Cheque' : 'e-Transfer';
     return env.lock(function () {
+      var again = findBySubmit(env, p.submit_id); if (again) return outcome(again, { status: again.proof_status }, { business: again.business });
       var code = orderCode(env, s);
       p.nameForFile = code + ' - ' + business + ' - ' + money(tier) + ' - sponsor';
       var checked = checkProof(env, p, tier);
@@ -2936,6 +2939,7 @@ var Core = (function () {
     var s = settings(env), who = person(p), amount = num(p.amount);
     if (!(amount > 0)) throw err('Please enter the amount you are giving.');
     return env.lock(function () {
+      var again = findBySubmit(env, p.submit_id); if (again) return outcome(again, null, { raised: raised(env) });   // same request sent twice
       var code = orderCode(env, s);
       // No proof for donations (Tamer 2026-09-24): Hany matches each submission to the bank deposit.
       var e = mk(env, who, { kind: 'donation', amount: amount, method: 'e-Transfer', order_code: code, submit_id: str(p.submit_id), proof_status: 'none' });
@@ -3002,7 +3006,7 @@ var Core = (function () {
       var e = mk(env, who, { kind: 'cash', qty: nums.length, amount: amount, method: method, tickets: nums.join(', '), recorded_by: m.name, member_id: m.id,
         proof_status: 'none', submit_id: str(p.submit_id), note: printed ? 'printed tickets handed over' : 'e-tickets' });
       env.append('entries', e);
-      finishSale(env, s, e, 'Thank you for your donation of <b>' + money(amount) + '</b>, received by ' + esc(m.name) + '. ' + (printed ? 'Here is a copy of your printed ticket' + (nums.length > 1 ? 's' : '') + '.' : 'Your tickets are below and attached.'), [], 'cash sale');
+      finishSale(env, s, e, 'Thank you for your donation of <b>' + money(amount) + '</b>, received by ' + esc(m.name) + '. ' + (printed ? 'Here is a copy of your printed ticket' + (nums.length > 1 ? 's' : '') + '.' : 'Your tickets are below.'), [], 'cash sale');
       return outcome(e, null, { cash: cashHeld(env, m) });
     });
   }
@@ -3049,7 +3053,7 @@ var Core = (function () {
         note: str(e.note + ' booked online, paid ' + env.now().toISOString().slice(0, 10)) };
       env.update('entries', e.id, patch);
       for (var k in patch) e[k] = patch[k];
-      finishSale(env, s, e, 'Thank you for your donation of <b>' + money(amount) + '</b>, received by ' + esc(m.name) + '. Your tickets are below and attached.', [], 'cash booking ' + e.order_code);
+      finishSale(env, s, e, 'Thank you for your donation of <b>' + money(amount) + '</b>, received by ' + esc(m.name) + '. Your tickets are below.', [], 'cash booking ' + e.order_code);
       var r = bookingView(e); r.cash = cashHeld(env, m); return r;
     });
   }
