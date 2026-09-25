@@ -2622,7 +2622,7 @@ var Core = (function () {
   // p.proof = { dataUrl, text (read on the phone), found:[…] (sensitive hits on the phone), skipped, error }
   // One receipt, one order (Tamer 2026-09-24): the same screenshot file, or the same Interac reference number, is refused
   // when it is already on an order that was not cancelled.
-  var DUPLICATE = 'This receipt was already used for another order. Please upload the screenshot (or cheque photo) of this payment.';
+  var DUPLICATE = 'This receipt was already used for another order. Please upload the screenshot of this payment.';
   function fingerprint(s) {   // cyrb53: a quick 53-bit hash, the same in Apps Script, Node and the browser
     var h1 = 0xdeadbeef, h2 = 0x41c6ce57;
     for (var i = 0, ch; i < s.length; i++) { ch = s.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
@@ -2756,7 +2756,7 @@ var Core = (function () {
       '<p style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:1.5px;color:#8A3B2E;margin:18px 0 8px">YOUR TICKET' + (numbers.length > 1 ? 'S' : '') + ' · NO. ' + numbers.join(', ') + '</p>' +
       imgs + doorCodes(env, cids, numbers) +
       '<p style="font-size:15px">' + (numbers.length > 1 ? 'Show them on your phone at the door or print them. Each ticket is one seat.' : 'Show it on your phone at the door or print it.') + '</p>' +
-      (gifts.length ? '<p>Your ' + gifts.length + ' gifted seat' + (gifts.length > 1 ? 's' : '') + ' will be given quietly to a senior or a newcomer. Thank you.</p>' : '') +
+      (gifts.length ? '<p>Your ' + gifts.length + ' gifted seat' + (gifts.length > 1 ? 's' : '') + ' will be given quietly to a senior. Thank you.</p>' : '') +
       '<table style="border-collapse:collapse;font-size:15px;margin:10px 0 14px">' +
       '<tr><td style="padding:3px 12px 3px 0;color:#7A6A5A">When</td><td>' + EVENT.when + '</td></tr>' +
       '<tr><td style="padding:3px 12px 3px 0;color:#7A6A5A">Where</td><td>' + EVENT.where + ' · <a href="' + EVENT.map + '">map</a></td></tr>' +
@@ -2793,7 +2793,8 @@ var Core = (function () {
   }
 
   function person(p) {
-    // Filling in the form registers the buyer; a tax receipt is the default unless they tick "No tax receipt needed".
+    // Filling in the form registers the buyer; everyone gets a tax receipt (the "No tax receipt needed" box was removed 2026-09-25;
+    // team sales from older pages may still send no_receipt).
     var o = { first: str(p.first), last: str(p.last), email: str(p.email).toLowerCase(), phone: str(p.phone),
       receipt: p.no_receipt ? 'N' : 'Y', address: '', city: '', postal: '' };
     if (!o.first || !o.last) throw err('Please enter your first and last name.');
@@ -3141,11 +3142,34 @@ var Core = (function () {
     var s = settings(env), to = str(p.to);
     if (to !== s.error_email && !/^[^@\s]+@stminacalgary\.ca$/i.test(to)) throw err('Test emails go to your own address or a church address only.');
     if (p.which === 'plain') { env.mail({ to: to, subject: 'Test', html: 'Test', replyTo: s.team_email, name: s.from_name }); return { ok: true }; }
+    if (p.which === 'links') {   // Tamer 2026-09-25: "send me an email with the link"
+      var L = [['Get tickets', 'https://thewonderworker.ca'], ['Donate', 'https://thewonderworker.ca/donate'], ['Become a sponsor', 'https://thewonderworker.ca/sponsor'],
+               ['Team guide (for the team)', 'https://thewonderworker.ca/team-help.html']];
+      env.mail({ to: to, subject: 'Nativity Celebration 2027 · the website', replyTo: s.team_email, name: s.from_name,
+        html: shell('<p>Here are the website links:</p><table style="border-collapse:collapse;font-size:15px">' +
+          L.map(function (l) { return '<tr><td style="padding:4px 14px 4px 0;color:#7A6A5A">' + l[0] + '</td><td><a href="' + l[1] + '">' + l[1].replace('https://', '') + '</a></td></tr>'; }).join('') +
+          '</table><p style="font-size:14px;color:#7A6A5A">If this email landed in Spam or Junk, tap <b>Not spam</b> so the next ones arrive.</p>') });
+      return { ok: true };
+    }
     var nums = [1001, 1002, 1003, 1004], amount = nums.length * num(s.suggested);
     var e = { first: 'Tamer', last: 'Test', email: to, amount: amount, method: 'e-Transfer', order_code: 'WW27-TEST', receipt: 'Y', tickets: nums.join(', ') };
     ticketsEmail(env, s, e, nums, [], 'Thank you for your donation of <b>' + money(amount) + '</b>. Your tickets are below.');
     return { ok: true };
   }
+  // ---------- team: paper sales sheet (Tamer 2026-09-25) ----------
+  // The servant writes buyers on the paper sheet (tickets/sales_sheet.py) when it is busy, then uploads one photo: the server
+  // reads it (Google's OCR) and returns rows to check; each row is then recorded as a normal team sale (cash_sale).
+  function memberSheetRead(env, p) {
+    var s = settings(env), m = memberByKey(env, p.key), owner = !m && s.owner_key && str(p.key) === String(s.owner_key);
+    if (!m && !owner) throw err('This link is no longer valid. Please ask Tamer for a new one.');
+    if (!p.image) throw err('Please take a photo of the sheet.');
+    var text = env.ocr(p.image);
+    if (text == null) throw err('The sheet cannot be read here: please type the buyers in.');
+    var r = { ok: true, rows: parseSheet(text) };
+    if (owner && p.debug) r.text = text;
+    return r;
+  }
+  function parseSheet(text) { return []; }
   function ownerResend(env, p) {
     var s = requireOwner(env, p.key);
     var e = env.list('entries').filter(function (x) { return x.id === p.id; })[0]; if (!e) throw err('Not found.');
@@ -3211,7 +3235,7 @@ var Core = (function () {
   }
 
   var ACTIONS = { config: config, order: order, donate: donate, sponsor: sponsor, waitlist: waitlist, ticket_status: ticketStatus,
-    member_me: memberMe, cash_sale: cashSale, member_undo: memberUndo, member_booking: memberBooking, member_paid: memberPaid,
+    member_me: memberMe, cash_sale: cashSale, member_sheet_read: memberSheetRead, member_undo: memberUndo, member_booking: memberBooking, member_paid: memberPaid,
     owner_data: ownerData, owner_member_add: ownerMemberAdd, owner_member_reissue: ownerMemberReissue, owner_member_revoke: ownerMemberRevoke,
     owner_void: ownerVoid, owner_clear: ownerClear, owner_sponsor_show: ownerSponsorShow, owner_handover: ownerHandover, owner_setting: ownerSetting, owner_resend: ownerResend, owner_test_email: ownerTestEmail,
     owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); } };
@@ -3282,13 +3306,13 @@ if (typeof module !== 'undefined') module.exports = Core;
     db.settings.owner_key = OWNER;
     db.members.push({ id: 'm-mina', name: 'Demo team member', key: MINA, active: 'true', created: new Date().toISOString() });
     db.members.push({ id: 'm-george', name: 'George', key: 'demo-member-george-000000000', active: 'true', created: new Date().toISOString() });
-    // a realistic starting point: a few sales, a donation and one cash booking waiting to be paid (all examples)
+    // a realistic starting point: a few sales, an online order and a donation (all examples)
     clock = -60000; var f = Date.now() + clock - 10000, form = f + '.' + ENV.sign(String(f)); clock = 0;
     var h = function (a, p) { return Core.handle(ENV, a, p); };
     h('cash_sale', { key: MINA, first: 'Nabil', last: 'Hanna', email: '', mode: 'printed', numbers: '12-13', amount: 40, method: 'Cash', submit_id: 'seed1' });
     h('cash_sale', { key: 'demo-member-george-000000000', first: 'Sara', last: 'Mikhail', email: 'sara.example@example.com', mode: 'eticket', qty: 3, amount: 60, method: 'Cash', submit_id: 'seed2' });
     h('donate', { first: 'Mary', last: 'Boutros', email: 'mary.example@example.com', amount: 250, form: form, submit_id: 'seed3' });
-    h('order', { first: 'Mark', last: 'Aziz', email: 'mark.example@example.com', qty: 4, gift_qty: 1, amount: 100, method: 'Cash', form: form, submit_id: 'seed4' });
+    h('order', { first: 'Mark', last: 'Aziz', email: 'mark.example@example.com', qty: 4, gift_qty: 1, amount: 100, method: 'e-Transfer', proof: { skipped: true }, form: form, submit_id: 'seed4' });
     db.outbox = []; save();
   }
   db = load(); if (!db || !db.settings) fresh();

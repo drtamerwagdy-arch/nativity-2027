@@ -78,7 +78,7 @@ p{margin:6px 0}
 @media (max-width:860px){.fgrid{grid-template-columns:1fr}.card{padding:18px}.panel2{padding:14px}}
 /* Get tickets on a computer: Tickets + donation, then Gift a seat, in the left column; Your details on the right.
    On a phone the order is the page order: Tickets + donation, Your details, Gift a seat + receipt, Pay. */
-@media (min-width:861px){#buy .b-tix{grid-column:1;grid-row:1}#buy .b-who{grid-column:2;grid-row:1/span 2}#buy .b-gift{grid-column:1;grid-row:2}}
+/* Get tickets: one column next to the steps (Tamer 2026-09-25): tickets + donation · your details · gift · pay */
 label.f{display:block;margin:0 0 12px;font:600 13px/1.3 Inter,system-ui,sans-serif;color:var(--ink)}
 label.f span{font-weight:400;color:var(--soft)}
 label.f input,label.f select,label.f textarea{display:block;width:100%;margin-top:6px;font:16px/1.3 Inter,system-ui,sans-serif;padding:11px 12px;border:1px solid var(--fieldline);border-radius:10px;background:var(--field);color:var(--ink);min-height:46px}
@@ -190,19 +190,10 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 <li>Under <b>New sale</b>, type the buyer's first and last name and email (mobile is optional).</li>
 <li><b>Printed tickets handed over</b>: type their numbers (e.g. <b>12-14</b>). Printed tickets are No. 1 to 377.<br><b>Email e-tickets</b>: choose how many; they get their own numbers (1001 and up) and arrive by email.</li>
 <li>Enter the amount received, choose <b>Cash</b> or <b>Cheque</b>, and submit.</li>
-<li>Buyer doesn't need a tax receipt? Tick <b>Buyer declines a tax receipt</b>.</li>
 </ol>
 <p class="tip">Made a mistake? <b>Undo</b> it under <b>My sales</b> within 15 minutes.</p></section>
 
-<section class="gs"><h2><span class="n">2</span>Collecting a cash booking</h2>
-<ol>
-<li>The buyer shows the QR code from their booking email, or their code (like <b>WW27-0007</b>).</li>
-<li>Tap <b>Scan code</b> and point at the QR, or type the code and tap <b>Find</b>.</li>
-<li>Check the name and the amount, collect the cash, tap <b>Paid</b>. Their tickets are emailed straight away.</li>
-</ol>
-<p class="tip">Bookings hold seats for 10 days. After that the seats go back on sale.</p></section>
-
-<section class="gs"><h2><span class="n">3</span>At the door</h2>
+<section class="gs"><h2><span class="n">2</span>At the door</h2>
 <ol>
 <li>Tap <b>Scan code</b> and point at the ticket's <b>door code</b> (in the ticket email) or the QR on a printed ticket. Typing <b>T377</b> works too.</li>
 <li><b>✓ registered</b>: welcome them in. <b>Not registered</b>: ask Tamer.</li>
@@ -214,7 +205,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 <li>When seats run low a warning shows, and artteam@ gets an email at 50, 25 and 10 seats left. Check with Tamer before handing out more printed tickets.</li>
 </ul></section>
 
-<section class="gs"><h2><span class="n">4</span>Your cash</h2>
+<section class="gs"><h2><span class="n">3</span>Your cash</h2>
 <ul>
 <li><b>Cash you hold</b> (top right) adds up what you collected.</li>
 <li>Give the cash to Hany (treasurer). Tamer records the hand-over and your total goes back down.</li>
@@ -224,7 +215,6 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 <table class="mails">
 <tr><td>Buyer pays by e-Transfer and adds the screenshot</td><td>Tickets by email at once: the ticket pictures, the <b>door codes</b> and a calendar invite.</td></tr>
 <tr><td>Buyer taps "Skip, I've paid"</td><td>Tickets still go out at once; artteam@ gets a <b>Check needed</b> email so the payment can be matched.</td></tr>
-<tr><td>Buyer chooses cash</td><td>A booking email with a QR code; after you tap <b>Paid</b>, the tickets email.</td></tr>
 <tr><td>You record a sale on the spot</td><td>E-tickets: the tickets email. Printed tickets: a copy by email if you typed an email.</td></tr>
 <tr><td>Donation · Sponsorship</td><td>A thank-you email. A sponsor's logo shows on the page after Tamer approves it.</td></tr>
 </table>
