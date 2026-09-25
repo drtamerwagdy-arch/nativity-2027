@@ -357,6 +357,12 @@ a.spp:hover{border-color:#C8843A;background:#FFF8EC}
 .logoprev{display:flex;align-items:center;gap:12px;margin:8px 0}
 .logoprev img{max-width:160px;max-height:100px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px}
 footer{justify-content:center;text-align:center}   /* the two bottom lines centered (Tamer 2026-09-25) */
+/* practice pages only: the gold "Try it" tag over "Upload your screenshot" (Tamer 2026-09-25) */
+.demotag{position:relative;margin:6px 0 14px;background:linear-gradient(135deg,#F6CB5C,#E9B347);color:#0B1530;border-radius:12px;padding:9px 12px;font-size:14px;line-height:1.45;animation:demobob 1.6s ease-in-out infinite}
+.demotag::after{content:"";position:absolute;left:50%;bottom:-9px;margin-left:-9px;border:9px solid transparent;border-bottom:0;border-top-color:#EDBB4F}
+.demotag>b:first-child{display:inline-block;background:#0B1530;color:#F6CB5C;border-radius:6px;padding:1px 7px;margin-right:7px;font-size:12px;letter-spacing:.08em}
+@keyframes demobob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@media (prefers-reduced-motion:reduce){.demotag{animation:none}}
 .pay .howto{display:block;font-size:13.5px;font-weight:400;color:var(--soft);margin:2px 0 10px}
 .warn .shotstep{font-weight:700;font-size:16px;margin:0 0 8px;color:var(--ink)}
 .thermo{height:22px;background:#EDE3D2;border-radius:11px;overflow:hidden;position:relative;margin:8px 0 4px}
@@ -518,7 +524,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.51</span></footer>
+<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.52</span></footer>
 
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3257,13 +3263,13 @@ var qrcode = function() {
     var f = $('#buy');
     [['first', 'Demo'], ['last', 'Demo']].forEach(function (x) { var i = $('[name=' + x[0] + ']', f); if (i && !i.value) i.value = x[1]; });
     var em = $('[name=email]', f); if (em) { em.value = ''; em.placeholder = 'Enter your email to get a demo email of the tickets'; }
-    ['#buy', '#give'].forEach(function (fid) {   // tickets and donations: a sample screenshot with the amount entered
+    ['#buy', '#give', '#spon'].forEach(function (fid) {   // tickets, donations and sponsors: a sample screenshot with the amount entered
       var form = $(fid), up = form && $('[data-proof] [data-upload]', form);
       if (up) up.addEventListener('click', function (ev) {
         ev.preventDefault(); ev.stopPropagation();
         var im = new Image(); im.onload = function () {
           var c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
-          var x = c.getContext('2d'), a = Number($('[name=amount]', form).value) || (fid === '#buy' ? ((Number($('[name=qty]', form).value) || 1) + (Number($('[name=gift_qty]', form).value) || 0)) * CFG.suggested : 20);
+          var x = c.getContext('2d'), a = fid === '#spon' ? (sponAmt() || 300) : Number($('[name=amount]', form).value) || (fid === '#buy' ? ((Number($('[name=qty]', form).value) || 1) + (Number($('[name=gift_qty]', form).value) || 0)) * CFG.suggested : 20);
           x.drawImage(im, 0, 0); x.fillStyle = '#222'; x.font = '600 54px "Avenir Next","Helvetica Neue",Arial,sans-serif'; x.textBaseline = 'alphabetic';
           x.fillText('$' + a.toFixed(2), 87, 700);
           x.fillText(new Date().toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }), 708, 700);
@@ -3274,6 +3280,13 @@ var qrcode = function() {
         };
         im.src = '/demo-assets/etransfer-demo.jpg';
       }, true);
+      // practice pages only (Tamer 2026-09-25): a gold "Try it" tag over the button, so the team taps it and sees how it works
+      if (up) {
+        var tag = document.createElement('div'); tag.className = 'demotag';
+        tag.innerHTML = '<b>TRY IT</b>Tap <b>Upload your screenshot</b>: the practice page adds a sample e-Transfer screenshot, so you can see how the check works.';
+        up.parentNode.insertBefore(tag, up);
+        up.addEventListener('click', function () { tag.remove(); });
+      }
     });
   }
   var buy = $('#buy'), buyProof = new ProofBox($('[data-proof]', buy), { expected: function () { return $('[name=amount]', buy).value; }, done: 'you will get your tickets by email.' }), buyTouched = false;
