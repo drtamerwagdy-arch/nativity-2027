@@ -60,6 +60,7 @@ iframe.page{position:absolute;inset:0;width:100%;height:100%;border:0;background
  *   Proof.sensitive(text, expected) → [{type, label}]   anything personal/bank → reject the image
  *       (expected = the amount paid; any bigger dollar figure is treated as a balance)
  *   Proof.facts(text, ctx) → {recipient, amount, keyword, ref, date}   what the proof shows
+ *   Proof.sensitiveLines(lines, expected) → [label or '' per line]   which lines to scramble on the phone (2026-09-25)
  */
 var Proof = (function () {
   var ALLOWED_EMAILS = ['donations@stminacalgary.ca', 'artteam@stminacalgary.ca'];
@@ -99,6 +100,23 @@ var Proof = (function () {
     if (!seen.balance && ref > 0 && amounts(t).some(function (a) { return a > ref + 0.009; }))
       found.push({ type: 'balance', label: 'another dollar amount (probably your balance)' });
     return found;
+  }
+
+  // The phone scrambles private details before a screenshot is sent (Tamer 2026-09-25: "say it will be scrambled … and actually
+  // build a rule for it"): the same rules, line by line, so only the lines that hold something private are covered and who was
+  // paid, the amount, the date, the message and the reference stay readable. A dollar figure above the amount paid is a balance.
+  function sensitiveLines(lines, expected) {
+    var joined = lines.join('\n'), all = withoutRefs(joined), ref = Math.max(Number(expected) || 0, amountPaid(all)), refs = [], m;
+    REF_RE.lastIndex = 0;
+    while ((m = REF_RE.exec(joined))) refs.push(m[1]);   // a reference on the line under its label is proof, not a card number
+    return lines.map(function (line) {
+      var t = withoutRefs(line), hit = '';
+      refs.forEach(function (r) { t = t.split(r).join(' REF '); });
+      RULES.some(function (r) { if (r.re.test(t)) { hit = r.label; return true; } return false; });
+      if (!hit && (t.match(/[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}/g) || []).some(function (e) { return ALLOWED_EMAILS.indexOf(e.toLowerCase()) < 0; })) hit = 'your own email address';
+      if (!hit && ref > 0 && amounts(t).some(function (a) { return a > ref + 0.009; })) hit = 'your balance';
+      return hit;
+    });
   }
 
   // ---- what the proof shows ----
@@ -157,7 +175,7 @@ var Proof = (function () {
     };
   }
 
-  return { sensitive: sensitive, facts: facts, keyword: keyword, amounts: amounts };
+  return { sensitive: sensitive, sensitiveLines: sensitiveLines, facts: facts, keyword: keyword, amounts: amounts };
 })();
 if (typeof module !== 'undefined') module.exports = Proof;
 </script>
@@ -2620,7 +2638,7 @@ var Core = (function () {
   }
 
   // ---------- proof (screenshot) ----------
-  // p.proof = { dataUrl, text (read on the phone), found:[…] (sensitive hits on the phone), skipped, error }
+  // p.proof = { dataUrl (private lines already scrambled on the phone), text (what stayed readable), scrambled:[labels] }
   // One receipt, one order (Tamer 2026-09-24): the same screenshot file, or the same Interac reference number, is refused
   // when it is already on an order that was not cancelled.
   var DUPLICATE = 'This receipt was already used for another order. Please upload the screenshot of this payment.';
@@ -2634,26 +2652,14 @@ var Core = (function () {
   function receiptUsed(env, test) { return env.list('entries').some(function (e) { return e.status !== 'void' && test(e); }); }
   function checkProof(env, p, expected) {
     var pr = p.proof || {}, res = { status: 'none', url: '', facts: {}, reasons: [], hash: '' };
-    if (pr.skipped || pr.error || !pr.dataUrl) {
-      res.status = pr.skipped ? 'skipped' : 'failed';
-      res.reasons.push(pr.error ? 'upload problem: ' + pr.error
-        : pr.found && pr.found.length ? 'screenshot showed ' + pr.found.join(', ') + ' and was not uploaded'
-        : 'no screenshot uploaded');
-      if (str(pr.comment)) res.reasons.push('buyer\'s note: "' + str(pr.comment).slice(0, 500) + '"');
-      res.reasons.push(pr.contact_me ? 'the buyer asked to be contacted' : 'the buyer did not ask to be contacted');
-      return res;
-    }
+    // every online order needs its screenshot (Tamer 2026-09-25: "Skip, I've paid" is gone)
+    if (!pr.dataUrl) throw err('Please upload the screenshot of your e-Transfer. Every order needs one.');
     res.hash = fingerprint(String(pr.dataUrl));
     if (receiptUsed(env, function (e) { return e.proof_hash === res.hash; })) throw err(DUPLICATE);
     var text = '', serverRead = false;
     try { var t = env.ocr(pr.dataUrl); if (t != null) { text = t; serverRead = true; } } catch (e) { res.reasons.push('server could not read the image'); }
     if (!serverRead) text = str(pr.text);
-    var hits = Proof.sensitive(text, expected);
-    if (hits.length) {                       // never keep an image that shows personal / bank data
-      res.status = 'failed';
-      res.reasons.push('screenshot showed ' + hits.map(function (h) { return h.label; }).join(', ') + ' (image deleted, not stored)');
-      return res;
-    }
+    // what the payment shows is read first, whatever else is on the picture
     var f = Proof.facts(text); res.facts = f;
     if (!text) res.reasons.push('no text could be read from the screenshot');
     else {
@@ -2662,10 +2668,16 @@ var Core = (function () {
       if (!f.keyword) res.reasons.push('message does not mention Wonder Worker / Art Team / Nativity');
       if (f.ref && receiptUsed(env, function (e) { return e.interac_ref && e.interac_ref === f.ref; })) throw err(DUPLICATE);
     }
-    res.url = env.saveProof(pr.dataUrl, p.nameForFile);
+    // the phone scrambles private details before sending; anything private still readable here → the picture is not kept
+    var hits = Proof.sensitive(text, expected);
+    if (hits.length) res.reasons.push('the screenshot still showed ' + hits.map(function (h) { return h.label.replace(/^your /, 'the buyer\'s '); }).join(', ') +
+      ' (not scrambled on the phone), so the picture was deleted and not kept. Read from it first: ' +
+      [f.amount ? money(f.amount) : 'amount not readable', f.recipient ? 'paid to donations@stminacalgary.ca' : 'recipient not visible', f.ref ? 'reference ' + f.ref : 'no reference found'].join(', '));
+    else res.url = env.saveProof(pr.dataUrl, p.nameForFile);
     res.status = res.reasons.length ? 'flagged' : 'ok';
     return res;
   }
+
 
   // ---------- QR code as an HTML table: renders in every email app, needs no outside service ----------
   // QR codes in emails are small PNG pictures (Tamer 2026-09-24): drawn as HTML tables they made a 3-ticket email ~200 KB,
@@ -3382,8 +3394,9 @@ if (typeof module !== 'undefined') module.exports = Core;
     var h = function (a, p) { return Core.handle(ENV, a, p); };
     h('cash_sale', { key: MINA, first: 'Nabil', last: 'Hanna', email: '', mode: 'printed', numbers: '12-13', amount: 40, method: 'Cash', submit_id: 'seed1' });
     h('cash_sale', { key: 'demo-member-george-000000000', first: 'Sara', last: 'Mikhail', email: 'sara.example@example.com', mode: 'eticket', qty: 3, amount: 60, method: 'Cash', submit_id: 'seed2' });
-    h('donate', { first: 'Mary', last: 'Boutros', email: 'mary.example@example.com', amount: 250, form: form, submit_id: 'seed3' });
-    h('order', { first: 'Mark', last: 'Aziz', email: 'mark.example@example.com', qty: 4, gift_qty: 1, amount: 100, method: 'e-Transfer', proof: { skipped: true }, form: form, submit_id: 'seed4' });
+    var shot = function (n, amt) { return { dataUrl: 'data:image/jpeg;base64,c2FtcGxl' + n, text: 'St. Mina donation\ndonations@stminacalgary.ca\nAmount\n$' + amt + '.00\nMessage\nWonder Worker' }; };   // every order needs a screenshot
+    h('donate', { first: 'Mary', last: 'Boutros', email: 'mary.example@example.com', amount: 250, method: 'e-Transfer', proof: shot(3, 250), form: form, submit_id: 'seed3' });
+    h('order', { first: 'Mark', last: 'Aziz', email: 'mark.example@example.com', qty: 4, gift_qty: 1, amount: 100, method: 'e-Transfer', proof: shot(4, 100), form: form, submit_id: 'seed4' });
     db.outbox = []; save();
   }
   fresh();   // Tamer 2026-09-25: every visit starts clean, so the whole team can test it
