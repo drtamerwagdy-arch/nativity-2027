@@ -2497,6 +2497,7 @@ var Core = (function () {
   var GIFT_MIN = 901, GIFT_MAX = 999, ETICKET_MIN = 1001, ETICKET_MAX = 1999;
   var DEFAULTS = {
     capacity: 377, reserved: 0, suggested: 20, goal: 10000, hold_days: 10,
+    given_before: 0,   // given before the website opened, counted toward the goal (Tamer 2026-09-25: $100)
     booking_max: 6,        // pay-in-cash booking: most of the buyer's own tickets per booking (gifted seats not counted)
     min_table: '10,25,45,70',   // least donation for 1, 2, 3, 4 tickets; from 5 tickets the full suggested amount each
     sponsor_tiers: '300,400,500',  // sponsorship amounts (Tamer 2026-09-24)
@@ -2832,8 +2833,8 @@ var Core = (function () {
     env.mail({ to: s.team_email, subject: 'Check needed · ' + (e.order_code || 'ticket ' + e.tickets) + ' · ' + e.first + ' ' + e.last, html: html, replyTo: e.email || s.team_email, name: 'Nativity tickets' });
   }
 
-  // Everything given counts toward the goal: ticket donations, gift seats and plain donations.
-  function raised(env) { return Math.round(live(env).reduce(function (t, e) { return t + num(e.amount); }, 0) * 100) / 100; }
+  // Everything given counts toward the goal: ticket donations, gift seats and plain donations, and what was given before the website
+  function raised(env) { return Math.round((live(env).reduce(function (t, e) { return t + num(e.amount); }, 0) + num(settings(env).given_before)) * 100) / 100; }
 
   // ---------- public: config ----------
   function config(env) {
@@ -3220,7 +3221,7 @@ var Core = (function () {
   }
   function ownerSetting(env, p) {
     requireOwner(env, p.key);
-    var allowed = ['capacity', 'reserved', 'suggested', 'goal', 'sales_close', 'receipt_ticket_value', 'void_numbers', 'paused', 'booking_max', 'min_table', 'order_max', 'hold_days', 'sponsor_tiers', 'gift_seats', 'team_page_url', 'owner_page_url', 'low_seats'];
+    var allowed = ['capacity', 'reserved', 'suggested', 'goal', 'given_before', 'sales_close', 'receipt_ticket_value', 'void_numbers', 'paused', 'booking_max', 'min_table', 'order_max', 'hold_days', 'sponsor_tiers', 'gift_seats', 'team_page_url', 'owner_page_url', 'low_seats'];
     if (allowed.indexOf(p.name) < 0) throw err('That setting cannot be changed here.');
     env.setSetting(p.name, str(p.value)); return { ok: true };
   }
@@ -3362,7 +3363,7 @@ var Core = (function () {
     var names = {}; env.list('members').forEach(function (m) { names[m.id] = m.name; });
     var sc = seatCount(env, s), tv = num(s.receipt_ticket_value);
     var t = { capacity: num(s.capacity), reserved: num(s.reserved), seatsUsed: Object.keys(usedNumbers(env)).length, seatsLeft: sc.left, printed: sc.printed, eticket: sc.eticket,
-      gifts: sc.gift, goal: num(s.goal), total: 0, byKind: {}, byMethod: {} };
+      gifts: sc.gift, goal: num(s.goal), total: num(s.given_before), givenBefore: num(s.given_before), byKind: {}, byMethod: {} };
     live(env).forEach(function (e) { t.total += num(e.amount); t.byMethod[e.method] = (t.byMethod[e.method] || 0) + num(e.amount); t.byKind[e.kind] = (t.byKind[e.kind] || 0) + num(e.amount); });
     var rows = env.list('entries').filter(function (e) { return e.kind !== 'waitlist' && e.kind !== 'booking'; }).map(function (e) {
       return { id: e.id, created: e.created, date: localDate(e.created), kind: e.kind, for: EXPORT_COLS.kind[1](e), status: e.status, first: e.first, last: e.last, email: e.email, phone: e.phone,
