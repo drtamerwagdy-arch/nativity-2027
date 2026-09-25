@@ -2495,6 +2495,8 @@ var Core = (function () {
   var DEFAULTS = {
     capacity: 377, reserved: 0, suggested: 20, goal: 10000, hold_days: 10,
     given_before: 0,   // given before the website opened, counted toward the goal (Tamer 2026-09-25: $100)
+    tickets_pdf: 'N',   // the tickets PDF in the tickets email: off (Tamer 2026-09-25: with it, the email went to Yahoo's spam); 'Y' once DKIM/DMARC are set
+    wallet_on: 'N', wallet_pass_type: '', wallet_team: '',   // Apple Wallet passes (Tamer 2026-09-25): 'Y' once the church's Apple certificate is in
     booking_max: 6,        // pay-in-cash booking: most of the buyer's own tickets per booking (gifted seats not counted)
     min_table: '10,25,45,70',   // least donation for 1, 2, 3, 4 tickets; from 5 tickets the full suggested amount each
     sponsor_tiers: '300,400,500',  // sponsorship amounts (Tamer 2026-09-24)
@@ -2778,11 +2780,13 @@ var Core = (function () {
       '<tr><td style="padding:3px 12px 3px 0;color:#7A6A5A">Where</td><td>' + EVENT.where + ' · <a href="' + EVENT.map + '">map</a></td></tr>' +
       '<tr><td style="padding:3px 12px 3px 0;color:#7A6A5A">Donation</td><td>' + money(e.amount) + ' by ' + esc(e.method) + (e.order_code ? ' · ref. ' + esc(e.order_code) : '') + '</td></tr>' +
       '</table>' +
+      (!demo && walletOn(env, s) ? '<p style="font-size:15px">On an iPhone, tap the attached ticket' + (numbers.length > 1 ? 's' : '') + ' (Ticket ' + numbers[0] + '.pkpass' + (numbers.length > 1 ? ' …' : '') + ') to add ' + (numbers.length > 1 ? 'them' : 'it') + ' to Apple Wallet.</p>' : '') +
       '<p style="margin:0 0 6px"><a href="' + calendarLink() + '" style="display:inline-block;background:#1A2D57;color:#FFF3D6;text-decoration:none;padding:9px 14px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px">Add to Google Calendar</a> &nbsp; <span style="font-size:13px;color:#7A6A5A">(iPhone: open the attached nativity-2027.ics)</span></p>' +
       (receiptLine ? '<p style="font-size:15px">' + receiptLine + '</p>' : '') +
       '<p>See you there,<br>The Wonder Worker Art Team<br>St. Mina Coptic Orthodox Church</p>');
     var atts = [env.textBlob('nativity-2027.ics', 'text/calendar', ics())];
-    var pdf = ticketsPdf(env, e, numbers, cids, demo); if (pdf) atts.push(pdf);   // the tickets as a PDF too (Tamer 2026-09-25)
+    if (String(s.tickets_pdf).toUpperCase() === 'Y') { var pdf = ticketsPdf(env, e, numbers, cids, demo); if (pdf) atts.push(pdf); }   // the tickets as a PDF too, when switched on
+    if (!demo && walletOn(env, s)) numbers.forEach(function (n) { atts.push(walletPass(env, s, e, n)); });   // and one Apple Wallet pass per ticket
     env.mail({ to: e.email, subject: (demo ? 'DEMO · ' : '') + 'Your tickets · Nativity Celebration 2027 (' + (demo ? numbers.map(lab).join(', ') : 'No. ' + numbers.join(', ')) + ')', html: html, inline: cids, attachments: atts, replyTo: s.team_email, name: s.from_name });
   }
 
@@ -2807,6 +2811,40 @@ var Core = (function () {
     }).join('');
     var name = (demo ? 'DEMO - ' : '') + 'Nativity 2027 tickets - ' + (e.order_code || (demo ? 'DEMO ' : 'No. ') + numbers.join(', ')) + '.pdf';
     return env.pdfFromHtml('<html><head><meta charset="utf-8"></head><body style="margin:0">' + pages + '</body></html>', name);
+  }
+  // ---------- Apple Wallet (Tamer 2026-09-25): one pass per ticket, attached to the tickets email ----------
+  // Off until the church's Pass Type ID certificate is in (Script Properties, owner_wallet_setup) and wallet_on is 'Y'.
+  // The barcode is the same door code as the email's QR (WW27-T + number); the wording is the ticket's settled wording.
+  function walletOn(env, s) {
+    return String(s.wallet_on).toUpperCase() === 'Y' && !!str(s.wallet_pass_type) && !!str(s.wallet_team) && !!env.walletPkpass && env.walletReady();
+  }
+  function walletPass(env, s, e, n) {
+    var who = str((e.first || '') + ' ' + (e.last || ''));
+    var pass = { formatVersion: 1, passTypeIdentifier: str(s.wallet_pass_type), teamIdentifier: str(s.wallet_team), serialNumber: 'WW27-T' + n,
+      organizationName: 'St. Mina Coptic Orthodox Church', description: 'Nativity Celebration 2027 · ticket No. ' + n, logoText: 'Nativity 2027',
+      foregroundColor: 'rgb(255, 243, 214)', backgroundColor: 'rgb(11, 21, 48)', labelColor: 'rgb(246, 203, 92)',
+      relevantDate: '2027-01-30T15:00:00-07:00', expirationDate: '2027-01-31T06:00:00-07:00',
+      barcodes: [{ format: 'PKBarcodeFormatQR', message: 'WW27-T' + n, messageEncoding: 'iso-8859-1', altText: 'No. ' + n }],
+      eventTicket: {
+        primaryFields: [{ key: 'event', label: 'SATURDAY, JANUARY 30, 2027', value: 'Nativity Celebration' }],
+        secondaryFields: [{ key: 'ticket', label: 'TICKET', value: 'No. ' + n }, { key: 'time', label: 'TIME', value: '3:00 – 8:00 PM', textAlignment: 'PKTextAlignmentRight' }],
+        auxiliaryFields: [{ key: 'where', label: 'WHERE', value: 'Bert Church LIVE Theatre, Airdrie' }].concat(who ? [{ key: 'name', label: 'NAME', value: who, textAlignment: 'PKTextAlignmentRight' }] : []),
+        backFields: [
+          { key: 'program', label: 'PROGRAMME', value: 'The choir: From angels to adults\nSunday school\'s play: Worth It — St. Paul\'s Journeys\nAdult play: "ماليش دعوة" · Malish Da3wa\nFollowed by Tasbeha' },
+          { key: 'when', label: 'WHEN', value: EVENT.when },
+          { key: 'address', label: 'WHERE', value: EVENT.where },
+          { key: 'door', label: 'AT THE DOOR', value: 'Show this pass. One seat per ticket.' }
+        ].concat(e.order_code ? [{ key: 'ref', label: 'REFERENCE', value: e.order_code }] : []).concat([{ key: 'contact', label: 'QUESTIONS', value: 'artteam@stminacalgary.ca' }])
+      }
+    };
+    return env.walletPkpass(pass, 'Ticket ' + n + '.pkpass');
+  }
+  // Tamer's dashboard key only: a sample pass for ticket 1001 sent back to the caller (nothing emailed), to try on an iPhone
+  function ownerTestPass(env, p) {
+    var s = requireOwner(env, p.key);
+    if (!env.walletPkpass || !env.walletReady()) throw err('The Apple Wallet certificate is not set up yet.');
+    if (!str(s.wallet_pass_type) || !str(s.wallet_team)) throw err('Set wallet_pass_type and wallet_team first.');
+    return { ok: true, pass: env.dataUri(walletPass(env, s, { first: 'Sample', last: 'Buyer', order_code: 'WW27-TEST' }, 1001)) };
   }
   // Tamer's dashboard key only: a sample tickets PDF sent back to the caller (nothing emailed), to check how it looks
   function ownerTestPdf(env, p) {
@@ -3218,7 +3256,7 @@ var Core = (function () {
   }
   function ownerSetting(env, p) {
     requireOwner(env, p.key);
-    var allowed = ['capacity', 'reserved', 'suggested', 'goal', 'given_before', 'sales_close', 'receipt_ticket_value', 'void_numbers', 'paused', 'booking_max', 'min_table', 'order_max', 'hold_days', 'sponsor_tiers', 'gift_seats', 'team_page_url', 'owner_page_url', 'low_seats'];
+    var allowed = ['capacity', 'reserved', 'suggested', 'goal', 'given_before', 'tickets_pdf', 'wallet_on', 'wallet_pass_type', 'wallet_team', 'sales_close', 'receipt_ticket_value', 'void_numbers', 'paused', 'booking_max', 'min_table', 'order_max', 'hold_days', 'sponsor_tiers', 'gift_seats', 'team_page_url', 'owner_page_url', 'low_seats'];
     if (allowed.indexOf(p.name) < 0) throw err('That setting cannot be changed here.');
     env.setSetting(p.name, str(p.value)); return { ok: true };
   }
@@ -3375,7 +3413,7 @@ var Core = (function () {
     member_me: memberMe, cash_sale: cashSale, demo_order: demoOrder, member_sheet_read: memberSheetRead, member_undo: memberUndo, member_booking: memberBooking, member_paid: memberPaid,
     owner_data: ownerData, owner_member_add: ownerMemberAdd, owner_member_reissue: ownerMemberReissue, owner_member_revoke: ownerMemberRevoke,
     owner_void: ownerVoid, owner_clear: ownerClear, owner_sponsor_show: ownerSponsorShow, owner_handover: ownerHandover, owner_setting: ownerSetting, owner_resend: ownerResend, owner_test_email: ownerTestEmail,
-    owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); }, owner_sheet_key: ownerSheetKey, sheet_rows: sheetRows, owner_test_pdf: ownerTestPdf };
+    owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); }, owner_sheet_key: ownerSheetKey, sheet_rows: sheetRows, owner_test_pdf: ownerTestPdf, owner_test_pass: ownerTestPass };
 
   var PUBLIC_WRITES = { order: 1, donate: 1, sponsor: 1, waitlist: 1 };
   function handle(env, action, payload) {

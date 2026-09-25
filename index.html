@@ -447,7 +447,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
     <div class="fgrid">
       <div class="panel2 g-amt">
         <h3>Your donation</h3>
-        <div class="money"><b>$</b><input name="amount" id="g-amount" type="text" inputmode="decimal" autocomplete="off" data-money aria-label="Donation amount" placeholder="50"></div>
+        <div class="money"><b>$</b><input name="amount" id="g-amount" type="text" inputmode="decimal" autocomplete="off" data-money aria-label="Donation amount"></div>
         <div class="pills qamts" data-quick></div>
         <p class="okbox hide" data-preview></p>
       </div>
@@ -518,7 +518,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.48</span></footer>
+<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.49</span></footer>
 
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3485,6 +3485,8 @@ var qrcode = function() {
         (r.order ? '<p class="hint">Reference ' + esc(r.order) + '</p>' : '') +
         (r.demo ? '<div class="okbox"><b>This was a demo:</b> nothing was recorded. The demo email with your tickets is on its way from artteam@stminacalgary.ca (check Spam or Junk too).</div>' : '');
     }
+    // Tamer 2026-09-25: "if you didn't get your email, please send us an email to artteam…"
+    if (action !== 'waitlist') h += '<p>If you didn\'t get your email, please email us at <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a>.</p>';
     if (r.contact) h += '<div class="okbox">Someone from the Wonder Worker Art Team will get in touch with you.</div>';
     h += '<p><button type="button" class="btn ghost" onclick="location.reload()">Back to start</button></p>';
     $('#done').innerHTML = h; show('done'); window.scrollTo({ top: 0, behavior: 'smooth' });
