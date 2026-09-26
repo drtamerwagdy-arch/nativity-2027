@@ -254,7 +254,6 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 .lead{margin:-8px 0 16px;font-size:16px;line-height:1.5;color:var(--ink)}
 #buy .sugh{font-size:clamp(22px,2.4vw,28px)}
 #buy .sugh .hl{white-space:nowrap}
-@media (min-width:761px){#buy .qrow.don>.sugtag{justify-self:start}}   /* the tag keeps its size now the form is wider */
 /* Get tickets on a computer: the form, and a narrow column on the right with the sponsors and the gold box (Tamer 2026-09-25) */
 @media (min-width:900px){
   #buy{display:grid;grid-template-columns:minmax(0,1fr) 250px;column-gap:22px;align-items:start}
@@ -272,29 +271,16 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 #buy .qrow .money{display:flex;align-items:center;gap:6px;border:2px solid #C8843A;border-radius:12px;background:#fff;padding:0 14px;flex-wrap:nowrap}   /* gold edge like "Feeling generous today?" (Tamer 2026-09-25) */
 #buy .qrow .money b{font:800 22px/1 Inter,system-ui,sans-serif;color:var(--soft)}
 #buy .qrow .money input{border:0;width:100%;padding:0;font:800 22px/1 Inter,system-ui,sans-serif;text-align:center;box-shadow:none}
-/* the suggested donation (Tamer 2026-09-25, mockup A): a gold price tag next to the box that follows the tickets and swings in each
-   time the number changes; tap it to use it. Under it a shiny gold banner. The box itself starts empty and never fills itself in. */
-#buy .qrow.don{grid-template-columns:270px 172px auto}
-/* on a phone (Tamer 2026-09-25): under the amount box on the right, as wide as the box, pointing up at it and swinging from that point */
-@media (max-width:760px){#buy .qrow.don{grid-template-columns:1fr auto}
-  #buy .qrow.don>.sugtag{grid-column:2;justify-self:stretch;height:auto;padding:20px 8px 9px;align-items:center;text-align:center;
-    clip-path:polygon(0 13px,50% 0,100% 13px,100% 100%,0 100%);transform-origin:50% 8px}
-  #buy .qrow.don>.sugtag::before{left:50%;top:8px;margin:0 0 0 -3.5px}
-  #buy .qrow.don>.sugtag b{font-size:17px}
-  #buy .qrow.don>.sugtag.swing{animation-name:tagdrop}}
-@keyframes tagdrop{0%{opacity:0;transform:translateY(-16px) rotate(0)}30%{opacity:1;transform:translateY(0) rotate(-12deg)}50%{transform:rotate(8deg)}68%{transform:rotate(-5deg)}84%{transform:rotate(2deg)}100%{transform:none}}
-.sugtag{position:relative;display:inline-flex;flex-direction:column;justify-content:center;height:50px;padding:0 16px 0 26px;background:linear-gradient(135deg,#F6CB5C,#E9B347);color:#0B1530;border:0;cursor:pointer;
-  clip-path:polygon(14px 0,100% 0,100% 100%,14px 100%,0 50%);font:inherit;text-align:left;transform-origin:12px 50%}
-.sugtag::before{content:"";position:absolute;left:12px;top:50%;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;background:#fff}
-.sugtag small{font:800 10.5px/1 Inter,sans-serif;letter-spacing:.12em;color:#7A4B12}.sugtag b{font:800 19px/1.1 Inter,sans-serif;white-space:nowrap}
-.sugtag.swing{animation:tagin 1s cubic-bezier(.3,1.3,.5,1) both}
-@keyframes tagin{0%{opacity:0;transform:translateX(46px) rotate(0)}30%{opacity:1;transform:translateX(0) rotate(-16deg)}50%{transform:rotate(10deg)}68%{transform:rotate(-6deg)}84%{transform:rotate(3deg)}100%{transform:none}}
+/* the suggested donation (Tamer 2026-09-26, chosen on the tryout page): no price tag any more — the shiny gold banner
+   is the one display. Tickets start at 1, so it always carries the amount ("★ Suggested $40 or more for your 2 tickets ★
+   · Tap here to fill it in"); tapping it fills the box. The box itself starts empty and never fills itself in. */
+.sgline[role=button]{cursor:pointer}
 .sgline{margin:14px 0 0;border-radius:12px;padding:11px 14px;font:800 15.5px/1.35 Inter,sans-serif;position:relative;overflow:hidden;text-align:center;
   background:linear-gradient(100deg,#F6CB5C,#FFE7A3 45%,#F6CB5C);color:#0B1530;border:1px solid #C8843A;box-shadow:0 3px 10px rgba(200,132,58,.25)}
 .sgline::after{content:"";position:absolute;top:0;bottom:0;width:60px;left:-80px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.75),transparent);transform:skewX(-20deg);animation:shine 3.2s ease-in-out infinite}
 @keyframes shine{0%{left:-80px}60%,100%{left:110%}}
 .sgline small{display:block;font-weight:600;font-size:13px;opacity:.85;margin-top:2px}
-@media (prefers-reduced-motion:reduce){.sugtag.swing,.sgline::after{animation:none}}
+@media (prefers-reduced-motion:reduce){.sgline::after{animation:none}}
 @media (max-width:440px){#buy .qrow{grid-template-columns:1fr 150px;gap:10px}#buy .qrow .stepper,#buy .qrow .money{width:150px;height:48px}
   #buy .qrow .stepper button{width:44px}#buy .qrow .stepper input{width:60px}#buy .big{font-size:18px}}
 /* Donate: the goal bar across the top, the form below */
@@ -462,10 +448,9 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
     </div>
     <div class="fgrid">
       <div class="panel2 b-tix">
-        <div class="row qrow"><span class="big">Tickets</span><div class="stepper"><button type="button" data-d="-1" aria-label="fewer">−</button><input name="qty" id="b-qty" type="number" min="0" max="20" value="0" inputmode="numeric" aria-label="Tickets"><button type="button" data-d="1" aria-label="more">+</button></div></div>
-        <div class="row qrow don"><span class="big">Your donation</span><div class="money"><b>$</b><input name="amount" id="b-amount" type="text" inputmode="decimal" autocomplete="off" data-money aria-label="Donation amount"></div>
-          <button type="button" class="sugtag hide" data-sugtag aria-live="polite"><small>SUGGESTED</small><b data-sugamt></b></button></div>
-        <div class="sgline" data-suggest>★ Suggested $20 per ticket ★<small>Every dollar beyond that supports the service.</small></div>   <!-- on the page from the first moment (Tamer 2026-09-25) -->
+        <div class="row qrow"><span class="big">Tickets</span><div class="stepper"><button type="button" data-d="-1" aria-label="fewer">−</button><input name="qty" id="b-qty" type="number" min="1" max="20" value="1" inputmode="numeric" aria-label="Tickets"><button type="button" data-d="1" aria-label="more">+</button></div></div>
+        <div class="row qrow don"><span class="big">Your donation</span><div class="money"><b>$</b><input name="amount" id="b-amount" type="text" inputmode="decimal" autocomplete="off" data-money aria-label="Donation amount"></div></div>
+        <div class="sgline" data-suggest role="button" tabindex="0" aria-live="polite">★ Suggested $20 or more for your 1 ticket ★<small>Tap here to fill it in · every dollar beyond supports the service.</small></div>
       </div>
       <div class="panel2 b-who"><div data-person></div></div>
       <div class="panel2 b-gift">
@@ -556,7 +541,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.72</span></footer>
+<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.73</span></footer>
 
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3243,7 +3228,7 @@ var qrcode = function() {
     try { if (/[?&]v=/.test(location.search)) { var u0 = new URL(location.href); u0.searchParams.delete('v'); history.replaceState(null, '', u0.pathname + u0.search + u0.hash); } } catch (x) { }
     if (window.WW_DEMO || !/(^|\.)thewonderworker\.ca$/.test(location.hostname)) return;
     fetch('/version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
-      if (!j || !j.v || j.v === '1.72') return;
+      if (!j || !j.v || j.v === '1.73') return;
       try { var k = 'ww27-updated-' + j.v; if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (x) { return; }
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () { });
@@ -3401,23 +3386,25 @@ var qrcode = function() {
     var a = Number($('[name=amount]', buy).value) || 0, lim = '', least = minimumFor(q, g);
     if (buyTouched && q >= 1 && a && a + 0.001 < least) lim = 'The minimum donation for ' + q + ' ticket' + (q > 1 ? 's' : '') + (g ? ' and ' + g + ' gifted seat' + (g > 1 ? 's' : '') : '') + ' is ' + money(least) + '.';
     $('[data-err]', buy).textContent = lim;
-    // Tamer 2026-09-25: "Suggested $20 per ticket" under the donation; a gifted seat is a $20 donation (not "suggested")
-    $('[data-suggest]', buy).innerHTML = '★ Suggested ' + money(CFG.suggested) + ' per ticket ★<small>Every dollar beyond that supports the service.</small>';
+    // Tamer 2026-09-26 (chosen on the tryout page): the shiny banner is the ONE display and always carries the amount
+    // (tickets start at 1); tapping it fills the box; the box never fills itself in; a gifted seat is a $20 donation.
+    $('[data-suggest]', buy).innerHTML = q >= 1 || g >= 1
+      ? '★ Suggested ' + money(s) + ' or more for your ' + (q >= 1 ? q + ' ticket' + (q > 1 ? 's' : '') : '') +
+        (q >= 1 && g >= 1 ? ' and ' : '') + (g >= 1 ? g + ' gifted seat' + (g > 1 ? 's' : '') : '') +
+        ' ★<small>Tap here to fill it in · every dollar beyond supports the service.</small>'
+      : '★ Suggested ' + money(CFG.suggested) + ' per ticket ★<small>Every dollar beyond that supports the service.</small>';
     $('[data-giftnote]', buy).textContent = money(CFG.suggested) + ' donation · optional';
     $('[data-sughead]', buy).textContent = money(CFG.suggested);
-    // the tag shows only once tickets are added (the page opens at 0), follows them and swings in again whenever the amount
-    // changes (Tamer 2026-09-25); the donation box is never filled in by itself; the gold banner is always there
-    var tag = $('[data-sugtag]', buy), amt = money(s) + ' or more';
-    if (q < 1) { tag.classList.add('hide'); $('[data-sugamt]', tag).textContent = ''; }
-    else if ($('[data-sugamt]', tag).textContent !== amt) { tag.classList.remove('hide'); $('[data-sugamt]', tag).textContent = amt; tag.classList.remove('swing'); void tag.offsetWidth; tag.classList.add('swing'); }
     $('[data-payhow]', buy).innerHTML = payHow();
     copyBtn(buy); paySync(buy);
   }
   $('[name=amount]', buy).addEventListener('input', function () { buyTouched = true; buySync(); });
-  $('[data-sugtag]', buy).addEventListener('click', function () {   // tap the tag: use the suggested amount
+  $('[data-suggest]', buy).addEventListener('click', function () {   // tap the banner: use the suggested amount
     var q = Number($('[name=qty]', buy).value) || 0, g = Number($('[name=gift_qty]', buy).value) || 0;
+    if (q < 1 && g < 1) return;
     $('[name=amount]', buy).value = (q + g) * CFG.suggested; buyTouched = true; buySync();
   });
+  $('[data-suggest]', buy).addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.click(); } });
   buy.addEventListener('input', function (e) { if (e.target.name === 'qty' || e.target.name === 'gift_qty') buySync(); });
   buy.addEventListener('change', function (e) { if (e.target.name === 'method') buySync(); });
   submit(buy, 'order', function (p) {
