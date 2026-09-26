@@ -366,7 +366,8 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
 .payopt .pl{flex:1}
 .payopt .pl b{color:var(--ink)}.payopt .pl small{color:var(--soft);opacity:1}
 .payopt.sel{border-color:#2B6BE4;background:#F5F9FF}
-.payopt.sel .pr{border-color:#2B6BE4}.payopt.sel .pr::after{content:"";width:13px;height:13px;border-radius:50%;background:#2B6BE4}
+.payopt.sel .pr{border-color:#2B6BE4}
+.payopt.on .pr::after{content:"";width:13px;height:13px;border-radius:50%;background:#2B6BE4}   /* the dot only once pressed */
 .payopt:focus-visible{outline:3px solid #F6CB5C;outline-offset:2px}
 .payd.nocard .paysub,.payd.nocard .payopt{display:none}
 .btn.paycard{background:#0B1530}.btn.paycard:hover{background:#1A2D57}
@@ -3719,11 +3720,11 @@ var qrcode = function() {
       api('practice_pay', { id: id }).then(function (r) { z.remove(); done(action, r); }, function (x) { z.remove(); $('[data-err]', form).textContent = x.message; });
     };
   }
-  function payOpen(form, mode) {   // 'card', 'et' or 'none' (nothing pressed yet): the check marks and the two parts follow
+  function payOpen(form, mode) {   // 'card', 'et' or 'none' (nothing pressed yet: card highlighted, its dot still empty)
     var et = $('[data-etpart]', form), cp = $('[data-cardpart]', form), oc = $('[data-optcard]', form), oe = $('[data-optet]', form);
     et.classList.toggle('hide', mode !== 'et'); if (cp) cp.classList.toggle('hide', mode !== 'card');
-    if (oc) { oc.classList.toggle('sel', mode !== 'et'); oc.setAttribute('aria-expanded', mode === 'card' ? 'true' : 'false'); }
-    if (oe) { oe.classList.toggle('sel', mode === 'et'); oe.setAttribute('aria-expanded', mode === 'et' ? 'true' : 'false'); }
+    if (oc) { oc.classList.toggle('sel', mode !== 'et'); oc.classList.toggle('on', mode === 'card'); oc.setAttribute('aria-expanded', mode === 'card' ? 'true' : 'false'); }
+    if (oe) { oe.classList.toggle('sel', mode === 'et'); oe.classList.toggle('on', mode === 'et'); oe.setAttribute('aria-expanded', mode === 'et' ? 'true' : 'false'); }
   }
   function payState(form) {   // what is open right now (kept across the settings arriving)
     return !$('[data-etpart]', form).classList.contains('hide') ? 'et'
