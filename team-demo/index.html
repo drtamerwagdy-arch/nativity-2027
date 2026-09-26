@@ -2803,7 +2803,10 @@ var Core = (function () {
       (demo ? '<p style="background:#FDECEA;border:2px solid #C0392B;border-radius:8px;padding:10px 12px;color:#8A1C12"><b>DEMO ONLY.</b> These are not real tickets and nothing was recorded. This shows what a buyer receives.</p>' : '') +
       '<p>Dear ' + esc(e.first) + ',</p><p>' + opening + '</p>' +
       '<p style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:1.5px;color:#8A3B2E;margin:18px 0 8px;text-align:center">YOUR TICKET' + (numbers.length > 1 ? 'S' : '') + ' · ' + (demo ? numbers.map(lab).join(', ') : 'NO. ' + numbers.join(', ')) + '</p>' +
-      imgs + '<p style="text-align:center;font-family:Arial,sans-serif;font-size:13px;color:#7A6A5A;margin:-4px 0 12px">To save ' + (numbers.length > 1 ? 'a ticket' : 'your ticket') + ' on your phone, press and hold it, then tap Save.</p>' +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 12px"><tr><td align="center">' +
+        '<div style="display:inline-block;background:#FFF6E3;border:1px solid #C8843A;border-radius:10px;padding:10px 16px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;color:#0B1530">&#128190; To save ' + (numbers.length > 1 ? 'your tickets' : 'your ticket') + ': press and hold the picture, then tap <span style="color:#8A3B2E">Save</span>.</div>' +
+      '</td></tr></table>' +
+      imgs +
       // e-tickets carry their own big door code at the end of the picture (v7, Tamer 2026-09-26): no separate section.
       // Demo and printed-ticket copies keep it (their pictures have only the small code).
       (numbers.some(function (n) { return Number(n) < 1000 || demo; }) ? doorCodes(env, cids, numbers, demo) : '') +
