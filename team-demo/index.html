@@ -2499,6 +2499,7 @@ var Core = (function () {
     capacity: 377, reserved: 0, suggested: 20, goal: 10000, hold_days: 10,
     given_before: 0,   // given before the website opened, counted toward the goal (Tamer 2026-09-25: $100)
     square_on: 'N', square_env: 'sandbox', square_location_id: '', square_fee_pct: 2.8, square_fee_fixed: 0.30, site_url: 'https://thewonderworker.ca/',   // card payments (Square), off until connected
+    payments_email: 'artteam+payments@stminacalgary.ca',   // one email per payment (Tamer 2026-09-25); 'off' = none
     tickets_pdf: 'N',   // the tickets PDF in the tickets email: off (Tamer 2026-09-25: with it, the email went to Yahoo's spam); 'Y' once DKIM/DMARC are set
     wallet_on: 'N', wallet_pass_type: '', wallet_team: '',   // Apple Wallet passes (Tamer 2026-09-25): 'Y' once the church's Apple certificate is in
     booking_max: 6,        // pay-in-cash booking: most of the buyer's own tickets per booking (gifted seats not counted)
@@ -3045,9 +3046,26 @@ var Core = (function () {
       catch (x) { reasons = reasons.concat(['tickets email failed: ' + x.message]); }
     }
     if (reasons.length) {
-      env.update('entries', e.id, { status: 'flagged', flags: reasons.join(' | ') });
+      env.update('entries', e.id, { status: 'flagged', flags: reasons.join(' | ') }); e.status = 'flagged';
       teamAlert(env, s, e, reasons, what);
     }
+    paymentNote(env, s, e);
+  }
+  // One short email per payment to the team's payments address (Tamer 2026-09-25: "email to artteam with each payment … a rule so all
+  // those emails go to a certain category so it doesn't clog"): artteam+payments@ arrives in artteam@'s inbox, and a Gmail filter on
+  // that address files it under its own label, out of the inbox. Tickets (online, card, team), donations and sponsorships.
+  function paymentNote(env, s, e) {
+    var to = str(s.payments_email); if (!to || /^(off|no|n)$/i.test(to)) return;
+    try {
+      var who = str((e.first || '') + ' ' + (e.last || '')) || e.business || '', n = list(e.tickets).length;
+      var what = e.kind === 'donation' ? 'donation' : e.kind === 'sponsor' ? 'sponsorship' + (e.silent === 'Y' ? ' (silent)' : '') : n + ' ticket' + (n === 1 ? '' : 's');
+      var rows = [['Name', who], ['Email', e.email], ['For', what + (e.kind === 'sponsor' && e.business ? ' · ' + e.business : '')],
+        ['Amount', money(e.amount) + (num(e.card_fee) ? ' (+ card fee ' + money(e.card_fee) + ', paid by the buyer)' : '')], ['Paid by', e.method],
+        ['Tickets', [e.tickets, e.gift_numbers ? 'gift seats ' + e.gift_numbers : ''].filter(Boolean).join(' · ')], ['Reference', e.order_code], ['Recorded by', e.recorded_by],
+        ['Status', e.status === 'flagged' ? 'needs a look (see the "Check needed" email)' : 'ok']].filter(function (r) { return str(r[1]); });
+      env.mail({ to: to, subject: 'Payment · ' + money(e.amount) + ' · ' + (who || 'no name') + ' · ' + what + (e.order_code ? ' · ' + e.order_code : ''), name: 'Nativity payments', replyTo: e.email || s.team_email,
+        html: shell('<table style="border-collapse:collapse;font-size:15px">' + rows.map(function (r) { return '<tr><td style="padding:3px 14px 3px 0;color:#7A6A5A">' + r[0] + '</td><td>' + esc(r[1]) + '</td></tr>'; }).join('') + '</table>') });
+    } catch (x) { if (env.log) env.log('payment email failed: ' + x.message); }
   }
 
   // ---------- public: Become a sponsor ($300 / $400 / $500 or any amount above; payment proof; logo; shown on the tickets page after Tamer approves) ----------
@@ -3101,6 +3119,7 @@ var Core = (function () {
           '<p>The Wonder Worker Art Team<br>St. Mina Coptic Orthodox Church</p>') });
       teamAlert(env, s, e, [silent ? 'new SILENT sponsor: ' + label + ' (' + money(tier) + '). Do not show the name anywhere.'
         : 'new sponsor: ' + business + ' (' + money(tier) + ')' + (showAs ? '; show the name as: "' + showAs + '"' : '') + '. Please look at the logo and tap "Show on page" on your dashboard.'].concat(reasons), 'sponsor ' + code);
+    paymentNote(env, s, e);
   }
 
   // ---------- public: Donate (no tickets; e-Transfer with proof, counts toward the goal) ----------
@@ -3134,6 +3153,7 @@ var Core = (function () {
         '<p>Together we have now given <b>' + money(total) + '</b> of our <b>' + money(s.goal) + '</b> goal.</p>' +
         '<p>The Wonder Worker Art Team<br>St. Mina Coptic Orthodox Church</p>') });
     env.update('entries', e.id, { emailed: env.now().toISOString() });
+    paymentNote(env, s, e);
     return total;
   }
 
@@ -3361,7 +3381,7 @@ var Core = (function () {
   }
   function ownerSetting(env, p) {
     requireOwner(env, p.key);
-    var allowed = ['capacity', 'reserved', 'suggested', 'goal', 'given_before', 'demo_open_until', 'square_on', 'square_env', 'square_location_id', 'square_fee_pct', 'square_fee_fixed', 'site_url', 'tickets_pdf', 'wallet_on', 'wallet_pass_type', 'wallet_team', 'sales_close', 'receipt_ticket_value', 'void_numbers', 'paused', 'booking_max', 'min_table', 'order_max', 'hold_days', 'sponsor_tiers', 'gift_seats', 'team_page_url', 'owner_page_url', 'low_seats'];
+    var allowed = ['capacity', 'reserved', 'suggested', 'goal', 'given_before', 'demo_open_until', 'payments_email', 'square_on', 'square_env', 'square_location_id', 'square_fee_pct', 'square_fee_fixed', 'site_url', 'tickets_pdf', 'wallet_on', 'wallet_pass_type', 'wallet_team', 'sales_close', 'receipt_ticket_value', 'void_numbers', 'paused', 'booking_max', 'min_table', 'order_max', 'hold_days', 'sponsor_tiers', 'gift_seats', 'team_page_url', 'owner_page_url', 'low_seats'];
     if (allowed.indexOf(p.name) < 0) throw err('That setting cannot be changed here.');
     env.setSetting(p.name, str(p.value)); return { ok: true };
   }
