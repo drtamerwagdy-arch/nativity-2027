@@ -2511,7 +2511,7 @@ var Core = (function () {
     gift_seats: '',        // seats set aside for gifts (Tamer only; empty = none set aside)
     etransfer_email: 'donations@stminacalgary.ca', team_email: 'artteam@stminacalgary.ca',
     error_email: 'drtamerwagdy@yahoo.com',   // system errors go to Tamer personally; payment checks go to team_email
-    sales_close: '2027-01-29T23:59:00-07:00', receipt_ticket_value: 0, void_numbers: '',
+    sales_close: '2027-01-29T23:59:00-07:00', receipt_ticket_value: 0, sponsor_ad_value: 50, void_numbers: '',   // sponsor_ad_value: CRA split receipt for named sponsors (Tamer 2026-09-25)
     owner_key: '', from_name: 'St. Mina Coptic Orthodox Church · Wonder Worker Art Team',
     paused: ''            // any text here pauses the public page and shows that text (dashboard → Settings)
   };
@@ -2885,7 +2885,7 @@ var Core = (function () {
     return { suggested: num(s.suggested), etransfer: s.etransfer_email, seatsLeft: Math.max(0, seatsLeft(env, s)), open: salesOpen(env, s), event: EVENT, form: formToken(env),
       bookingMax: num(s.booking_max), minTable: String(s.min_table), orderMax: num(s.order_max), holdDays: num(s.hold_days),
       tiers: String(s.sponsor_tiers).split(/[\s,]+/).map(Number).filter(Boolean), sponsors: sponsorsShown(env),
-      card: squareOn(env, s) ? { pct: num(s.square_fee_pct), fixed: num(s.square_fee_fixed) } : null,
+      card: squareOn(env, s) ? { pct: num(s.square_fee_pct), fixed: num(s.square_fee_fixed) } : null, sponsorAd: num(s.sponsor_ad_value),
       goal: num(s.goal), raised: raised(env), givers: live(env).filter(function (e) { return num(e.amount) > 0; }).length, paused: str(s.paused) };
   }
 
@@ -3111,10 +3111,11 @@ var Core = (function () {
     var business = e.business, tier = num(e.amount), code = e.order_code, silent = e.silent === 'Y', showAs = e.show_as, label = business || str(e.first + ' ' + e.last);
     env.mail({ to: e.email, subject: 'Thank you for sponsoring · Nativity Celebration 2027', name: s.from_name, replyTo: s.team_email,
         html: shell('<p>Dear ' + esc(e.first) + ',</p><p>Thank you for sponsoring the Nativity Celebration 2027' + (business ? ' on behalf of <b>' + esc(business) + '</b>' : '') + ' (' + money(tier) + ', ref. ' + code + ').</p>' +
-          // CRA: a sponsorship that advertises the business gets no donation receipt; a silent sponsor's gift does (Tamer 2026-09-25)
+          // CRA split receipt (Tamer 2026-09-25): a named sponsor's receipt is the amount less the advertising's value ($50); silent: in full
           (silent ? '<p>As you asked, you are a <b>silent sponsor</b>: your name will not be shown on our website or at the celebration. You will get an official donation receipt for your gift.</p>'
             : '<p>Your name, logo and a link to your website will show on our tickets page (thewonderworker.ca) once the team has approved them, and on the day of the celebration, January 30, 2027.</p>' +
-              '<p>Because a sponsorship advertises your business, it does not receive an official donation receipt (Canada Revenue Agency rules). Please keep this email as your confirmation of payment; your business may be able to claim it as an advertising expense.</p>' +
+              (receiptable(s, e) > 0 ? '<p>Your official donation receipt will be for <b>' + money(receiptable(s, e)) + '</b>: your ' + money(tier) + ' less ' + money(advantage(s, e)) + ', the value of the advertising you receive (Canada Revenue Agency rules). Your business may be able to claim the ' + money(advantage(s, e)) + ' as an advertising expense; please ask your accountant.</p>'
+                : '<p>Please keep this email as your confirmation of payment.</p>') +
               (showAs ? '<p>How you asked us to show your name: <b>' + esc(showAs) + '</b></p>' : '')) +
           '<p>The Wonder Worker Art Team<br>St. Mina Coptic Orthodox Church</p>') });
       teamAlert(env, s, e, [silent ? 'new SILENT sponsor: ' + label + ' (' + money(tier) + '). Do not show the name anywhere.'
@@ -3404,7 +3405,7 @@ var Core = (function () {
   }
   function ownerSetting(env, p) {
     requireOwner(env, p.key);
-    var allowed = ['capacity', 'reserved', 'suggested', 'goal', 'given_before', 'demo_open_until', 'payments_email', 'square_on', 'square_env', 'square_location_id', 'square_fee_pct', 'square_fee_fixed', 'site_url', 'tickets_pdf', 'wallet_on', 'wallet_pass_type', 'wallet_team', 'sales_close', 'receipt_ticket_value', 'void_numbers', 'paused', 'booking_max', 'min_table', 'order_max', 'hold_days', 'sponsor_tiers', 'gift_seats', 'team_page_url', 'owner_page_url', 'low_seats'];
+    var allowed = ['capacity', 'reserved', 'suggested', 'goal', 'given_before', 'demo_open_until', 'payments_email', 'square_on', 'square_env', 'square_location_id', 'square_fee_pct', 'square_fee_fixed', 'site_url', 'tickets_pdf', 'wallet_on', 'wallet_pass_type', 'wallet_team', 'sales_close', 'receipt_ticket_value', 'sponsor_ad_value', 'void_numbers', 'paused', 'booking_max', 'min_table', 'order_max', 'hold_days', 'sponsor_tiers', 'gift_seats', 'team_page_url', 'owner_page_url', 'low_seats'];
     if (allowed.indexOf(p.name) < 0) throw err('That setting cannot be changed here.');
     env.setSetting(p.name, str(p.value)); return { ok: true };
   }
@@ -3491,15 +3492,26 @@ var Core = (function () {
     business: ['Business', function (e) { return e.business; }],
     tickets: ['Tickets', function (e) { return [e.tickets, e.gift_numbers ? 'gift ' + e.gift_numbers : ''].filter(Boolean).join(' · '); }],
     by: ['Recorded by', function (e) { return e.recorded_by; }],
-    receipt: ['Tax receipt', function (e) { return sponsorNoReceipt(e) ? 'No (sponsorship: advertising)' : e.receipt === 'N' ? 'No (declined)' : 'Yes'; }],
+    receipt: ['Tax receipt', function (e, s) {
+      var adv = advantage(s, e);
+      return e.receipt === 'N' ? 'No (declined)' : adv > 0.8 * num(e.amount) ? 'No (what they got back is over 80%)' :
+        e.kind === 'sponsor' && e.silent !== 'Y' && adv ? 'Yes, less ' + money(adv) + ' for the advertising' : 'Yes'; }],
     receiptable: ['Receiptable amount', null],
     status: ['Status', function (e) { return e.status; }]
   };
-  // CRA: a sponsor whose business is advertised (name, logo, link) gets no donation receipt; a silent sponsor made a gift and does
-  function sponsorNoReceipt(e) { return e.kind === 'sponsor' && e.silent !== 'Y'; }
+  // CRA split receipting (Tamer 2026-09-25): the receipt is for what was paid less the fair market value of what came back.
+  // Tickets: no value (anyone who asks gets tickets free), receipt_ticket_value 0. A named sponsor's advertising (name, logo,
+  // link and ad on the tickets page, the sponsors' banner on the day) is valued at sponsor_ad_value, $50; a silent sponsor gets
+  // nothing back. No receipt at all when what came back is over 80% of the payment.
+  function advantage(s, e) {
+    return num(s.receipt_ticket_value) * (list(e.tickets).length + list(e.gift_numbers).length) + (e.kind === 'sponsor' && e.silent !== 'Y' ? num(s.sponsor_ad_value) : 0);
+  }
+  function receiptable(s, e) {
+    var a = num(e.amount), adv = advantage(s, e);
+    return adv > 0.8 * a ? 0 : Math.max(0, Math.round((a - adv) * 100) / 100);
+  }
   function exportRows(env, p) {
     var s = requireOwner(env, p.key), cols = (p.cols && p.cols.length ? p.cols : ['date', 'name', 'email', 'amount', 'method']).filter(function (c) { return EXPORT_COLS[c]; });
-    var tv = num(s.receipt_ticket_value);
     var rows = live(env).filter(function (e) {
       if (p.method && e.method !== p.method) return false;
       if (p.member && e.member_id !== p.member) return false;
@@ -3508,8 +3520,8 @@ var Core = (function () {
       return true;
     }).map(function (e) {
       return cols.map(function (c) {
-        if (c === 'receiptable') return sponsorNoReceipt(e) ? 0 : Math.max(0, num(e.amount) - tv * (list(e.tickets).length + list(e.gift_numbers).length));
-        return EXPORT_COLS[c][1](e);
+        if (c === 'receiptable') return receiptable(s, e);
+        return EXPORT_COLS[c][1](e, s);
       });
     });
     var head = cols.map(function (c) { return EXPORT_COLS[c][0]; });
@@ -3552,7 +3564,7 @@ var Core = (function () {
       return { id: e.id, created: e.created, date: localDate(e.created), kind: e.kind, for: EXPORT_COLS.kind[1](e), status: e.status, first: e.first, last: e.last, email: e.email, phone: e.phone,
         qty: num(e.qty), gift_qty: num(e.gift_qty), tickets: e.tickets, gift_numbers: e.gift_numbers, amount: num(e.amount), method: e.method, order: e.order_code, interac_ref: e.interac_ref,
         proof: e.proof, proof_status: e.proof_status, flags: e.flags, recorded_by: e.recorded_by || names[e.member_id] || '', business: e.business, silent: e.silent === 'Y',
-        receipt: EXPORT_COLS.receipt[1](e), receiptable: sponsorNoReceipt(e) ? 0 : Math.max(0, num(e.amount) - tv * (list(e.tickets).length + list(e.gift_numbers).length)) };
+        receipt: EXPORT_COLS.receipt[1](e, s), receiptable: receiptable(s, e) };
     });
     return { ok: true, now: env.now().toISOString(), totals: t, rows: rows };
   }

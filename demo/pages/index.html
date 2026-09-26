@@ -253,12 +253,12 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 /* one line under the heading instead of the "4 easy steps" box (Tamer 2026-09-25, layout D) */
 .lead{margin:-8px 0 16px;font-size:16px;line-height:1.5;color:var(--ink)}
 #buy .sugh{font-size:clamp(22px,2.4vw,28px)}
-#buy .sugh .hl{color:#8E2226;background:linear-gradient(transparent 60%,rgba(246,203,92,.75) 60%);padding:0 3px;white-space:nowrap}
+#buy .sugh .hl{white-space:nowrap}
 @media (min-width:761px){#buy .qrow.don>.sugtag{justify-self:start}}   /* the tag keeps its size now the form is wider */
 /* Get tickets on a computer: the form, and a narrow column on the right with the sponsors and the gold box (Tamer 2026-09-25) */
 @media (min-width:900px){
   #buy{display:grid;grid-template-columns:minmax(0,1fr) 250px;column-gap:22px;align-items:start}
-  #buy>*{grid-column:1}#buy>.sechead,#buy>.lead,#buy>.welcome{grid-column:1/-1}#buy>.leftcol{grid-column:2;grid-row:3/span 8;position:sticky;top:16px}
+  #buy>*{grid-column:1}#buy>.sechead,#buy>.lead{grid-column:1/-1}#buy>.leftcol{grid-column:2;grid-row:3/span 8;position:sticky;top:16px}
   #buy>.leftcol .spcta,#buy>.leftcol .spbox{margin-top:0}#buy>.leftcol .spcta{padding:10px 12px}#buy>.leftcol .spcta b{font-size:17px}#buy>.leftcol .spcta span{font-size:12.5px;line-height:1.4;display:block}
   #buy>.leftcol .spbox{padding:11px}#buy>.leftcol .spbox h4{font-size:17px}#buy>.leftcol .spp{font-size:13px;padding:5px 8px}}
 #buy .fgrid{grid-template-columns:1fr}
@@ -353,7 +353,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
 @media (prefers-reduced-motion:reduce){.demotag{animation:none}}
 /* Pay, on all three pages (Tamer 2026-09-25, layout D): "Pay by card" with the total on it and an optional tick to cover the card
    fee; then "Pay by Interac e-Transfer · No fees", which opens the message, the two Copy rows and the big square uploader */
-.payd{display:grid;gap:10px;max-width:560px}
+.payd{display:grid;gap:10px;max-width:560px;margin:0 auto}   /* centred in the Pay box (Tamer 2026-09-25) */
 .payd .btn{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;width:100%;padding:14px 18px;min-height:66px}
 .payd .pl b{display:block;font:800 17px/1.2 Inter,system-ui,sans-serif}
 .payd .pl small{display:block;margin-top:4px;font:500 12.5px/1.3 Inter,system-ui,sans-serif;opacity:.85}
@@ -397,7 +397,13 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
 .etpart [data-proof]{display:grid;gap:10px}
 .demotag.right::after{left:75%}
 /* the welcome note at the bottom of every page (Tamer 2026-09-25) */
-.welcome{max-width:760px;margin:22px auto 0;padding:14px 18px;text-align:center;font-size:14.5px;line-height:1.55;color:var(--soft);border-top:2px solid #F6CB5C}
+.welcome{max-width:760px;margin:22px auto 0;padding:14px 18px 0;text-align:center;font-size:13px;line-height:1.55;color:var(--soft);border-top:2px solid #F6CB5C}
+.fine{max-width:760px;margin:10px auto 0;padding:0 18px;text-align:center;font-size:12px;line-height:1.5;color:var(--faint)}
+#give .fine{border-top:2px solid #F6CB5C;padding-top:14px;margin-top:22px}
+/* the footer on a dark band (Tamer 2026-09-25, like his clinic's site) */
+footer.site{max-width:none;margin:0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));background:#10203F;color:#C9D2E4;font-size:13.5px;line-height:1.6;gap:6px 12px;align-items:center;justify-content:center;text-align:center}
+footer.site b{color:#fff}footer.site a{color:#fff;text-decoration:none;font-weight:600}footer.site a:hover{text-decoration:underline}
+footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color:#C9D2E4}
 .welcome b{color:var(--ink)}.welcome a,.welcome .link{color:#1A2D57;font-weight:600}
 .thermo{height:22px;background:#EDE3D2;border-radius:11px;overflow:hidden;position:relative;margin:8px 0 4px}
 .thermo i{position:absolute;top:0;bottom:0;left:0;background:linear-gradient(90deg,var(--sky2),var(--red));border-radius:11px;transition:width .4s}
@@ -433,7 +439,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
 
   <!-- ============ GET TICKETS ============ -->
   <form class="card hide" id="buy" novalidate>
-    <div class="sechead"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M13 6v2M13 11v2M13 16v2"/></svg></span><div><h2 class="sugh">Suggested donation: <span class="hl" data-sughead>$20 or more</span> per ticket</h2></div><span id="seats" class="seatpill"></span></div>
+    <div class="sechead"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M13 6v2M13 11v2M13 16v2"/></svg></span><div><h2 class="sugh">E-tickets: suggested donation <span class="hl" data-sughead>$20</span> per ticket</h2></div><span id="seats" class="seatpill"></span></div>
     <!-- Tamer 2026-09-25 (layout D): one line instead of the "4 easy steps" box; the e-Transfer steps open under their own pay button -->
     <p class="lead">Choose your tickets, add your details, then pay by card or Interac e-Transfer. Your e-tickets arrive by email.</p>
     <div class="leftcol">
@@ -460,6 +466,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
     <div data-sponspot class="spot-phone"></div>   <!-- the sponsors and the gold box, under Pay on a phone -->
     <!-- Tamer 2026-09-25: a donation is not a condition for a ticket; ask by email, no name needed, any email address -->
     <p class="welcome"><b>Everyone is welcome.</b> Your donation is not the price of a seat; it simply helps cover the cost of the service. If you would like to come but can't give right now, just email us at <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a> with how many tickets you need, and we'll email them to you. No need to give your name, and any email address will do. The church doors are always open.</p>
+    <p class="fine">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</p>
   </form>
 
   <!-- ============ DONATE ============ -->
@@ -478,15 +485,16 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
       <div class="panel2 span2 paypanel"><h3>Pay</h3><div data-paypanel="Submit my donation"></div></div>
     </div>
     <div class="err" data-err></div>
+    <p class="fine">Your details are private: used only by authorized church personnel for your tax receipt, and deleted once receipts are issued.</p>
   </form>
 
   <!-- ============ BECOME A SPONSOR ============ -->
   <form class="card t-blue hide" id="spon" novalidate>
     <div class="sechead"><span class="ico blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg></span><div><h2>Become a sponsor</h2><div class="sub" data-sponsub>$300, $400, $500 or more</div></div></div>
-    <!-- the page opens with this (Tamer 2026-09-25), worded to CRA's sponsorship rule: a sponsorship that advertises a business gets no donation receipt;
-         a silent sponsor (no recognition) makes a gift and gets one. canada.ca → Charities → Receiving gifts → Sponsorship -->
+    <!-- the page opens with this (Tamer 2026-09-25). CRA split receipt: a named sponsor's advertising is valued at $50 (sponsor_ad_value)
+         and the receipt is for the rest; a silent sponsor gets nothing back and a receipt in full. canada.ca → Charities → Receiving gifts → Sponsorship -->
     <div class="intro"><p><b>Support our church's Nativity Celebration and promote your business.</b> Your business name, logo and a link to your website will show on our tickets page and on the day of the celebration.</p>
-      <p><b>About tax receipts:</b> because a sponsorship advertises your business, the Canada Revenue Agency does not allow a donation receipt for it; your business may be able to claim it as an advertising expense (ask your accountant). Would you rather have a tax receipt? Choose <b>silent sponsor</b>: your name is not shown and you get an official donation receipt for the full amount.</p></div>
+      <p><b>About tax receipts:</b> we valued the sponsor package at <b data-adval>$50</b>, so you can claim the rest of your donation on a tax receipt. Please speak with your accountant and the church treasurer to confirm.</p></div>
     <p class="lead">Choose your sponsorship, tell us about your business, then pay by card or Interac e-Transfer. Your name shows on the tickets page once approved.</p>
     <div data-sponsors></div>
     <div class="fgrid" style="margin-top:14px">
@@ -519,6 +527,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
     <div class="err" data-err></div>
     <!-- Tamer 2026-09-25: the sponsor page's own version of the welcome note -->
     <p class="welcome"><b>Every gift counts.</b> A sponsorship is one way to support the service, not the only one. If your business would like to help but these amounts don't fit right now, you can give any amount on the <button type="button" class="link" data-go="give">Donate page</button>, or email us at <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a>. Any support is welcome, and so is everyone at the celebration.</p>
+    <p class="fine">Your details are private: used only by authorized church personnel for your sponsorship and tax receipt, and deleted once receipts are issued.</p>
   </form>
 
   <!-- ============ DONE / WAITLIST ============ -->
@@ -532,7 +541,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.57</span></footer>
+<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.58</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3342,7 +3351,7 @@ var qrcode = function() {
     // Tamer 2026-09-25: "Suggested $20 per ticket" under the donation; a gifted seat is a $20 donation (not "suggested")
     $('[data-suggest]', buy).innerHTML = '★ Suggested ' + money(CFG.suggested) + ' per ticket ★<small>Every dollar beyond that supports the service.</small>';
     $('[data-giftnote]', buy).textContent = money(CFG.suggested) + ' donation · optional';
-    $('[data-sughead]', buy).textContent = money(CFG.suggested) + ' or more';
+    $('[data-sughead]', buy).textContent = money(CFG.suggested);
     // the tag shows only once tickets are added (the page opens at 0), follows them and swings in again whenever the amount
     // changes (Tamer 2026-09-25); the donation box is never filled in by itself; the gold banner is always there
     var tag = $('[data-sugtag]', buy), amt = money(s) + ' or more';
@@ -3520,7 +3529,8 @@ var qrcode = function() {
     else if (action === 'sponsor') {
       h = '<h2>Thank you, ' + esc(r.business || r.first) + '!</h2><p>Your sponsorship of <b>' + money(r.amount) + '</b> is recorded (ref. ' + esc(r.order) + '). A thank-you email is on its way to <b>' + esc(r.email) + '</b>.</p>' +
         (r.silent ? '<p>As you asked, you are a silent sponsor: your name will not be shown anywhere. You will get an official donation receipt for your gift.</p>'
-          : '<p>Your name, logo and website link will show on our tickets page once approved, and on the day of the celebration. A sponsorship does not receive a donation receipt; the email is your confirmation of payment.</p>');
+          : '<p>Your name, logo and website link will show on our tickets page once approved, and on the day of the celebration. Your official donation receipt will be for ' +
+            (r.amount > CFG.sponsorAd ? '<b>' + money(r.amount - CFG.sponsorAd) + '</b>: your ' + money(r.amount) + ' less ' + money(CFG.sponsorAd) + ', the value of the advertising (Canada Revenue Agency rules).' : 'your gift.') + '</p>');
     }
     else if (r.booking) {
       var q = qrcode(0, 'M'); q.addData(r.link); q.make();
@@ -3600,6 +3610,7 @@ var qrcode = function() {
     $('[data-tiers]', spon).innerHTML = CFG.tiers.map(function (t) { return '<label><input type="radio" name="tier" value="' + t + '"> ' + money(t) + '</label>'; }).join('');
     if (CFG.tiers.length) { $('[data-sponsub]', spon).textContent = CFG.tiers.map(money).join(', ') + ' or more'; $$('[data-genmin]', spon).forEach(function (x) { x.textContent = money(sponMost()); }); }
     $('[data-sponsors]', spon).innerHTML = sponsorsHtml(CFG.sponsors);
+    if (CFG.sponsorAd >= 0) $$('[data-adval]', spon).forEach(function (x) { x.textContent = money(CFG.sponsorAd); });
     buySync(); thermo(); sponSync(); sponSpot(); tourStart();
     payInit();
   }, function () { buySync(); thermo(); sponSync(); sponSpot(); tourStart(); payInit(); });
