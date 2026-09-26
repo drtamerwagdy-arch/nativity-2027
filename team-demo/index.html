@@ -3404,7 +3404,7 @@ var Core = (function () {
       var e = mk(env, who, { kind: 'cash', qty: q, amount: 0, method: 'Free', tickets: nums.join(', '), recorded_by: 'Tamer (free tickets)', proof_status: 'none',
         submit_id: str(p.submit_id), note: 'free tickets, asked for by email' });
       env.append('entries', e);
-      finishSale(env, s, e, 'You are very welcome. Here ' + (q > 1 ? 'are your tickets' : 'is your ticket') + ' for the Nativity Celebration 2027. We look forward to seeing you there.', [], 'free tickets');
+      finishSale(env, s, e, 'Here ' + (q > 1 ? 'are your tickets' : 'is your ticket') + ' for the Nativity Celebration 2027. We look forward to seeing you there.', [], 'free tickets');
       return outcome(e, null);
     });
   }
