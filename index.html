@@ -3736,9 +3736,11 @@ var qrcode = function() {
       if (d.getAttribute('data-ready')) return; d.setAttribute('data-ready', '1');
       function pick(mode, part) {
         payOpen(form, mode);
-        setTimeout(function () { $(part, form).scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 40);
+        // the target must be an element with a real box: [data-cardpart] is display:contents, and scrolling
+        // to a boxless element jumps to the top of the page (Tamer 2026-09-26: "a jumb in the page")
+        setTimeout(function () { var el = $(part, form); if (el && el.offsetHeight) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 40);
       }
-      oc.onclick = function () { pick('card', '[data-cardpart]'); };
+      oc.onclick = function () { pick('card', '[data-cardpart] .paycard'); };
       oe.onclick = function () { pick('et', '[data-etpart]'); };
       form.addEventListener('input', function () { paySync(form); }); form.addEventListener('change', function () { paySync(form); });
     });
