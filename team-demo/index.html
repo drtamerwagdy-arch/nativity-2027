@@ -3601,7 +3601,7 @@ if (typeof module !== 'undefined') module.exports = Core;
   var BASE = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
   var TICKETS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 901, 902, 903, 904, 905, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019, 1020, 1021, 1022, 1023, 1024, 1025, 1026, 1027, 1028, 1029, 1030];
   var KEY_STORE = 'ww27-team-demo-v1', MINA = 'demo-member-mina-0000000000', OWNER = 'demo-owner';
-  var db = null, clock = 0;
+  var db = null, clock = 0, SQ = { n: 0, orders: {} }, pendingDemo = null;
 
   // ---------- the engine's surroundings, all inside this page ----------
   function load() { try { var s = localStorage.getItem(KEY_STORE); if (s) return JSON.parse(s); } catch (e) { } return null; }
@@ -3634,12 +3634,26 @@ if (typeof module !== 'undefined') module.exports = Core;
     ocrSheet: function () { return "#1 FIRST: MARY\n#1 LAST: GIRGIS\n#1 TICKETS: 2\n#1 AMOUNT: 40\n#1 PAID: CASH\n#1 EMAIL: MARY.GIRGIS@EXAMPLE.COM\n#2 FIRST: JOHN\n#2 LAST: SMITH\n#2 TICKETS: 1\n#2 AMOUNT: 20\n#2 PAID: CASH\n#2 EMAIL: JSMITH77@EXAMPLE.COM\n#2 PRINTED: 12\n#3 FIRST: MINA\n#3 LAST: HANNA\n#3 TICKETS: 4\n#3 AMOUNT: 100\n#3 PAID: CHEQUE\n#3 EMAIL: MINA.HANNA@EXAMPLE.COM\n#4 FIRST: SARAH\n#4 LAST: ABDELMALAK\n#4 TICKETS: 3\n#4 AMOUNT: 60\n#4 PAID: CASH\n#4 EMAIL: SARAH.A@EXAMPLE.COM\n#4 PRINTED: 20-22\n#5 FIRST: PETER\n#5 LAST: WASSEF\n#5 TICKETS: 1\n#5 AMOUNT: 25\n#5 PAID: CASH\n#5 EMAIL: PWASSEF@EXAMPLE.COM"; },   // paper sheet: any photo reads as the sample sheet (what Google read from it)
     saveLogo: function (dataUrl) { return dataUrl; },      // the resized logo is kept in the demo
     makeXlsx: function (head, rows, name) { return { name: name + '.xlsx' }; },
+    // a pretend Square (Tamer 2026-09-25: "the demo … not showing the payment changes"): the practice pages show "Pay by card" and the
+    // fee tick like the real page; its payment page is a pretend step in the page ("practice-card:"), nothing is paid
+    squareReady: function () { return true; },
+    square: function (method, api, body) {
+      var M = SQ;
+      if (method === 'POST' && api === '/v2/online-checkout/payment-links') {
+        var id = 'practice-' + (++M.n); M.orders[id] = { total: body.quick_pay.price_money.amount, back: body.checkout_options.redirect_url, paid: false };
+        return { payment_link: { id: id, order_id: id, url: 'practice-card:' + id } };
+      }
+      var m = api.match(/^\/v2\/orders\/(.+)$/), o = m && M.orders[decodeURIComponent(m[1])];
+      if (method === 'GET' && o) return { order: { id: m[1], state: o.paid ? 'COMPLETED' : 'OPEN', tenders: o.paid ? [{ id: 't1' }] : [], net_amount_due_money: { amount: o.paid ? 0 : o.total }, total_money: { amount: o.total } } };
+      throw new Error('Practice Square: ' + method + ' ' + api);
+    },
     pageUrl: function (page, key) { return page + '.html?k=' + key; },
     teamUrl: function () { return BASE + 'team.html' }
   };
   function fresh() {
     db = { settings: JSON.parse(JSON.stringify(Core.DEFAULTS)), entries: [], members: [], handovers: [], outbox: [] };
     db.settings.owner_key = OWNER;
+    db.settings.square_on = 'Y'; db.settings.square_location_id = 'PRACTICE';   // "Pay by card" shows, with the pretend Square
     db.members.push({ id: 'm-mina', name: 'Demo team member', key: MINA, active: 'true', created: new Date().toISOString() });
     db.members.push({ id: 'm-george', name: 'George', key: 'demo-member-george-000000000', active: 'true', created: new Date().toISOString() });
     // a realistic starting point: a few sales, an online order and a donation (all examples)
@@ -3664,6 +3678,24 @@ if (typeof module !== 'undefined') module.exports = Core;
     .then(function (r) { return r.json(); }).then(function (c) { liveForm = c.form || ''; }, function () { });
   window.addEventListener('message', function (ev) {
     var d = ev.data || {};
+    // "Pay by card" on a practice ticket order: the pretend Square step first; "Pretend it is paid" then sends the demo order
+    if (d.ww === 'api' && d.action === 'order' && LIVE && /card/i.test((d.payload || {}).method)) {
+      pendingDemo = JSON.parse(JSON.stringify(d.payload)); pendingDemo.method = 'e-Transfer';
+      ev.source.postMessage({ ww: 'api-reply', id: d.id, result: { ok: true, card: { url: 'practice-card:demo' } } }, '*');
+      return;
+    }
+    if (d.ww === 'api' && d.action === 'practice_pay') {
+      var pid = String((d.payload || {}).id || '');
+      if (pid === 'demo' && pendingDemo) { d = { ww: 'api', action: 'order', id: d.id, payload: pendingDemo }; pendingDemo = null; }
+      else {
+        var o = SQ.orders[pid], back = o ? o.back : '', q = function (k) { var mm = back.match(new RegExp('[?&]' + k + '=([^&#]+)')); return mm ? decodeURIComponent(mm[1]) : ''; };
+        if (o) o.paid = true;
+        var r2; try { r2 = o ? Core.handle(ENV, 'card_status', { order: q('card'), t: q('t') }) : { ok: false, error: 'Please try again.' }; } catch (e) { r2 = { ok: false, error: String(e.message || e) }; }
+        if (r2 && r2.ok) trialDone = true;
+        save(); ev.source.postMessage({ ww: 'api-reply', id: d.id, result: JSON.parse(JSON.stringify(r2)) }, '*');
+        return;
+      }
+    }
     if (d.ww === 'api' && d.action === 'order' && LIVE) { trialDone = true;
       var pl = JSON.parse(JSON.stringify(d.payload || {})); pl.form = liveForm; delete pl.proof;
       fetch(LIVE, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'demo_order', payload: pl }) })

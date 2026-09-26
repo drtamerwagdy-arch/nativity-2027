@@ -397,6 +397,14 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
 .privnote{margin:0;font-size:13.5px;line-height:1.45;color:var(--soft)}
 .etpart [data-proof]{display:grid;gap:10px}
 .demotag.right::after{left:75%}
+/* the practice pages' pretend Square step */
+.pcard{position:fixed;inset:0;z-index:10000;background:rgba(11,21,48,.7);display:flex;align-items:center;justify-content:center;padding:16px}
+.pcard-in{background:#fff;border-radius:16px;max-width:420px;width:100%;padding:20px;display:grid;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,.4)}
+.pcard-in h3{margin:0;font:800 19px/1.25 Inter,system-ui,sans-serif;text-transform:none;letter-spacing:0;color:#0B1530}
+.pcard-in p{margin:0;color:var(--soft);font-size:14.5px}
+.pflag{justify-self:start;background:#F6CB5C;color:#0B1530;font:800 11px/1 Inter,sans-serif;letter-spacing:.1em;padding:6px 9px;border-radius:999px}
+.psum{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:6px;font-size:15px}
+.psum div{display:flex;justify-content:space-between;gap:10px}.psum .tot{border-top:1px solid var(--line);padding-top:7px;font-weight:800}
 /* the welcome note at the bottom of every page (Tamer 2026-09-25) */
 .welcome{max-width:760px;margin:22px auto 0;padding:14px 18px 0;text-align:center;font-size:13px;line-height:1.55;color:var(--soft);border-top:2px solid #F6CB5C}
 .fine{max-width:760px;margin:10px auto 0;padding:0 18px;text-align:center;font-size:12px;line-height:1.5;color:var(--faint)}
@@ -542,7 +550,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.59</span></footer>
+<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.60</span></footer>
 
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3217,7 +3225,7 @@ var qrcode = function() {
     try { if (/[?&]v=/.test(location.search)) { var u0 = new URL(location.href); u0.searchParams.delete('v'); history.replaceState(null, '', u0.pathname + u0.search + u0.hash); } } catch (x) { }
     if (window.WW_DEMO || !/(^|\.)thewonderworker\.ca$/.test(location.hostname)) return;
     fetch('/version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
-      if (!j || !j.v || j.v === '1.59') return;
+      if (!j || !j.v || j.v === '1.60') return;
       try { var k = 'ww27-updated-' + j.v; if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (x) { return; }
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () { });
@@ -3270,6 +3278,7 @@ var qrcode = function() {
       }
       function ok(r) {
         if (settled) return; end();
+        if (r && r.card && /^practice-card:/.test(r.card.url)) { btn.disabled = false; btn.innerHTML = label; return practiceCard(r.card.url.replace(/^practice-card:/, ''), form, action); }   // practice pages: pretend Square
         if (r && r.card && r.card.url) { btn.textContent = 'Opening the card payment…'; location.href = r.card.url; return; }   // Square's page (2026-09-25)
         try { done(action, r); } catch (x) { $('#done').innerHTML = '<h2>Thank you!</h2><p>It went through' + (r && r.order ? ' (reference ' + esc(r.order) + ')' : '') + '. Your email is on its way.</p>'; show('done'); }
       }
@@ -3652,6 +3661,22 @@ var qrcode = function() {
     $('[data-cardamt]', form).textContent = a > 0 ? money(a + (cover ? fee : 0)) : '';
     $('[data-feeamt]', form).textContent = money(fee);
     $('[data-coverrow]', form).classList.toggle('hide', !(a > 0));
+  }
+  // the practice pages only (Tamer 2026-09-25): where Square's secure page would open, a pretend step; nothing is paid
+  function practiceCard(id, form, action) {
+    var a = amountOf(form), cover = $('[name=cover_fee]', form).checked, t = a > 0 && cover ? cardTotal(a) : a;
+    var z = document.createElement('div'); z.className = 'pcard'; z.setAttribute('role', 'dialog'); z.setAttribute('aria-label', 'Practice card payment');
+    z.innerHTML = '<div class="pcard-in"><span class="pflag">PRACTICE</span><h3>Square\'s secure payment page opens here</h3>' +
+      '<p>On the real page people pay with a card, Apple Pay or Google Pay. Here nothing is paid.</p>' +
+      '<div class="psum"><div><span>Donation</span><b>' + money(a) + '</b></div>' + (t > a ? '<div><span>Covering the card fee</span><b>' + money(t - a) + '</b></div>' : '') +
+      '<div class="tot"><span>Total</span><b>' + money(t) + '</b></div></div>' +
+      '<button type="button" class="btn wide" data-pp>Pretend it is paid</button><button type="button" class="btn ghost wide" data-pb>Go back without paying</button></div>';
+    document.body.appendChild(z);
+    $('[data-pb]', z).onclick = function () { z.remove(); };
+    $('[data-pp]', z).onclick = function () {
+      this.disabled = true; this.textContent = 'One moment…';
+      api('practice_pay', { id: id }).then(function (r) { z.remove(); done(action, r); }, function (x) { z.remove(); $('[data-err]', form).textContent = x.message; });
+    };
   }
   function payInit() {
     [buy, give, spon].forEach(function (form) {
