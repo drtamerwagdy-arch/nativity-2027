@@ -3690,7 +3690,7 @@ if (typeof module !== 'undefined') module.exports = Core;
       'window.WW_TESS={script:"https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js",options:{workerBlobURL:false,workerPath:' + JSON.stringify(BASE + '../demo-assets/tess/worker-wrap.js') +
       ',corePath:' + JSON.stringify(BASE + '../demo-assets/tess/') + ',langPath:' + JSON.stringify(BASE + '../demo-assets/tess') + '}};' +
       'window.alert=function(m){parent.postMessage({ww:"toast",m:String(m)},"*")};window.confirm=function(){return true};window.prompt=function(q,d){return d==null?"":d};<\/script>';
-    (cache[tab] ? Promise.resolve(cache[tab]) : fetch(BASE + 'pages/' + tab + '.html').then(function (r) { return r.text(); }))
+    (cache[tab] ? Promise.resolve(cache[tab]) : fetch(BASE + 'pages/' + tab + '.html', { cache: 'no-cache' }).then(function (r) { return r.text(); }))
       .then(function (html) { cache[tab] = html; frame.srcdoc = html.replace(/<head>/i, '<head>' + inject); });
   }
   [].forEach.call(document.querySelectorAll('[data-tab]'), function (b) { b.onclick = function () { show(b.getAttribute('data-tab')); }; });
