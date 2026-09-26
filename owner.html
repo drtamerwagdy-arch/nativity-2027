@@ -172,7 +172,7 @@ main{max-width:1100px}
 .stat span{font:12px Arial,sans-serif;color:var(--soft);letter-spacing:.5px}
 .flag{color:var(--bad);font-size:12px}
 .pill{display:inline-block;border-radius:999px;padding:1px 8px;font:12px Arial,sans-serif;background:#eee}
-.pill.ok{background:#E4F3E8;color:var(--ok)}.pill.flagged{background:#FCEEEC;color:var(--bad)}.pill.void{background:#eee;color:#888}
+.pill.ok{background:#E4F3E8;color:var(--ok)}.pill.flagged{background:#FCEEEC;color:var(--bad)}.pill.void,.pill.refunded{background:#eee;color:#888}.pill.awaiting_card{background:#FFF3D6;color:#8A5A00}
 .scroll{overflow-x:auto}
 input.s{font:15px Arial,sans-serif;padding:7px 10px;border:1px solid var(--line);border-radius:8px}
 .cols label{display:inline-flex;gap:5px;align-items:center;margin:0 12px 6px 0;font:14px Arial,sans-serif}
@@ -192,7 +192,7 @@ input.s{font:15px Arial,sans-serif;padding:7px 10px;border:1px solid var(--line)
   <section id="t-settings" class="hide"></section>
   <section class="card hide" id="bad"><h2>Link not valid</h2></section>
 </main>
-<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.65</span></footer>
+<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.66</span></footer>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -234,7 +234,7 @@ document.addEventListener('click', function (ev) {
 // they keep only digits and one decimal point, and phones still show the number keypad (inputmode="decimal")
 document.addEventListener('input', function (ev) {
   var i = ev.target; if (!i || !i.hasAttribute || !i.hasAttribute('data-money')) return;
-  var v = i.value.replace(/[^\d.]/g, ''), d = v.indexOf('.');
+  var v = i.value.replace(/,(\d{1,2})$/, '.$1').replace(/[^\d.]/g, ''), d = v.indexOf('.');   // "20,50" → 20.50 (2026-09-26)
   if (d > -1) v = v.slice(0, d + 1) + v.slice(d + 1).replace(/\./g, '').slice(0, 2);
   if (v !== i.value) i.value = v;
 }, true);
@@ -308,12 +308,14 @@ function copyBtn(root) {
           '<td>' + esc(e.kind) + (e.order_code ? ' · ' + esc(e.order_code) : '') + '<br>' + (e.tickets ? 'No. ' + esc(e.tickets) : '') + (e.gift_numbers ? ' · gift ' + esc(e.gift_numbers) : '') + (e.recorded_by ? '<br><span class="hint">by ' + esc(e.recorded_by) + '</span>' : '') + '</td>' +
           '<td>' + money(e.amount) + '<br><span class="hint">' + esc(e.method) + '</span></td>' +
           '<td>' + (e.proof ? '<a href="' + esc(e.proof) + '" target="_blank" rel="noopener">screenshot</a>' : '<span class="hint">' + esc(e.proof_status || '') + '</span>') + (e.interac_ref ? '<br><span class="hint">ref ' + esc(e.interac_ref) + '</span>' : '') + (e.flags ? '<div class="flag">' + esc(e.flags) + '</div>' : '') + (e.kind === 'waitlist' ? '' : '<div class="hint">' + (e.receipt === 'N' ? 'no tax receipt (declined)' : 'tax receipt: yes') + '</div>') + '</td>' +
-          '<td style="white-space:nowrap">' + (e.status === 'flagged' ? '<button class="link" data-ok="' + e.id + '">Checked OK</button><br>' : '') + (e.tickets ? '<button class="link" data-rs="' + e.id + '">Resend</button><br>' : '') + (e.status !== 'void' ? '<button class="link" data-void="' + e.id + '">Void</button>' : '') + '</td></tr>';
+          '<td style="white-space:nowrap">' + (e.status === 'flagged' ? '<button class="link" data-ok="' + e.id + '">Checked OK</button><br>' : '') + (e.tickets && e.email && e.status !== 'void' && e.status !== 'refunded' ? '<button class="link" data-rs="' + e.id + '">Resend</button><br>' : '') + (e.method === 'Card' && e.status === 'ok' ? '<button class="link" data-refund="' + e.id + '">Refunded in Square</button><br>' : '') + (e.status !== 'void' && e.status !== 'refunded' ? '<button class="link" data-void="' + e.id + '">Void</button>' : '') + '</td></tr>';
       }).join('') + '</table>' + (list.length ? '' : '<p class="hint">Nothing here.</p>') + '</div>';
     $$('[data-f]').forEach(function (b) { b.onclick = function () { filter = b.getAttribute('data-f'); entries(); }; });
     $('[data-q]').oninput = function () { q = this.value.toLowerCase(); var pos = this.selectionStart; entries(); var i = $('[data-q]'); i.focus(); i.setSelectionRange(pos, pos); };
     $$('[data-ok]').forEach(function (b) { b.onclick = function () { run('owner_clear', { id: b.getAttribute('data-ok') }).then(reload); }; });
     $$('[data-void]').forEach(function (b) { b.onclick = function () { if (confirm('Void this entry? Its tickets are cancelled and its amount no longer counts.')) run('owner_void', { id: b.getAttribute('data-void') }).then(reload); }; });
+    // a card payment refunded in Square (2026-09-26): its seats come back and it no longer counts, and it stays in Hany's export as refunded
+    $$('[data-refund]').forEach(function (b) { b.onclick = function () { if (confirm('Mark this card payment as refunded? Do the refund in Square first. Its tickets are cancelled and its amount no longer counts.')) run('owner_refunded', { id: b.getAttribute('data-refund') }).then(reload, function (x) { alert(x.message); }); }; });
     $$('[data-rs]').forEach(function (b) { b.onclick = function () { var e = D.entries.filter(function (x) { return x.id === b.getAttribute('data-rs'); })[0]; var to = prompt('Send the tickets again to:', e.email || ''); if (to === null) return; run('owner_resend', { id: e.id, email: to }).then(function () { alert('Sent.'); reload(); }, function (x) { alert(x.message); }); }; });
   }
 
@@ -348,7 +350,7 @@ function copyBtn(root) {
   function exporter() {
     $('#t-export').innerHTML = '<div class="card"><h2>Export for Hany</h2><p class="hint">Pick the columns and filters Hany wants, preview, then download or email the Excel file to artteam@.</p>' +
       '<div class="cols">' + COLS.map(function (c) { return '<label><input type="checkbox" value="' + c[0] + '"' + (chosen.indexOf(c[0]) > -1 ? ' checked' : '') + '> ' + c[1] + '</label>'; }).join('') + '</div>' +
-      '<div class="row"><select class="s" data-ex="method"><option value="">All methods</option><option>e-Transfer</option><option>Cash</option><option>Cheque</option></select>' +
+      '<div class="row"><select class="s" data-ex="method"><option value="">All methods</option><option>e-Transfer</option><option>Card</option><option>Cash</option><option>Cheque</option><option>Free</option></select>' +
       '<select class="s" data-ex="member"><option value="">All sellers</option>' + D.members.map(function (m) { return '<option value="' + m.id + '">' + esc(m.name) + '</option>'; }).join('') + '</select>' +
       '<label class="hint">From <input class="s" type="date" data-ex="from"></label><label class="hint">To <input class="s" type="date" data-ex="to"></label></div>' +
       '<div class="row"><button class="btn ghost" data-prev style="min-height:0;padding:8px 14px">Preview</button><button class="btn" data-dl style="min-height:0;padding:8px 14px">Download Excel</button><button class="btn" data-mail style="min-height:0;padding:8px 14px">Email Excel to artteam@</button></div><div data-out class="scroll"></div></div>';
@@ -362,9 +364,17 @@ function copyBtn(root) {
   }
 
   function settingsTab() {
-    var s = D.settings, F = [['capacity', 'Seats in the theatre'], ['reserved', 'Seats reserved (cast, team)'], ['suggested', 'Suggested donation per ticket ($)'], ['goal', 'Fundraising goal ($)'], ['gift_seats', 'Seats set aside for gifts (only you see gift numbers; empty = none)'], ['booking_max', 'Pay-in-cash booking: most tickets (gifted seats not counted)'], ['min_table', 'Minimum donation for 1, 2, 3, 4 tickets (then the suggested amount each)'], ['order_max', 'Most tickets per online order'], ['hold_days', 'Days a cash booking holds seats'], ['sales_close', 'Sales close (date/time)'], ['receipt_ticket_value', 'Value of one ticket for receipts ($, set by the church)'], ['void_numbers', 'Cancelled ticket numbers (e.g. 120-130, 455)'], ['paused', 'Pause the public page: type a message to show instead (empty = open)']];
+    var s = D.settings, F = [['capacity', 'Seats in the theatre'], ['reserved', 'Seats reserved (cast, team)'], ['gift_seats', 'Seats set aside for gifts (only you see gift numbers; empty = none)'],
+      ['suggested', 'Suggested donation per ticket ($)'], ['min_table', 'Minimum donation for 1, 2, 3, 4 tickets ($, comma-separated; 5+ = suggested each)'], ['order_max', 'Most tickets in one online order'],
+      ['goal', 'Fundraising goal ($)'], ['given_before', 'Given before the website opened ($, counted toward the goal)'],
+      ['sponsor_tiers', 'Sponsorship amounts ($, comma-separated)'], ['sponsor_ad_value', 'Value of the sponsor package ($, taken off a named sponsor\'s tax receipt)'],
+      ['square_on', 'Card payments (Y or N)'], ['square_fee_pct', 'Card fee, percent (Square: 2.8)'], ['square_fee_fixed', 'Card fee, fixed ($, Square: 0.30)'],
+      ['payments_email', 'Where each payment note goes ("off" = none)'], ['low_seats', 'Email the team when seats left reach (comma-separated)'],
+      ['booking_max', 'Pay-in-cash booking: most tickets (gifted seats not counted)'], ['hold_days', 'Pay-in-cash booking: days held'],
+      ['sales_close', 'Ticket sales close (date and time)'], ['tickets_pdf', 'Attach the tickets as a PDF to the email (Y or N; off: PDFs sent the email to spam)'],
+      ['site_url', 'Website address (for links in emails and the card return)'], ['void_numbers', 'Cancelled printed ticket numbers (never reused)'], ['paused', 'Pause message (empty = the site is open)']];
     $('#t-settings').innerHTML = '<div class="card"><h2>Settings</h2>' + F.map(function (f) { return '<label class="f">' + f[1] + '<input data-set="' + f[0] + '" value="' + esc(s[f[0]]) + '"></label>'; }).join('') + '<p class="hint">Each field saves when you leave it.</p></div>';
-    $$('[data-set]').forEach(function (i) { i.onchange = function () { run('owner_setting', { name: i.getAttribute('data-set'), value: i.value }).then(function () { i.style.borderColor = 'var(--ok)'; reload(); }, function (x) { alert(x.message); }); }; });
+    $$('[data-set]').forEach(function (i) { i.onchange = function () { run('owner_setting', { name: i.getAttribute('data-set'), value: i.value }).then(function () { i.style.borderColor = 'var(--ok)'; D.settings[i.getAttribute('data-set')] = i.value; }, function (x) { i.style.borderColor = 'var(--bad)'; alert(x.message); }); }; });   // saves in place: a redraw here ate the next tap on a phone (2026-09-26)
   }
   reload();
 })();

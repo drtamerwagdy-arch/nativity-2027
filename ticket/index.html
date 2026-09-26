@@ -227,7 +227,7 @@ document.addEventListener('click', function (ev) {
 // they keep only digits and one decimal point, and phones still show the number keypad (inputmode="decimal")
 document.addEventListener('input', function (ev) {
   var i = ev.target; if (!i || !i.hasAttribute || !i.hasAttribute('data-money')) return;
-  var v = i.value.replace(/[^\d.]/g, ''), d = v.indexOf('.');
+  var v = i.value.replace(/,(\d{1,2})$/, '.$1').replace(/[^\d.]/g, ''), d = v.indexOf('.');   // "20,50" → 20.50 (2026-09-26)
   if (d > -1) v = v.slice(0, d + 1) + v.slice(d + 1).replace(/\./g, '').slice(0, 2);
   if (v !== i.value) i.value = v;
 }, true);
@@ -251,7 +251,7 @@ function copyBtn(root) {
     $('#tk').innerHTML = '<img src="' + r.image + '" alt="Your ticket ' + esc(r.n) + '">';
     $('#save').classList.remove('hide'); $('#how').classList.remove('hide');
     $('#how').innerHTML = IOS ? 'Tap <b>Save ticket</b>, then <b>Save Image</b>: it goes to your Photos. You can also press and hold the ticket.'
-      : 'Your ticket is downloading. If it doesn\'t, tap <b>Save ticket</b>.';
+      : 'Your ticket is downloading. If it doesn\'t, tap <b>Save ticket</b>, or press and hold the ticket and choose <b>Save image</b>.';
     fetch(pic).then(function (x) { return x.blob(); }).then(function (b) { try { file = new File([b], name, { type: 'image/jpeg' }); } catch (x) { } });
     if (!IOS) download();   // Android and computers: straight to Downloads
   }, function (x) { $('#tk').innerHTML = '<div class="msg">' + esc(x.message) + '</div>'; });

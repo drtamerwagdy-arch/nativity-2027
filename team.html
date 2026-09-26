@@ -229,7 +229,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   </section>
   <section class="card hide" id="bad"><h2>Link not valid</h2><p>This link is no longer valid. Please ask Tamer for a new one.</p></section>
 </main>
-<footer><span>Wonder Worker Art Team · team page</span><span class="ver">v1.65</span></footer>
+<footer><span>Wonder Worker Art Team · team page</span><span class="ver">v1.66</span></footer>
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
    Online demo (window.WW_DEMO): the engine runs in the page around this one; ask it by message. */
@@ -270,7 +270,7 @@ document.addEventListener('click', function (ev) {
 // they keep only digits and one decimal point, and phones still show the number keypad (inputmode="decimal")
 document.addEventListener('input', function (ev) {
   var i = ev.target; if (!i || !i.hasAttribute || !i.hasAttribute('data-money')) return;
-  var v = i.value.replace(/[^\d.]/g, ''), d = v.indexOf('.');
+  var v = i.value.replace(/,(\d{1,2})$/, '.$1').replace(/[^\d.]/g, ''), d = v.indexOf('.');   // "20,50" → 20.50 (2026-09-26)
   if (d > -1) v = v.slice(0, d + 1) + v.slice(d + 1).replace(/\./g, '').slice(0, 2);
   if (v !== i.value) i.value = v;
 }, true);

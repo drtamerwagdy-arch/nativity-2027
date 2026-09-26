@@ -2569,7 +2569,7 @@ var Core = (function () {
   }
 
   // what counts: paid sales and donations (not voided, not the waitlist, not a cash booking still waiting for payment)
-  function live(env) { return env.list('entries').filter(function (e) { return e.status !== 'void' && e.status !== 'awaiting_card' && e.kind !== 'waitlist' && e.kind !== 'booking'; }); }
+  function live(env) { return env.list('entries').filter(function (e) { return e.status !== 'void' && e.status !== 'refunded' && e.status !== 'awaiting_card' && e.kind !== 'waitlist' && e.kind !== 'booking'; }); }
   function pendingHolds(env, s) {
     var cutoff = env.now().getTime() - num(s.hold_days) * 86400e3;
     return env.list('entries').filter(function (e) { return e.kind === 'booking' && e.status === 'pending' && new Date(e.created).getTime() > cutoff; });
@@ -2673,15 +2673,20 @@ var Core = (function () {
     return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
   }
   function receiptUsed(env, test) { return env.list('entries').some(function (e) { return e.status !== 'void' && test(e); }); }
+  // the slow part of the check (Drive OCR, several seconds), done before the lock so the lock is held briefly (2026-09-26)
+  function readProofText(env, p) {
+    var pr = p.proof || {}; if (!pr.dataUrl) return { text: '', serverRead: false };
+    try { var t = env.ocr(pr.dataUrl); if (t != null) return { text: t, serverRead: true }; } catch (e) { return { text: str(pr.text), serverRead: false, ocrFailed: true }; }
+    return { text: str(pr.text), serverRead: false };
+  }
   function checkProof(env, p, expected) {
     var pr = p.proof || {}, res = { status: 'none', url: '', facts: {}, reasons: [], hash: '' };
     // every online order needs its screenshot (Tamer 2026-09-25: "Skip, I've paid" is gone)
     if (!pr.dataUrl) throw err('Please upload the screenshot of your e-Transfer. Every order needs one.');
     res.hash = fingerprint(String(pr.dataUrl));
     if (receiptUsed(env, function (e) { return e.proof_hash === res.hash; })) throw err(DUPLICATE);
-    var text = '', serverRead = false;
-    try { var t = env.ocr(pr.dataUrl); if (t != null) { text = t; serverRead = true; } } catch (e) { res.reasons.push('server could not read the image'); }
-    if (!serverRead) text = str(pr.text);
+    var pre = p.proofText || readProofText(env, p), text = pre.text, serverRead = pre.serverRead;
+    if (pre.ocrFailed) res.reasons.push('server could not read the image');
     // what the payment shows is read first, whatever else is on the picture
     var f = Proof.facts(text); res.facts = f;
     if (!text) res.reasons.push('no text could be read from the screenshot');
@@ -2782,9 +2787,9 @@ var Core = (function () {
     // (Tamer 2026-09-24: the email came with 2 copies of the tickets); attachments: the calendar invite and, since 2026-09-25, one PDF of the tickets
     // demo (Tamer 2026-09-25): tickets DEMO 1 … DEMO N, "DEMO" pictures with no real code, nothing recorded
     var demo = !!e.demo, lab = function (n) { return demo ? 'DEMO ' + n : 'No. ' + n; };
-    var cids = {}, imgs = '', w = numbers.length > 1 ? 460 : 632;   // the full width of the email (Tamer 2026-09-25: "slightly bigger")
+    var cids = {}, imgs = '', w = numbers.length > 1 ? 460 : 632, missing = [];   // the full width of the email (Tamer 2026-09-25: "slightly bigger")
     numbers.forEach(function (n) {
-      var key = demo ? 'demo-' + ('0' + n).slice(-2) : n, blob = env.ticketImage(key); if (!blob) return;
+      var key = demo ? 'demo-' + ('0' + n).slice(-2) : n, blob = env.ticketImage(key); if (!blob) { missing.push(n); return; }
       cids['t' + n] = blob;
       // Tamer 2026-09-25: "the email pic not centered": a centred table cell, which every mail app honours
       imgs += '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px"><tr><td align="center" style="text-align:center">' +
@@ -2812,26 +2817,33 @@ var Core = (function () {
       // Google and Apple side by side (Tamer 2026-09-25: "can it be also apple calendar"); the Apple one is the same invite as the
       // attachment, on thewonderworker.ca (published by publish.sh), which an iPhone or a Mac opens straight into Calendar
       '<p style="margin:0 0 6px"><a href="' + calendarLink() + '" style="display:inline-block;margin:0 6px 6px 0;background:#1A2D57;color:#FFF3D6;text-decoration:none;padding:9px 14px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px">Add to Google Calendar</a>' +
-        '<a href="' + str(s.site_url || 'https://thewonderworker.ca/') + 'nativity-2027.ics" style="display:inline-block;margin:0 0 6px;background:#1A2D57;color:#FFF3D6;text-decoration:none;padding:9px 14px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px">Add to Apple Calendar</a></p>' +
+        '<a href="' + siteUrl(s) + 'nativity-2027.ics" style="display:inline-block;margin:0 0 6px;background:#1A2D57;color:#FFF3D6;text-decoration:none;padding:9px 14px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px">Add to Apple Calendar</a></p>' +
       (receiptLine ? '<p style="font-size:15px">' + receiptLine + '</p>' : '') +
       '<p>See you there,<br>The Wonder Worker Art Team<br>St. Mina Coptic Orthodox Church</p>');
     var atts = [env.textBlob('nativity-2027.ics', 'text/calendar', ics())];
     if (String(s.tickets_pdf).toUpperCase() === 'Y') { var pdf = ticketsPdf(env, e, numbers, cids, demo); if (pdf) atts.push(pdf); }   // the tickets as a PDF too, when switched on
     if (!demo && walletOn(env, s)) numbers.forEach(function (n) { atts.push(walletPass(env, s, e, n)); });   // and one Apple Wallet pass per ticket
+    ticketsEmail.missing = missing;   // read by finishSale: a ticket without its picture in Drive is flagged for the team (2026-09-26)
     env.mail({ to: e.email, subject: (subjectPre || '') + (demo ? 'DEMO · ' : '') + 'Your tickets · Nativity Celebration 2027 (' + (demo ? numbers.map(lab).join(', ') : 'No. ' + numbers.join(', ')) + ')', html: html, inline: cids, attachments: atts, replyTo: s.team_email, name: s.from_name });
   }
 
   // ---------- one ticket picture to save (Tamer 2026-09-25) ----------
   // The email links to thewonderworker.ca/ticket/?n=1003&k=… ; k is signed with the owner key, so ticket numbers can't be tried one
   // by one. The page asks for the picture here and offers Save. Only the picture: no name, no email, nothing else about the buyer.
+  function siteUrl(s) { var u = str(s.site_url) || 'https://thewonderworker.ca/'; return /\/$/.test(u) ? u : u + '/'; }   // always with the slash (2026-09-26)
   function ticketKey(env, n) { return env.sign('ticket-' + n); }
-  function ticketLink(env, s, n) { return str(s.site_url || 'https://thewonderworker.ca/') + 'ticket/?n=' + encodeURIComponent(n) + '&k=' + ticketKey(env, n); }
+  function ticketLink(env, s, n) { return siteUrl(s) + 'ticket/?n=' + encodeURIComponent(n) + '&k=' + ticketKey(env, n); }
   function ticketPicture(env, p) {
     var n = str(p.n);
     if (!/^(\d{1,4}|demo-\d{2})$/.test(n) || str(p.k) !== ticketKey(env, n)) throw err('This link is not valid. Please email artteam@stminacalgary.ca and we will send your ticket again.');
     var b = env.ticketImage(/^demo-/.test(n) ? n : Number(n));
     if (!b) throw err('Your ticket picture is not ready. Please email artteam@stminacalgary.ca and we will send it again.');
     return { ok: true, n: n, name: 'Nativity-2027-ticket-' + (/^demo-/.test(n) ? n.toUpperCase() : n) + '.jpg', image: env.dataUri(b) };
+  }
+
+  function needPictures(env, nums) {   // owner tools: every ticket picture must be in Drive before the email goes (2026-09-26)
+    var missing = nums.filter(function (n) { return !env.ticketImage(n); });
+    if (missing.length) throw err('No picture in Drive for ticket ' + missing.join(', ') + '. Upload it first (tickets/render.py, then tools/upload_files.py).');
   }
 
   // The tickets as one PDF to open, save or print: one page per ticket, with its door code (Tamer 2026-09-25: "make the barcode
@@ -2919,6 +2931,9 @@ var Core = (function () {
   // ---------- public: config ----------
   function config(env) {
     var s = settings(env);
+    // paid card orders whose buyer never came back and whose Square notice was lost settle here, at most once every 3 minutes,
+    // whenever anyone opens the page (Apps Script returns 200 to Square even on a failure, so Square never retries) (2026-09-26)
+    try { if (env.throttle && env.throttle('card-sweep', 180)) sweepCards(env); } catch (x) { env.log('card sweep: ' + (x.stack || x)); }
     return { suggested: num(s.suggested), etransfer: s.etransfer_email, seatsLeft: Math.max(0, seatsLeft(env, s)), open: salesOpen(env, s), event: EVENT, form: formToken(env),
       bookingMax: num(s.booking_max), minTable: String(s.min_table), orderMax: num(s.order_max), holdDays: num(s.hold_days),
       tiers: String(s.sponsor_tiers).split(/[\s,]+/).map(Number).filter(Boolean), sponsors: sponsorsShown(env),
@@ -2971,7 +2986,8 @@ var Core = (function () {
     // enough for the whole team to test. Until demo_open_until (Tamer 2026-09-25: "no limit for demo email for the next week") there is
     // no limit per person; the daily total stays under Google's own sending limit (about 1,500 a day) so real tickets always go out
     var open = str(s.demo_open_until) && localDate(env.now().toISOString()) <= str(s.demo_open_until);
-    if (env.hit && ((!open && !env.hit('demo:' + who.email, 10, 86400)) || !env.hit('demo:all', open ? 1000 : 300, 86400)))
+    var day = ':' + localDate(env.now().toISOString());   // the count is per Calgary day (the cache keeps a key 6 h at most, 2026-09-26)
+    if (env.hit && (!env.hit('demo:' + who.email + day, open ? 30 : 10, 21600) || !env.hit('demo:all' + day, open ? 1000 : 300, 21600)))
       throw err('That is enough demo emails for today. Please try again tomorrow.');
     var nums = []; for (var i = 1; i <= qty; i++) nums.push(i);
     var e = { demo: true, first: who.first, last: who.last, email: who.email, amount: amount > 0 ? amount : qty * num(s.suggested), method: 'e-Transfer', receipt: 'N' };
@@ -3006,7 +3022,9 @@ var Core = (function () {
     }
     if (/card/i.test(p.method)) return cardStart(env, s, who, p, { kind: 'order', qty: qty, gift_qty: gq, amount: amount }, qty + ' ticket' + (qty > 1 ? 's' : ''), '');
     var method = /cheque/i.test(p.method) ? 'Cheque' : 'e-Transfer';
+    p.proofText = readProofText(env, p);   // the slow reading of the screenshot, before the lock (2026-09-26)
     return env.lock(function () {
+      s = settings(env);   // fresh inside the lock: the counters as they are now (2026-09-26)
       var again = seenBefore(env, p, function (a) { return outcome(a, { status: a.proof_status }); }); if (again) return again;   // same request sent twice
       if (!fits(env, s, qty, gq)) throw err('Sorry, only ' + Math.max(0, seatsLeft(env, s)) + ' seats are left. You can join the waitlist.');
       var code = orderCode(env, s);
@@ -3027,6 +3045,7 @@ var Core = (function () {
   // Seats are held (hold_days); the buyer gets a QR code by email; a team member scans it, takes the cash and taps Paid.
   function book(env, s, who, qty, gq, amount, p) {
     return env.lock(function () {
+      s = settings(env);   // fresh inside the lock (2026-09-26)
       var again = seenBefore(env, p, function (a) { return bookingOutcome(env, a); }); if (again) return again;   // same request sent twice
       if (!fits(env, s, qty, gq)) throw err('Sorry, only ' + Math.max(0, seatsLeft(env, s)) + ' seats are left. You can join the waitlist.');
       var e = mk(env, who, { kind: 'booking', status: 'pending', qty: qty, gift_qty: gq, amount: amount, method: 'Cash', order_code: orderCode(env, s),
@@ -3079,12 +3098,14 @@ var Core = (function () {
   function finishSale(env, s, e, opening, reasons, what) {
     lowSeatsCheck(env, s);
     if (e.email) {
-      try { ticketsEmail(env, s, e, list(e.tickets), list(e.gift_numbers), opening); env.update('entries', e.id, { emailed: env.now().toISOString() }); }
-      catch (x) { reasons = reasons.concat(['tickets email failed: ' + x.message]); }
+      try {
+        ticketsEmail(env, s, e, list(e.tickets), list(e.gift_numbers), opening); env.update('entries', e.id, { emailed: env.now().toISOString() });
+        if (ticketsEmail.missing && ticketsEmail.missing.length) reasons = reasons.concat(['no picture in Drive for ticket ' + ticketsEmail.missing.join(', ') + ': the email went out with the door code only; upload the picture (tickets/render.py + tools/upload_files.py) and resend']);
+      } catch (x) { reasons = reasons.concat(['tickets email failed: ' + x.message]); }
     }
     if (reasons.length) {
       env.update('entries', e.id, { status: 'flagged', flags: reasons.join(' | ') }); e.status = 'flagged';
-      teamAlert(env, s, e, reasons, what);
+      try { teamAlert(env, s, e, reasons, what); } catch (x) { env.log('team alert failed: ' + x.message); }
     }
     paymentNote(env, s, e);
   }
@@ -3129,7 +3150,9 @@ var Core = (function () {
         ad_text: silent ? '' : str(p.ad_text).slice(0, 120), show_as: showAs, silent: silent ? 'Y' : '' };
     }, 'sponsorship', 'sponsor/');
     var method = /cheque/i.test(p.method) ? 'Cheque' : 'e-Transfer';
+    p.proofText = readProofText(env, p);
     return env.lock(function () {
+      s = settings(env);   // fresh inside the lock (2026-09-26)
       var again = seenBefore(env, p, function (a) { return outcome(a, { status: a.proof_status }, { business: a.business, silent: a.silent === 'Y' }); }); if (again) return again;
       var code = orderCode(env, s);
       p.nameForFile = code + ' - ' + label + ' - ' + money(tier) + ' - sponsor' + (silent ? ' (silent)' : '');
@@ -3167,7 +3190,9 @@ var Core = (function () {
     var s = settings(env), who = person(p), amount = num(p.amount);
     if (!(amount > 0)) throw err('Please enter the amount you are giving.');
     if (/card/i.test(p.method)) return cardStart(env, s, who, p, { kind: 'donation', amount: amount }, 'donation', 'donate/');
+    p.proofText = readProofText(env, p);
     return env.lock(function () {
+      s = settings(env);   // fresh inside the lock (2026-09-26)
       var again = seenBefore(env, p, function (a) { return outcome(a, null, { raised: raised(env) }); }); if (again) return again;   // same request sent twice
       var code = orderCode(env, s);
       // Tamer 2026-09-25: donations need the e-Transfer screenshot too, checked like a ticket order (was: no proof, 2026-09-24)
@@ -3205,13 +3230,16 @@ var Core = (function () {
   function cardStart(env, s, who, p, fields, what, page) {
     if (!squareOn(env, s)) throw err('Card payments are not available right now. Please pay by e-Transfer.');
     return env.lock(function () {
-      var again = seenBefore(env, p, function (a) { return cardAgain(env, a); }); if (again) return again;
+      s = settings(env);   // fresh inside the lock (2026-09-26)
+      var again = seenBefore(env, p, function (a) { return cardAgain(env, a); });
+      if (again && again.processing) throw err('One moment, please press Pay by card again.');   // the first try's row is not visible yet: no email to wait for
+      if (again) return again;
       if (typeof fields !== 'function' && fields.kind === 'order' && !fits(env, s, fields.qty, fields.gift_qty)) throw err('Sorry, only ' + Math.max(0, seatsLeft(env, s)) + ' seats are left. You can join the waitlist.');
       // Tamer 2026-09-25 (layout D): covering the fee is an optional tick (cover_fee Y/N), a gift rather than a surcharge, which
       // Square doesn't support in Canada. An older page that sends nothing had the fee added, so no answer means Y.
       var cover = !/^(n|no|false|0)$/i.test(str(p.cover_fee));
       var code = orderCode(env, s), token = env.random(20), f = typeof fields === 'function' ? fields(code) : fields, total = cover ? cardTotal(s, f.amount) : num(f.amount);
-      var back = str(s.site_url || 'https://thewonderworker.ca/') + page + '?card=' + encodeURIComponent(code) + '&t=' + token;
+      var back = siteUrl(s) + page + '?card=' + encodeURIComponent(code) + '&t=' + token;
       var r = env.square('POST', '/v2/online-checkout/payment-links', { idempotency_key: code + '-' + token,
         // Square's page and receipt show the split: "… · $40.00 donation + $1.47 to cover the card fee"
         quick_pay: { name: 'Nativity Celebration 2027 · ' + what + ' · ' + code + (total > num(f.amount) ? ' · ' + money(f.amount) + ' donation + ' + money(total - num(f.amount)) + ' to cover the card fee' : ''),
@@ -3243,22 +3271,28 @@ var Core = (function () {
     return env.lock(function () {
       var s = settings(env);   // inside the lock: the ticket counters as they are now
       var e = env.list('entries').filter(function (x) { return x.id === e0.id; })[0];
-      if (!e || e.status !== 'awaiting_card') return e;   // settled meanwhile (the buyer came back while Square called)
+      if (!e || e.status !== 'awaiting_card') return e || e0;   // settled meanwhile (the buyer came back while Square called)
       // Only once per order, whatever the sheet shows. 2026-09-25: WW27-0003 was settled twice in the same second (the buyer's
       // return and Square's notice) and got two tickets emails with different numbers; the sheet had not shown the first yet.
       // The mark lives in the script's own store, which never lags.
-      if (env.once && !env.once('card-settled-' + e.id)) { e.settling = true; return e; }
+      if (env.once && !env.once('card-settled-' + e.id)) { var busy = {}; for (var kk in e) busy[kk] = e[kk]; busy.settling = true; return busy; }
       var reasons = [], patch = { status: 'ok', proof_status: 'card' };
-      if (e.kind === 'order') {
-        if (fits(env, s, num(e.qty), num(e.gift_qty))) { patch.tickets = take(env, s, num(e.qty)).join(', '); patch.gift_numbers = num(e.gift_qty) ? takeGift(env, s, num(e.gift_qty)).join(', ') : ''; }
-        else { patch.status = 'flagged'; reasons.push('paid by card, but the seats ran out before Square confirmed: please refund in Square or find seats'); }
-      }
-      env.update('entries', e.id, patch); for (var k in patch) e[k] = patch[k];
-      if (e.kind === 'order') {
-        if (e.tickets) finishSale(env, s, e, 'Thank you for your donation of <b>' + money(e.amount) + '</b>. Your tickets are below.', reasons, 'card order ' + e.order_code);
-        else teamAlert(env, s, e, reasons, 'card order ' + e.order_code);
-      } else if (e.kind === 'donation') donationThanks(env, s, e);
-      else if (e.kind === 'sponsor') sponsorThanks(env, s, e, []);
+      try {   // if this fails before the row is settled, the mark is undone so the next check can try again (2026-09-26)
+        if (e.kind === 'order') {
+          if (fits(env, s, num(e.qty), num(e.gift_qty))) { patch.tickets = take(env, s, num(e.qty)).join(', '); patch.gift_numbers = num(e.gift_qty) ? takeGift(env, s, num(e.gift_qty)).join(', ') : ''; }
+          else { patch.status = 'flagged'; reasons.push('paid by card, but the seats ran out before Square confirmed: please refund in Square or find seats'); }
+        }
+        env.update('entries', e.id, patch);
+      } catch (x) { if (env.unmark) env.unmark('card-settled-' + e.id); throw x; }
+      for (var k in patch) e[k] = patch[k];
+      // the row is settled; a problem sending the emails is reported to the team, never to the buyer as a failed payment
+      try {
+        if (e.kind === 'order') {
+          if (e.tickets) finishSale(env, s, e, 'Thank you for your donation of <b>' + money(e.amount) + '</b>. Your tickets are below.', reasons, 'card order ' + e.order_code);
+          else teamAlert(env, s, e, reasons, 'card order ' + e.order_code);
+        } else if (e.kind === 'donation') donationThanks(env, s, e);
+        else if (e.kind === 'sponsor') sponsorThanks(env, s, e, []);
+      } catch (x) { env.log('after card settle ' + e.order_code + ': ' + (x.stack || x)); try { env.alert('card settle emails ' + e.order_code, x, {}); } catch (y) { } }
       return e;
     });
   }
@@ -3276,21 +3310,29 @@ var Core = (function () {
     if (id) cardSettle(env, env.list('entries').filter(function (x) { return x.card_ref === id; })[0]);
     return { ok: true };
   }
-  // dashboard: ask Square about every card payment still waiting (last 3 days)
+  // ask Square about every card payment still waiting (last 3 days; at most 6 per run so a page load stays quick)
+  function sweepCards(env) {
+    var since = env.now().getTime() - 3 * 864e5, n = 0;
+    env.list('entries').filter(function (x) { return x.status === 'awaiting_card' && Date.parse(x.created) > since; }).slice(0, 6)
+      .forEach(function (x) { if ((cardSettle(env, x) || x).status !== 'awaiting_card') n++; });
+    return n;
+  }
+  // dashboard: the same, on demand
   function ownerCardCheck(env, p) {
     requireOwner(env, p.key);
-    var since = env.now().getTime() - 3 * 864e5, n = 0;
-    env.list('entries').filter(function (x) { return x.status === 'awaiting_card' && Date.parse(x.created) > since; }).forEach(function (x) { if (cardSettle(env, x).status !== 'awaiting_card') n++; });
-    return { ok: true, settled: n };
+    return { ok: true, settled: sweepCards(env) };
   }
 
   function waitlist(env, p) {
     antiSpam(env, p);
     var who = person(p), s = settings(env);
+    return env.lock(function () {
+    var again = seenBefore(env, p, function () { return { ok: true }; }); if (again) return { ok: true };   // same request sent twice (2026-09-26)
     var e = mk(env, who, { kind: 'waitlist', qty: Math.max(1, Math.floor(num(p.qty))), status: 'ok', submit_id: str(p.submit_id) });
     env.append('entries', e);
     env.mail({ to: s.team_email, subject: 'Waitlist · ' + who.first + ' ' + who.last + ' · ' + e.qty + ' seat(s)', html: shell('<p>' + esc(who.first + ' ' + who.last) + ' (' + esc(who.email) + ') joined the waitlist for ' + e.qty + ' seat(s).</p>'), name: 'Nativity tickets' });
     return { ok: true };
+    });
   }
 
   // ---------- team page (personal link) ----------
@@ -3308,7 +3350,7 @@ var Core = (function () {
   }
   function cashSale(env, p) {
     var m = memberByKey(env, p.key); if (!m) throw err('This link is no longer valid. Please ask Tamer for a new one.');
-    var prev = findBySubmit(env, p.submit_id); if (prev) return outcome(prev, null);
+    var prev = findBySubmit(env, p.submit_id); if (prev) return outcome(prev, null, { cash: cashHeld(env, m) });
     var s = settings(env), email = str(p.email).toLowerCase();
     var who = { first: str(p.first), last: str(p.last), email: email, phone: str(p.phone), receipt: p.no_receipt ? 'N' : 'Y', address: '', city: '', postal: '' };
     if (!who.first || !who.last) throw err('Enter the buyer\'s first and last name.');
@@ -3318,6 +3360,7 @@ var Core = (function () {
     var printed = p.mode === 'printed';
     if (!printed && !email) throw err('No email? Then hand over printed tickets and choose "Printed tickets".');
     return env.lock(function () {
+      s = settings(env);   // fresh inside the lock (2026-09-26)
       var again = seenBefore(env, p, function (a) { return outcome(a, null, { cash: cashHeld(env, m) }); }); if (again) return again;   // same request sent twice
       var nums;
       if (printed) {
@@ -3349,6 +3392,7 @@ var Core = (function () {
     if (!validEmail(email)) throw err('Enter the email address they wrote from.');
     if (q < 1 || q > 20) throw err('Number of tickets: 1 to 20.');
     return env.lock(function () {
+      s = settings(env);   // fresh inside the lock (2026-09-26)
       var again = seenBefore(env, p, function (a) { return outcome(a, null); }); if (again) return again;   // same request sent twice
       if (!fits(env, s, q, 0)) throw err('Only ' + Math.max(0, seatsLeft(env, s)) + ' seats left.');
       var nums = take(env, s, q), who = { first: str(p.first) || 'Guest', last: str(p.last), email: email, phone: '', receipt: 'N', address: '', city: '', postal: '' };
@@ -3390,17 +3434,22 @@ var Core = (function () {
     var m = memberByKey(env, p.key); if (!m) throw err('This link is no longer valid. Please ask Tamer for a new one.');
     var s = settings(env);
     return env.lock(function () {
+      s = settings(env);   // fresh inside the lock (2026-09-26)
       var e = findBooking(env, p.ref);
       if (e.status === 'void') throw err('Booking ' + e.order_code + ' was cancelled. Make a new sale instead.');
       if (e.kind !== 'booking') throw err('Booking ' + e.order_code + ' is already paid (tickets ' + e.tickets + ', by ' + e.recorded_by + ').');
-      var amount = num(p.amount) || num(e.amount), method = /cheque/i.test(p.method) ? 'Cheque' : 'Cash';
-      var qty = num(e.qty), gq = num(e.gift_qty);
-      if (!fits(env, s, qty, gq, e.id)) throw err('Not enough seats left for this booking. Please call Tamer.');
-      var patch = { kind: 'cash', status: 'ok', amount: amount, method: method, recorded_by: m.name, member_id: m.id,
-        tickets: take(env, s, qty).join(', '),
-        gift_numbers: gq ? takeGift(env, s, gq).join(', ') : '',
-        note: str(e.note + ' booked online, paid ' + env.now().toISOString().slice(0, 10)) };
-      env.update('entries', e.id, patch);
+      // once only, whatever the sheet shows (a double tap on Paid + the sheet lag = two sets of tickets); undone if this run fails
+      if (env.once && !env.once('paid-' + e.id)) throw err('Booking ' + e.order_code + ' is being marked paid right now. Check the list in a moment.');
+      try {
+        var amount = num(p.amount) || num(e.amount), method = /cheque/i.test(p.method) ? 'Cheque' : 'Cash';
+        var qty = num(e.qty), gq = num(e.gift_qty);
+        if (!fits(env, s, qty, gq, e.id)) throw err('Not enough seats left for this booking. Please call Tamer.');
+        var patch = { kind: 'cash', status: 'ok', amount: amount, method: method, recorded_by: m.name, member_id: m.id,
+          tickets: take(env, s, qty).join(', '),
+          gift_numbers: gq ? takeGift(env, s, gq).join(', ') : '',
+          note: str(e.note + ' booked online, paid ' + env.now().toISOString().slice(0, 10)) };
+        env.update('entries', e.id, patch);
+      } catch (x) { if (env.unmark) env.unmark('paid-' + e.id); throw x; }
       for (var k in patch) e[k] = patch[k];
       finishSale(env, s, e, 'Thank you for your donation of <b>' + money(amount) + '</b>, received by ' + esc(m.name) + '. Your tickets are below.', [], 'cash booking ' + e.order_code);
       var r = bookingView(e); r.cash = cashHeld(env, m); return r;
@@ -3445,6 +3494,7 @@ var Core = (function () {
         if (used[n] && used[n].id !== e.id) throw err('Ticket ' + n + ' belongs to another order.');
         if (vo.indexOf(n) > -1) throw err('Ticket ' + n + ' was cancelled.');
       });
+      needPictures(env, nums);
       env.update('entries', e.id, { tickets: nums.join(', ') }); e.tickets = nums.join(', ');
       if (num(p.next_online)) env.setSetting('next_online', Math.max(ETICKET_MIN, Math.floor(num(p.next_online))));
       if (str(p.note) && e.email) {
@@ -3455,7 +3505,17 @@ var Core = (function () {
     });
   }
   function ownerVoid(env, p) { requireOwner(env, p.key); env.update('entries', p.id, { status: 'void' }); return { ok: true }; }
-  function ownerClear(env, p) { requireOwner(env, p.key); env.update('entries', p.id, { status: 'ok' }); return { ok: true }; }
+  // refunded in Square (2026-09-26): seats and numbers come back and the amount no longer counts, like void, but the row stays in Hany's export
+  function ownerRefunded(env, p) {
+    requireOwner(env, p.key);
+    var e = env.list('entries').filter(function (x) { return x.id === p.id; })[0]; if (!e) throw err('Not found.');
+    env.update('entries', e.id, { status: 'refunded', note: str(e.note + ' refunded ' + env.now().toISOString().slice(0, 10)) }); return { ok: true };
+  }
+  function ownerClear(env, p) {
+    requireOwner(env, p.key);
+    var e = env.list('entries').filter(function (x) { return x.id === p.id; })[0]; if (!e) throw err('Not found.');
+    env.update('entries', e.id, { status: 'ok', flags: '', note: str(e.note + (e.flags ? ' | checked OK: ' + e.flags : '')) }); return { ok: true };
+  }
   function ownerSponsorShow(env, p) {
     requireOwner(env, p.key);
     var e = env.list('entries').filter(function (x) { return String(x.id) === String(p.id); })[0];
@@ -3541,6 +3601,8 @@ var Core = (function () {
     var s = requireOwner(env, p.key);
     var e = env.list('entries').filter(function (x) { return x.id === p.id; })[0]; if (!e) throw err('Not found.');
     if (p.email) { if (!validEmail(str(p.email))) throw err('Check the email.'); e.email = str(p.email).toLowerCase(); env.update('entries', e.id, { email: e.email }); }
+    if (!e.email) throw err('This sale has no email. Enter one to send the tickets to.');
+    needPictures(env, list(e.tickets));
     ticketsEmail(env, s, e, list(e.tickets), list(e.gift_numbers), 'Here are your tickets again.');
     return { ok: true };
   }
@@ -3560,6 +3622,9 @@ var Core = (function () {
     by: ['Recorded by', function (e) { return e.recorded_by; }],
     receipt: ['Tax receipt', function (e, s) {
       var adv = advantage(s, e);
+      if (e.status === 'awaiting_card') return 'No (card not paid)';   // an unfinished card order: nothing was received (2026-09-26)
+      if (e.status === 'void') return 'No (cancelled)';
+      if (e.status === 'refunded') return 'No (refunded)';
       return e.receipt === 'N' ? 'No (declined)' : adv > 0.8 * num(e.amount) ? 'No (what they got back is over 80%)' :
         e.kind === 'sponsor' && e.silent !== 'Y' && adv ? 'Yes, less ' + money(adv) + ' for the advertising' : 'Yes'; }],
     receiptable: ['Receiptable amount', null],
@@ -3573,18 +3638,21 @@ var Core = (function () {
     return num(s.receipt_ticket_value) * (list(e.tickets).length + list(e.gift_numbers).length) + (e.kind === 'sponsor' && e.silent !== 'Y' ? num(s.sponsor_ad_value) : 0);
   }
   function receiptable(s, e) {
+    if (e.status === 'awaiting_card' || e.status === 'void' || e.status === 'refunded' || e.receipt === 'N') return 0;
     var a = num(e.amount), adv = advantage(s, e);
     return adv > 0.8 * a ? 0 : Math.max(0, Math.round((a - adv) * 100) / 100);
   }
   function exportRows(env, p) {
     var s = requireOwner(env, p.key), cols = (p.cols && p.cols.length ? p.cols : ['date', 'name', 'email', 'amount', 'method']).filter(function (c) { return EXPORT_COLS[c]; });
-    var rows = live(env).filter(function (e) {
+    var entriesOut = env.list('entries').filter(function (e) {   // live sales, plus refunded ones so Hany sees them (2026-09-26)
+      if (!(e.status === 'refunded' || (e.status !== 'void' && e.status !== 'awaiting_card' && e.kind !== 'waitlist' && e.kind !== 'booking'))) return false;
       if (p.method && e.method !== p.method) return false;
       if (p.member && e.member_id !== p.member) return false;
       if (p.from && localDate(e.created) < p.from) return false;
       if (p.to && localDate(e.created) > p.to) return false;
       return true;
-    }).map(function (e) {
+    });
+    var rows = entriesOut.map(function (e) {
       return cols.map(function (c) {
         if (c === 'receiptable') return receiptable(s, e);
         return EXPORT_COLS[c][1](e, s);
@@ -3593,11 +3661,12 @@ var Core = (function () {
     var head = cols.map(function (c) { return EXPORT_COLS[c][0]; });
     var ai = cols.indexOf('amount');
     if (ai > -1) {
-      var sums = {}; var mi = cols.indexOf('method');
-      rows.forEach(function (r) { var k = mi > -1 ? r[mi] : 'All'; sums[k] = (sums[k] || 0) + num(r[ai]); });
+      var sums = {}; var mi = cols.indexOf('method'), si = cols.indexOf('status');
+      var counted = rows.filter(function (r, i) { return entriesOut[i].status !== 'refunded'; });   // refunded rows are listed, not summed (2026-09-26)
+      counted.forEach(function (r) { var k = mi > -1 ? r[mi] : 'All'; sums[k] = (sums[k] || 0) + num(r[ai]); });
       var tail = [[]];
       Object.keys(sums).forEach(function (k) { var r = cols.map(function () { return ''; }); r[0] = 'Total ' + k; r[ai] = sums[k]; tail.push(r); });
-      var g = cols.map(function () { return ''; }); g[0] = 'Grand total'; g[ai] = rows.reduce(function (t, r) { return t + num(r[ai]); }, 0); tail.push(g);
+      var g = cols.map(function () { return ''; }); g[0] = 'Grand total' + (counted.length < rows.length ? ' (refunded not counted)' : ''); g[ai] = counted.reduce(function (t, r) { return t + num(r[ai]); }, 0); tail.push(g);
       rows = rows.concat(tail);
     }
     return { head: head, rows: rows };
@@ -3640,7 +3709,7 @@ var Core = (function () {
     owner_data: ownerData, owner_member_add: ownerMemberAdd, owner_member_reissue: ownerMemberReissue, owner_member_revoke: ownerMemberRevoke,
     owner_void: ownerVoid, owner_clear: ownerClear, owner_sponsor_show: ownerSponsorShow, owner_handover: ownerHandover, owner_setting: ownerSetting, owner_resend: ownerResend, owner_test_email: ownerTestEmail,
     owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); }, owner_sheet_key: ownerSheetKey, sheet_rows: sheetRows, owner_test_pdf: ownerTestPdf, owner_test_pass: ownerTestPass,
-    card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck, owner_free_tickets: ownerFreeTickets, ticket_picture: ticketPicture, owner_set_tickets: ownerSetTickets };
+    card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck, owner_free_tickets: ownerFreeTickets, ticket_picture: ticketPicture, owner_set_tickets: ownerSetTickets, owner_refunded: ownerRefunded };
 
   var PUBLIC_WRITES = { order: 1, donate: 1, sponsor: 1, waitlist: 1 };
   function handle(env, action, payload) {

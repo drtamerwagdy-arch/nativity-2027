@@ -386,12 +386,13 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
 .shotgrid .cap{display:block;font:700 11.5px/1 Inter,system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);text-align:center;margin:0 0 6px}
 .shotex{margin:0}
 .shotex img{display:block;width:100%;aspect-ratio:1;object-fit:contain;border-radius:14px;border:2px solid #F6CB5C;background:#fff;cursor:zoom-in}
-.upsq{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;aspect-ratio:1;width:100%;border:2.5px dashed #1F4E8C;border-radius:14px;background:#F2F6FD;color:#1F4E8C;cursor:pointer;text-align:center;padding:10px;overflow:hidden}
+.upsq{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;aspect-ratio:1;width:100%;border:2.5px dashed #1F4E8C;border-radius:14px;background:#F2F6FD;color:#1F4E8C;cursor:pointer;text-align:center;padding:10px}
+@media (max-width:480px){.upsq{gap:4px;padding:8px 6px}.upsq svg{width:32px;height:32px}.upsq b{font-size:14px}.upsq small{font-size:11.5px}}
 .upsq:hover{background:#E6EEFB}.upsq:focus-within{outline:3px solid #F6CB5C;outline-offset:2px}
 .upsq svg{width:46px;height:46px}
 .upsq b{font:800 15.5px/1.2 Inter,system-ui,sans-serif}
 .upsq small{font:500 12.5px/1.3 Inter,system-ui,sans-serif;color:var(--soft)}
-.upsq canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff}
+.upsq canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;border-radius:11px}
 .upsq .chg{position:absolute;left:0;right:0;bottom:0;background:rgba(31,122,85,.92);color:#fff;font:700 12.5px/1 Inter,system-ui,sans-serif;padding:8px 4px}
 .upsq.got{border-style:solid;border-color:#1F7A55}
 .privnote{margin:0;font-size:13.5px;line-height:1.45;color:var(--soft)}
@@ -550,7 +551,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.65</span></footer>
+<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.66</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -592,7 +593,7 @@ document.addEventListener('click', function (ev) {
 // they keep only digits and one decimal point, and phones still show the number keypad (inputmode="decimal")
 document.addEventListener('input', function (ev) {
   var i = ev.target; if (!i || !i.hasAttribute || !i.hasAttribute('data-money')) return;
-  var v = i.value.replace(/[^\d.]/g, ''), d = v.indexOf('.');
+  var v = i.value.replace(/,(\d{1,2})$/, '.$1').replace(/[^\d.]/g, ''), d = v.indexOf('.');   // "20,50" → 20.50 (2026-09-26)
   if (d > -1) v = v.slice(0, d + 1) + v.slice(d + 1).replace(/\./g, '').slice(0, 2);
   if (v !== i.value) i.value = v;
 }, true);
@@ -789,8 +790,10 @@ function ProofBox(root, opts) {
   }
   function check() {
     busy = true; state = { dataUrl: '', text: '', scrambled: [], error: '' }; say('hint', 'Checking your screenshot on this phone…');
-    loadTesseract().then(function (T) { return T.recognize(cv.toDataURL('image/png'), 'eng', (window.WW_TESS && WW_TESS.options) || {}); }).then(function (out) {
+    var timeout = new Promise(function (_, rej) { setTimeout(function () { rej(new Error('reading took too long')); }, 45000); });   // 2026-09-26
+    Promise.race([loadTesseract().then(function (T) { return T.recognize(cv.toDataURL('image/png'), 'eng', (window.WW_TESS && WW_TESS.options) || {}); }), timeout]).then(function (out) {
       busy = false;
+      try {
       var exp = opts.expected ? Number(opts.expected()) : 0, lines = (out.data.lines || []).filter(function (l) { return String(l.text).trim(); });
       var texts = lines.map(function (l) { return String(l.text).trim(); }), hits = Proof.sensitiveLines(texts, exp), ctx = cv.getContext('2d'), kept = [];
       lines.forEach(function (l, n) { if (hits[n]) { scramble(ctx, l.bbox); if (state.scrambled.indexOf(hits[n]) < 0) state.scrambled.push(hits[n]); } else kept.push(texts[n]); });
@@ -804,6 +807,10 @@ function ProofBox(root, opts) {
       say('okbox', '<b>Screenshot ready.</b> ' + (f.amount ? 'Amount ' + money(f.amount) + '. ' : '') +
         (state.scrambled.length ? '<br>Private details on it (' + esc(state.scrambled.join(', ')) + ') have been blacked out, so no one can see them.' : '') +
         (notes.length ? '<br>Note: ' + esc(notes.join('; ')) + '. That\'s OK: you can still submit and the team will check.' : (state.scrambled.length ? '' : ' Everything we need is visible.')));
+      } catch (x) {   // anything odd in the reading: send the picture as it is; the server checks it (2026-09-26)
+        state.dataUrl = cv.toDataURL('image/jpeg', 0.85); state.text = ''; state.scrambled = [];
+        say('warn', 'We could not check the picture on this phone. It will be checked when you submit, and any private details on it will not be kept.');
+      }
     }, function () {
       busy = false;
       // the reader could not load (old phone / no connection): send it; the server checks it and deletes it if it shows private details
@@ -3225,7 +3232,7 @@ var qrcode = function() {
     try { if (/[?&]v=/.test(location.search)) { var u0 = new URL(location.href); u0.searchParams.delete('v'); history.replaceState(null, '', u0.pathname + u0.search + u0.hash); } } catch (x) { }
     if (window.WW_DEMO || !/(^|\.)thewonderworker\.ca$/.test(location.hostname)) return;
     fetch('/version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
-      if (!j || !j.v || j.v === '1.65') return;
+      if (!j || !j.v || j.v === '1.66') return;
       try { var k = 'ww27-updated-' + j.v; if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (x) { return; }
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () { });
@@ -3257,28 +3264,36 @@ var qrcode = function() {
     return o;
   }
   function submit(form, action, build) {
-    var errBox = $('[data-err]', form), sid = newId();
+    var errBox = $('[data-err]', form), sid = newId(), lastBtn = null, lastPay = '';
     // Enter in a box never sends the form: on the pay forms it would press "Pay by card" (layout D, 2026-09-25)
     form.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.tagName === 'INPUT' && e.target.type !== 'submit') e.preventDefault(); });
+    // which button was pressed: older Safari has no ev.submitter, so the last submit button tapped is remembered (2026-09-26)
+    form.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('button[type=submit]'); if (b) lastBtn = b; }, true);
+    function visible(b) { return !!(b.offsetWidth || b.offsetHeight || b.getClientRects().length); }
     form.onsubmit = function (ev) {
       ev.preventDefault(); errBox.textContent = '';
-      // which button: "Pay by card" or the e-Transfer Submit (the waitlist has just one)
-      var btn = ev.submitter && ev.submitter.type === 'submit' ? ev.submitter : $('button[type=submit]', form), pw = $('[name=paywith]', form);
-      if (pw) pw.value = btn.getAttribute('data-pay') || 'e-Transfer';
+      var all = $$('button[type=submit]', form), pw = $('[name=paywith]', form);
+      var btn = ev.submitter && ev.submitter.type === 'submit' ? ev.submitter : lastBtn || all.filter(function (b) { return visible(b) && b.getAttribute('data-pay') !== 'Card'; })[0] || all[0];
+      var pay = btn.getAttribute('data-pay') || 'e-Transfer';
+      if (pw) pw.value = pay;
+      if (lastPay && lastPay !== pay) sid = newId();   // another way to pay is a new request; the same way again is the same request (never booked twice)
+      lastPay = pay;
       var p; try { p = build(data(form)); } catch (x) { errBox.textContent = x.message; return; }
       if (!p) return;
-      p.submit_id = sid; p.form = CFG.form; btn.disabled = true; var label = btn.innerHTML; btn.textContent = 'Sending…';
+      p.submit_id = sid; var label = btn.innerHTML, refreshed = false;
+      all.forEach(function (b) { b.disabled = true; }); btn.textContent = 'Sending…';   // both pay buttons wait (2026-09-26)
+      function restore() { all.forEach(function (b) { b.disabled = false; }); btn.innerHTML = label; }
       // A phone pauses a page that goes to the background (or the screen locks) and the answer can get lost: the page then
       // sends the same request again. Same submit_id, so the server returns the first result and never books twice (Tamer 2026-09-24).
       var settled = false, tries = 0, open = 0, last = 0, timer;
       function end() { settled = true; clearTimeout(timer); document.removeEventListener('visibilitychange', onVis); }
       function giveUp() {
         end(); errBox.textContent = 'We could not hear back. If your email arrives, you are all set; if not, tap the button again (it will not book twice).';
-        btn.disabled = false; btn.innerHTML = label;
+        restore();
       }
       function ok(r) {
         if (settled) return; end();
-        if (r && r.card && /^practice-card:/.test(r.card.url)) { btn.disabled = false; btn.innerHTML = label; return practiceCard(r.card.url.replace(/^practice-card:/, ''), form, action); }   // practice pages: pretend Square
+        if (r && r.card && /^practice-card:/.test(r.card.url)) { restore(); return practiceCard(r.card.url.replace(/^practice-card:/, ''), form, action); }   // practice pages: pretend Square
         if (r && r.card && r.card.url) { btn.textContent = 'Opening the card payment…'; location.href = r.card.url; return; }   // Square's page (2026-09-25)
         try { done(action, r); } catch (x) { $('#done').innerHTML = '<h2>Thank you!</h2><p>It went through' + (r && r.order ? ' (reference ' + esc(r.order) + ')' : '') + '. Your email is on its way.</p>'; show('done'); }
       }
@@ -3287,7 +3302,12 @@ var qrcode = function() {
         if (x.net && tries < 6) { clearTimeout(timer); timer = setTimeout(send, 3000); return; }
         if (open > 0) return;   // an earlier try may still come back
         if (x.net) return giveUp();
-        end(); errBox.textContent = x.message; btn.disabled = false; btn.innerHTML = label;
+        if (/reload the page/i.test(x.message) && !refreshed) {   // the page's anti-robot token is hours old: a fresh one, then the same request again (2026-09-26)
+          refreshed = true;
+          api('config').then(function (c) { CFG.form = c.form; p.form = c.form; tries = 0; send(); }, function () { end(); errBox.textContent = x.message; restore(); });
+          return;
+        }
+        end(); errBox.textContent = x.message; restore();
       }
       function send() {
         if (settled || tries >= 6) return;
@@ -3298,7 +3318,7 @@ var qrcode = function() {
       }
       function onVis() { if (document.visibilityState === 'visible' && Date.now() - last > 4000) send(); }
       document.addEventListener('visibilitychange', onVis);
-      send();
+      CFG_READY.then(function () { p.form = CFG.form; send(); });   // the settings (and the anti-robot token) must be in before anything is sent
     };
   }
   // the button they pressed decides how they pay; "cover the card fee" goes with card payments only (Y/N)
@@ -3409,8 +3429,9 @@ var qrcode = function() {
   var give = $('#give');
   // Fundraising banner: a graduated thermometer (every 10 %, labels every 25 %), filled to what's given;
   // the gold dashed part shows where the total will be once this gift is completed.
+  var gidN = 0;
   function banner(raised, add, goal, givers) {
-    goal = goal || 1;
+    goal = goal || 1; var gid = 'fillg' + (++gidN);
     var H = 230, top = 12, bot = 196, x = 38, w = 22, span = bot - top;
     function y(v) { return bot - Math.min(1, Math.max(0, v / goal)) * span; }
     function k(v) { return v >= 1000 ? '$' + (v / 1000).toFixed(v % 1000 ? 1 : 0) + 'k' : '$' + v; }
@@ -3425,11 +3446,11 @@ var qrcode = function() {
     var you = add > 0 ? '<g><rect x="-118" y="' + (yn - 13) + '" width="142" height="26" rx="7" fill="#F6CB5C"/><path d="M24 ' + (yn - 7) + 'L34 ' + yn + 'L24 ' + (yn + 7) + 'z" fill="#F6CB5C"/>' +
       '<text x="-47" y="' + (yn + 5) + '" text-anchor="middle" fill="#0B1530" font-family="Inter,Arial,sans-serif" font-weight="800" font-size="13">you · + ' + money(add) + '</text></g>' : '';
     var svg = '<svg width="232" height="' + H + '" viewBox="-120 0 232 ' + H + '" role="img" aria-label="' + money(raised) + ' of ' + money(goal) + '">' +
-      '<defs><linearGradient id="fillg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#A12A22"/><stop offset="1" stop-color="#D63A2E"/></linearGradient></defs>' +
+      '<defs><linearGradient id="' + gid + '" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#A12A22"/><stop offset="1" stop-color="#D63A2E"/></linearGradient></defs>' +
       '<rect x="' + x + '" y="' + top + '" width="' + w + '" height="' + (span + 10) + '" rx="11" fill="rgba(255,255,255,.88)" stroke="#2A1030" stroke-width="2"/>' +
       (add > 0 ? '<rect x="' + (x + 4) + '" y="' + yn + '" width="' + (w - 8) + '" height="' + Math.max(0, yr - yn) + '" fill="#F2C14E" stroke="#B8860B" stroke-dasharray="3 2"/>' : '') +
-      '<rect x="' + (x + 4) + '" y="' + yr + '" width="' + (w - 8) + '" height="' + (bot - yr + 12) + '" fill="url(#fillg)"/>' +
-      '<circle cx="' + (x + w / 2) + '" cy="' + (bot + 18) + '" r="17" fill="url(#fillg)" stroke="#2A1030" stroke-width="2"/>' +
+      '<rect x="' + (x + 4) + '" y="' + yr + '" width="' + (w - 8) + '" height="' + (bot - yr + 12) + '" fill="url(#' + gid + ')"/>' +
+      '<circle cx="' + (x + w / 2) + '" cy="' + (bot + 18) + '" r="17" fill="url(#' + gid + ')" stroke="#2A1030" stroke-width="2"/>' +
       '<circle cx="' + (x + w / 2 - 5) + '" cy="' + (bot + 13) + '" r="4" fill="rgba(255,255,255,.45)"/>' + ticks + you + '</svg>';
     var pct = Math.min(100, Math.round(raised / goal * 100));
     return '<div class="tbanner"><div class="bg"></div><div class="grade"></div><div class="fade"></div><div class="in">' + svg +
@@ -3547,6 +3568,8 @@ var qrcode = function() {
   // ---- result ----
   function done(action, r) {
     var h = '';
+    try { sessionStorage.removeItem('ww27-place'); } catch (x) { }   // "Back to start" starts at the top
+    if (action === 'order' && r && r.order && (!r.tickets || !r.tickets.length) && !r.booking && !r.processing) r.contact = true;   // paid, but the seats ran out: the team will be in touch
     if (r && r.processing) {   // the same request went through a moment ago (the phone had lost the answer): its email is on its way
       $('#done').innerHTML = '<h2>Thank you!</h2><p>We have it: your email is on its way.</p><p>If you didn\'t get your email, please email us at <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a>.</p>' +
         '<p><button type="button" class="btn ghost" onclick="location.reload()">Back to start</button></p>';
@@ -3628,8 +3651,10 @@ var qrcode = function() {
   // the guide that fits the page someone arrived on (Become a sponsor opens its own when shown)
   function tourStart() { }   // Tamer 2026-09-25: no guide opening by itself; the steps are on the page and Help opens the guide
 
-  api('config').then(function (c) {
+  payInit();
+  var CFG_READY = api('config').then(function (c) {
     for (var k in c) CFG[k] = c[k];
+    if (c.orderMax) $$('[name=qty],[name=gift_qty]').forEach(function (i) { i.max = c.orderMax; });
     $('#seats').textContent = CFG.open ? (CFG.seatsLeft > 0 ? CFG.seatsLeft + ' seats left' : 'Sold out: join the waitlist') : 'Ticket sales are closed.';
     if (CFG.paused) { $('#pick').outerHTML = '<section class="card"><h2>Back soon</h2><p>' + esc(CFG.paused) + '</p></section>'; forms.forEach(function (f) { $('#' + f).classList.add('hide'); }); return; }
     if (cur === 'buy' && (CFG.seatsLeft <= 0 || !CFG.open)) show('wait', true);
@@ -3639,8 +3664,8 @@ var qrcode = function() {
     $('[data-sponsors]', spon).innerHTML = sponsorsHtml(CFG.sponsors);
     if (CFG.sponsorAd >= 0) $$('[data-adval]', spon).forEach(function (x) { x.textContent = money(CFG.sponsorAd); });
     buySync(); thermo(); sponSync(); sponSpot(); tourStart();
-    payInit(); placeScroll();
-  }, function () { buySync(); thermo(); sponSync(); sponSpot(); tourStart(); payInit(); placeScroll(); });
+    payMode(); placeScroll();
+  }, function () { buySync(); thermo(); sponSync(); sponSpot(); tourStart(); payMode(); placeScroll(); });
 
   // ---- a reload keeps your place (Tamer 2026-09-25: "when reload keep at same location"): the tab now, the scroll once drawn ----
   var PLACE = null;
@@ -3663,9 +3688,10 @@ var qrcode = function() {
   function paySync(form) {   // the total on "Pay by card" and the fee in the tick follow the amount chosen above
     if (!CFG.card || !form) return;
     var a = amountOf(form), fee = a > 0 ? Math.round((cardTotal(a) - a) * 100) / 100 : 0, cover = $('[name=cover_fee]', form).checked;
-    $('[data-cardamt]', form).textContent = a > 0 ? money(a + (cover ? fee : 0)) : '';
-    $('[data-feeamt]', form).textContent = money(fee);
-    $('[data-coverrow]', form).classList.toggle('hide', !(a > 0));
+    var amt = $('[data-cardamt]', form), feeEl = $('[data-feeamt]', form), row = $('[data-coverrow]', form);
+    if (amt) amt.textContent = a > 0 ? money(a + (cover ? fee : 0)) : '';
+    if (feeEl) feeEl.textContent = money(fee);
+    if (row) row.classList.toggle('hide', !(a > 0));
   }
   // the practice pages only (Tamer 2026-09-25): where Square's secure page would open, a pretend step; nothing is paid
   function practiceCard(id, form, action) {
@@ -3683,27 +3709,32 @@ var qrcode = function() {
       api('practice_pay', { id: id }).then(function (r) { z.remove(); done(action, r); }, function (x) { z.remove(); $('[data-err]', form).textContent = x.message; });
     };
   }
-  function payInit() {
+  function payOpen(form, on) { var tg = $('[data-etoggle]', form), et = $('[data-etpart]', form); et.classList.toggle('hide', !on); tg.setAttribute('aria-expanded', on ? 'true' : 'false'); }
+  function payInit() {   // at once, before the settings arrive (2026-09-26: the buttons were dead during the engine's cold start)
     [buy, give, spon].forEach(function (form) {
       var d = $('.payd', form), tg = $('[data-etoggle]', form), et = $('[data-etpart]', form);
       if (d.getAttribute('data-ready')) return; d.setAttribute('data-ready', '1');
-      function open(on) { et.classList.toggle('hide', !on); tg.setAttribute('aria-expanded', on ? 'true' : 'false'); }
       tg.onclick = function () {
-        var on = et.classList.contains('hide'); open(on);
+        var on = et.classList.contains('hide'); payOpen(form, on);
         if (on) setTimeout(function () { et.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 40);
       };
-      if (CFG.card) {
-        paySync(form);
-        form.addEventListener('input', function () { paySync(form); }); form.addEventListener('change', function () { paySync(form); });
-      } else { $('[data-cardpart]', form).classList.add('hide'); d.classList.add('nocard'); tg.classList.add('hide'); open(true); }   // no card payments: the e-Transfer part is simply there
+      form.addEventListener('input', function () { paySync(form); }); form.addEventListener('change', function () { paySync(form); });
+    });
+  }
+  function payMode() {   // once the settings are known: card on (totals) or off (the e-Transfer part is simply there)
+    [buy, give, spon].forEach(function (form) {
+      var d = $('.payd', form);
+      if (CFG.card) { $('[data-cardpart]', form).classList.remove('hide'); d.classList.remove('nocard'); $('[data-etoggle]', form).classList.remove('hide'); paySync(form); }
+      else { $('[data-cardpart]', form).classList.add('hide'); d.classList.add('nocard'); $('[data-etoggle]', form).classList.add('hide'); payOpen(form, true); }
     });
   }
   // back from Square's page (?card=WW27-0005&t=…): Square is asked whether it is paid
   function cardReturn() {
     $('#done').innerHTML = '<h2>Checking your card payment…</h2><p>One moment.</p>'; show('done');
     var kindAction = { donation: 'donate', sponsor: 'sponsor', order: 'order' };
-    api('card_status', { order: param('card'), t: param('t') }).then(function (r) {
-      try { history.replaceState(null, '', location.pathname); } catch (x) { }
+    var order = param('card'), t = param('t');
+    CFG_READY.then(function () { return api('card_status', { order: order, t: t }); }).then(function (r) {
+      if (!r.pending) { try { history.replaceState(null, '', location.pathname); sessionStorage.removeItem('ww27-place'); } catch (x) { } }
       if (r.settling) {   // paid; the other confirmation (Square's notice) is sending the email right now
         $('#done').innerHTML = '<h2>Thank you' + (r.first ? ', ' + esc(r.first) : '') + '!</h2><p>Your card payment went through. Your email is on its way to <b>' + esc(r.email || 'you') + '</b>.</p>' +
           '<p>If you didn\'t get your email, please email us at <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a>.</p><p><button type="button" class="btn ghost" onclick="location.href=location.pathname">Back to start</button></p>';
@@ -3711,7 +3742,7 @@ var qrcode = function() {
       }
       if (!r.pending) return done(kindAction[r.kind] || 'order', r);
       $('#done').innerHTML = '<h2>Your card payment is not finished</h2><p>Square has not confirmed a payment for <b>' + esc(param('card')) + '</b> yet. If you just paid, wait a moment and check again.</p>' +
-        '<p><button type="button" class="btn" onclick="location.reload()">Check again</button> <a class="btn ghost" href="' + esc(r.url) + '">Back to the card payment</a></p>' +
+        '<p><button type="button" class="btn" onclick="location.reload()">Check again</button> <a class="btn ghost" href="' + esc(r.url) + '">Back to the card payment</a></p>' +   // the address still has ?card=, so the reload checks again
         '<p class="hint">Or start over and pay by Interac e-Transfer. Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></p>';
     }, function (x) { $('#done').innerHTML = '<h2>We could not check the payment</h2><p>' + esc(x.message) + '</p>'; });
   }
@@ -3720,6 +3751,7 @@ var qrcode = function() {
   if (param('p') === 'donate' || param('donate')) show('give', true);
   else if (param('p') === 'sponsor') show('spon', true);
   else show('buy', true);
+  window.addEventListener('pageshow', function (e) { if (e.persisted) location.reload(); });   // back from Square's page with Back: a fresh form (2026-09-26)
   if (param('card') && param('t')) cardReturn();
   else placeTab();
 })();
