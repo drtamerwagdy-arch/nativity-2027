@@ -2759,7 +2759,7 @@ var Core = (function () {
           (demo ? '<div style="width:220px;height:220px;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,#f3f3f3 0 8px,#e6e6e6 8px 16px);border:2px solid #C0392B;color:#C0392B;font:bold 24px Arial,sans-serif">DEMO<br>no code</div>' : qrImg(env, cids, 'd' + n, 'WW27-T' + n, 220)) + '<div style="font-family:Arial,sans-serif;font-size:14px;font-weight:bold;margin-top:6px">' + (demo ? 'DEMO ' : 'No. ') + n + '</div></div>';
       }).join('') + '</div>';
   }
-  function ticketsEmail(env, s, e, numbers, gifts, opening) {
+  function ticketsEmail(env, s, e, numbers, gifts, opening, subjectPre) {
     // one ticket shows large; several show smaller so the email stays short — Tamer 2026-09-24. No attached picture copies
     // (Tamer 2026-09-24: the email came with 2 copies of the tickets); attachments: the calendar invite and, since 2026-09-25, one PDF of the tickets
     // demo (Tamer 2026-09-25): tickets DEMO 1 … DEMO N, "DEMO" pictures with no real code, nothing recorded
@@ -2800,7 +2800,7 @@ var Core = (function () {
     var atts = [env.textBlob('nativity-2027.ics', 'text/calendar', ics())];
     if (String(s.tickets_pdf).toUpperCase() === 'Y') { var pdf = ticketsPdf(env, e, numbers, cids, demo); if (pdf) atts.push(pdf); }   // the tickets as a PDF too, when switched on
     if (!demo && walletOn(env, s)) numbers.forEach(function (n) { atts.push(walletPass(env, s, e, n)); });   // and one Apple Wallet pass per ticket
-    env.mail({ to: e.email, subject: (demo ? 'DEMO · ' : '') + 'Your tickets · Nativity Celebration 2027 (' + (demo ? numbers.map(lab).join(', ') : 'No. ' + numbers.join(', ')) + ')', html: html, inline: cids, attachments: atts, replyTo: s.team_email, name: s.from_name });
+    env.mail({ to: e.email, subject: (subjectPre || '') + (demo ? 'DEMO · ' : '') + 'Your tickets · Nativity Celebration 2027 (' + (demo ? numbers.map(lab).join(', ') : 'No. ' + numbers.join(', ')) + ')', html: html, inline: cids, attachments: atts, replyTo: s.team_email, name: s.from_name });
   }
 
   // ---------- one ticket picture to save (Tamer 2026-09-25) ----------
@@ -3222,10 +3222,14 @@ var Core = (function () {
   }
   function cardSettle(env, e0) {
     if (!e0 || e0.status !== 'awaiting_card' || !e0.card_ref || !cardPaid(env, e0)) return e0;
-    var s = settings(env);
     return env.lock(function () {
+      var s = settings(env);   // inside the lock: the ticket counters as they are now
       var e = env.list('entries').filter(function (x) { return x.id === e0.id; })[0];
       if (!e || e.status !== 'awaiting_card') return e;   // settled meanwhile (the buyer came back while Square called)
+      // Only once per order, whatever the sheet shows. 2026-09-25: WW27-0003 was settled twice in the same second (the buyer's
+      // return and Square's notice) and got two tickets emails with different numbers; the sheet had not shown the first yet.
+      // The mark lives in the script's own store, which never lags.
+      if (env.once && !env.once('card-settled-' + e.id)) { e.settling = true; return e; }
       var reasons = [], patch = { status: 'ok', proof_status: 'card' };
       if (e.kind === 'order') {
         if (fits(env, s, num(e.qty), num(e.gift_qty))) { patch.tickets = take(env, s, num(e.qty)).join(', '); patch.gift_numbers = num(e.gift_qty) ? takeGift(env, s, num(e.gift_qty)).join(', ') : ''; }
@@ -3245,6 +3249,7 @@ var Core = (function () {
     var e = env.list('entries').filter(function (x) { return x.method === 'Card' && x.order_code === str(p.order); })[0];
     if (!e || !str(p.t) || e.token !== str(p.t)) throw err('We could not find that payment. If you paid, please email artteam@stminacalgary.ca.');
     e = cardSettle(env, e);
+    if (e.settling) return { ok: true, settling: true, kind: e.kind, first: e.first, email: e.email };   // the other call is sending the email
     return e.status === 'awaiting_card' ? { ok: true, pending: true, url: e.card_link, kind: e.kind } : cardOutcome(env, e);
   }
   // Square calls when a payment changes; what it says is not trusted: the order is asked again
@@ -3407,6 +3412,30 @@ var Core = (function () {
     return { ok: true, link: env.pageUrl('team', k) };
   }
   function ownerMemberRevoke(env, p) { requireOwner(env, p.key); env.update('members', p.id, { active: 'false' }); return { ok: true }; }
+  // Owner only (2026-09-25, WW27-0003 was given two sets of numbers): set an order's e-ticket numbers, optionally move the
+  // counter for new tickets (so numbers freed here are handed out again), and send one corrected tickets email with a note.
+  function ownerSetTickets(env, p) {
+    var s = requireOwner(env, p.key);
+    return env.lock(function () {
+      s = settings(env);
+      var e = env.list('entries').filter(function (x) { return x.id === p.id || (str(p.order) && x.order_code === str(p.order)); })[0];
+      if (!e) throw err('Order not found.');
+      var nums = parseNumbers(p.tickets), used = usedNumbers(env), vo = voided(s);
+      if (nums.length !== list(e.tickets).length) throw err('This order has ' + list(e.tickets).length + ' tickets; give that many numbers.');
+      nums.forEach(function (n) {
+        if (n < ETICKET_MIN || n > ETICKET_MAX) throw err('E-tickets are No. ' + ETICKET_MIN + ' to ' + ETICKET_MAX + '.');
+        if (used[n] && used[n].id !== e.id) throw err('Ticket ' + n + ' belongs to another order.');
+        if (vo.indexOf(n) > -1) throw err('Ticket ' + n + ' was cancelled.');
+      });
+      env.update('entries', e.id, { tickets: nums.join(', ') }); e.tickets = nums.join(', ');
+      if (num(p.next_online)) env.setSetting('next_online', Math.max(ETICKET_MIN, Math.floor(num(p.next_online))));
+      if (str(p.note) && e.email) {
+        ticketsEmail(env, s, e, nums, list(e.gift_numbers), esc(str(p.note)).replace(/\n/g, '<br>'), str(p.subject_prefix) ? str(p.subject_prefix) + ' ' : '');
+        env.update('entries', e.id, { emailed: env.now().toISOString() });
+      }
+      return { ok: true, order: e.order_code, tickets: nums, email: e.email };
+    });
+  }
   function ownerVoid(env, p) { requireOwner(env, p.key); env.update('entries', p.id, { status: 'void' }); return { ok: true }; }
   function ownerClear(env, p) { requireOwner(env, p.key); env.update('entries', p.id, { status: 'ok' }); return { ok: true }; }
   function ownerSponsorShow(env, p) {
@@ -3593,7 +3622,7 @@ var Core = (function () {
     owner_data: ownerData, owner_member_add: ownerMemberAdd, owner_member_reissue: ownerMemberReissue, owner_member_revoke: ownerMemberRevoke,
     owner_void: ownerVoid, owner_clear: ownerClear, owner_sponsor_show: ownerSponsorShow, owner_handover: ownerHandover, owner_setting: ownerSetting, owner_resend: ownerResend, owner_test_email: ownerTestEmail,
     owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); }, owner_sheet_key: ownerSheetKey, sheet_rows: sheetRows, owner_test_pdf: ownerTestPdf, owner_test_pass: ownerTestPass,
-    card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck, owner_free_tickets: ownerFreeTickets, ticket_picture: ticketPicture };
+    card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck, owner_free_tickets: ownerFreeTickets, ticket_picture: ticketPicture, owner_set_tickets: ownerSetTickets };
 
   var PUBLIC_WRITES = { order: 1, donate: 1, sponsor: 1, waitlist: 1 };
   function handle(env, action, payload) {
@@ -3620,7 +3649,7 @@ if (typeof module !== 'undefined') module.exports = Core;
   var BASE = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
   var TICKETS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 901, 902, 903, 904, 905, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019, 1020, 1021, 1022, 1023, 1024, 1025, 1026, 1027, 1028, 1029, 1030];
   var KEY_STORE = 'ww27-public-demo-v1', MINA = 'demo-member-mina-0000000000', OWNER = 'demo-owner';
-  var db = null, clock = 0, SQ = { n: 0, orders: {} }, pendingDemo = null;
+  var db = null, clock = 0, SQ = { n: 0, orders: {} }, pendingDemo = null, ONCE = {};
 
   // ---------- the engine's surroundings, all inside this page ----------
   function load() { try { var s = localStorage.getItem(KEY_STORE); if (s) return JSON.parse(s); } catch (e) { } return null; }
@@ -3656,6 +3685,7 @@ if (typeof module !== 'undefined') module.exports = Core;
     makeXlsx: function (head, rows, name) { return { name: name + '.xlsx' }; },
     // a pretend Square (Tamer 2026-09-25: "the demo … not showing the payment changes"): the practice pages show "Pay by card" and the
     // fee tick like the real page; its payment page is a pretend step in the page ("practice-card:"), nothing is paid
+    once: function (k) { if (ONCE[k]) return false; ONCE[k] = 1; return true; },
     squareReady: function () { return true; },
     square: function (method, api, body) {
       var M = SQ;
