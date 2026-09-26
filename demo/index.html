@@ -2741,11 +2741,11 @@ var Core = (function () {
   }
 
   function shell(inner) {
-    return '<div style="background:#F4EEDC;padding:18px 10px;font-family:Georgia,serif;color:#2A1A2E">' +
-      '<div style="max-width:620px;margin:0 auto;background:#fff;border-radius:10px;overflow:hidden;border:1px solid #E3D6BF">' +
-      '<div style="background:#0B1530;background:linear-gradient(180deg,#0B1530,#1A2D57);padding:14px 20px 16px;color:#F2C14E;font-family:Arial,sans-serif;letter-spacing:2px;font-weight:bold;font-size:13px"><div style="color:#F4EEDC;font-size:11px;letter-spacing:2.5px;margin-bottom:5px">ST. MINA COPTIC ORTHODOX CHURCH</div>WONDER WORKER ART TEAM · NATIVITY CELEBRATION 2027</div>' +
-      '<div style="padding:20px 22px;font-size:16px;line-height:1.5">' + inner + '</div>' +
-      '<div style="padding:12px 22px 18px;font-family:Arial,sans-serif;font-size:12px;color:#7A6A5A;border-top:1px solid #EFE6D6">Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary · reply to this email for any question.<br><b>Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b></div>' +
+    return '<div style="background:#F4EEDC;padding:14px 4px;font-family:Georgia,serif;color:#2A1A2E">' +   // narrower margins: a bigger ticket on a phone (2026-09-25)
+      '<div style="max-width:660px;margin:0 auto;background:#fff;border-radius:10px;overflow:hidden;border:1px solid #E3D6BF">' +
+      '<div style="background:#0B1530;background:linear-gradient(180deg,#0B1530,#1A2D57);padding:14px 14px 16px;color:#F2C14E;font-family:Arial,sans-serif;letter-spacing:2px;font-weight:bold;font-size:13px"><div style="color:#F4EEDC;font-size:11px;letter-spacing:2.5px;margin-bottom:5px">ST. MINA COPTIC ORTHODOX CHURCH</div>WONDER WORKER ART TEAM · NATIVITY CELEBRATION 2027</div>' +
+      '<div style="padding:18px 14px;font-size:16px;line-height:1.5">' + inner + '</div>' +
+      '<div style="padding:12px 14px 18px;font-family:Arial,sans-serif;font-size:12px;color:#7A6A5A;border-top:1px solid #EFE6D6">Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary · reply to this email for any question.<br><b>Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b></div>' +
       '</div></div>';
   }
 
@@ -2764,7 +2764,7 @@ var Core = (function () {
     // (Tamer 2026-09-24: the email came with 2 copies of the tickets); attachments: the calendar invite and, since 2026-09-25, one PDF of the tickets
     // demo (Tamer 2026-09-25): tickets DEMO 1 … DEMO N, "DEMO" pictures with no real code, nothing recorded
     var demo = !!e.demo, lab = function (n) { return demo ? 'DEMO ' + n : 'No. ' + n; };
-    var cids = {}, imgs = '', w = numbers.length > 1 ? 380 : 540;
+    var cids = {}, imgs = '', w = numbers.length > 1 ? 460 : 632;   // the full width of the email (Tamer 2026-09-25: "slightly bigger")
     numbers.forEach(function (n) {
       var key = demo ? 'demo-' + ('0' + n).slice(-2) : n, blob = env.ticketImage(key); if (!blob) return;
       cids['t' + n] = blob;
