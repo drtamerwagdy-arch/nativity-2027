@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en" data-theme="night">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Your ticket · Nativity Celebration 2027</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>/* Shared look for the ticket pages (v2, Tamer 2026-09-24: "like my app" — light page, white cards with a coloured
+   top edge, clean sans type, small uppercase section labels, full-width two-column forms on computers, one column on phones).
+   The header keeps the ticket's sundown look (sundown by default, daylight via data-theme="daylight"). */
+:root{
+  --sky1:#3A1F4E;--sky2:#5A2447;--sky3:#3A1830;--gold:#F2C14E;--cream:#F4EEDC;--red:#D63A2E;
+  --grade:linear-gradient(180deg,#3B2A6B 0%,#7A3C7A 30%,#D0606A 55%,#F08A3C 72%,#8A4A3A 100%);
+  --page:#F3F5F9;--tab-gold:#C8843A;--card:#FFFFFF;--ink:#1B2233;--soft:#5B6477;--faint:#8A93A6;--line:#E3E8F0;--field:#FFFFFF;--fieldline:#D3DAE6;
+  --accent:#5A2447;--accent-2:#7A2F5E;--accent-ink:#FFFFFF;--accent-tint:#F6EEF3;
+  --gold-tint:#FFF6E3;--blue:#1F4E8C;--blue-tint:#EDF3FC;--green:#1F7A55;--green-tint:#EAF6F0;
+  --ok:#1F7A55;--warn:#9A5A00;--bad:#B3261E;
+  --radius:16px;--shadow:0 1px 2px rgba(16,24,40,.05),0 6px 20px rgba(16,24,40,.06);
+  color-scheme:light}
+[data-theme=night]{--sky1:#0B1530;--sky2:#10203F;--sky3:#1A2D57;--gold:#F6CB5C;--cream:#FFF3D6;--accent:#1A2D57;--accent-2:#0B1530;--accent-tint:#EAF0FA}
+/* team page + dashboard header (Tamer 2026-09-25): white with a gold line underneath, like his app */
+.hero.light{background:#fff;color:#0B1530;border-bottom:4px solid var(--tab-gold);box-shadow:0 2px 10px rgba(11,21,48,.06)}
+.hero.light .bg,.hero.light .grade,.hero.light .fade{display:none}.hero.light .kick{color:#B7791F!important}.hero.light h1,.hero.light #hi{color:#0B1530}
+.hero.light .held{color:#0B1530}.hero.light .held small{color:#8A6A2A}
+[data-theme=night] .hero .grade{display:none}
+[data-theme=night] .hero .fade{background:linear-gradient(180deg,rgba(3,8,24,.25) 0%,rgba(3,10,30,.7) 100%)}
+[data-theme=night] .hero .bg{background-position:100% 55%}
+[data-theme=night] .ultra{font-family:"Abril Fatface",Georgia,serif;color:var(--cream);text-shadow:0 2px 0 rgba(90,10,10,.55),0 5px 10px rgba(0,0,0,.35)}
+[data-theme=daylight]{--sky1:#2F78B8;--sky2:#23609A;--sky3:#1A4B7C;--accent:#1F5F9E;--accent-2:#2A6DA8;--accent-tint:#EDF4FB;
+  --grade:linear-gradient(180deg,#2F86D6 0%,#58A6E6 40%,#A9D2F0 62%,#D9B77A 78%,#B08A55 100%)}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--page);color:var(--ink);font:16px/1.5 Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-text-size-adjust:100%}
+.bebas{font-family:"Bebas Neue",Impact,"Arial Narrow",sans-serif;letter-spacing:1.5px}
+.ultra{font-family:Ultra,Georgia,serif;color:var(--red);text-shadow:-2px -2px 0 #2A1030,2px -2px 0 #2A1030,-2px 2px 0 #2A1030,2px 2px 0 #2A1030,0 4px 6px rgba(0,0,0,.45)}
+
+/* header background layers (the header layout itself lives in each page) */
+.hero{position:relative;overflow:hidden;color:var(--cream);background:var(--sky1)}
+.hero .bg{position:absolute;inset:0;background:var(--bgimg) center 40%/cover}
+.hero .grade{position:absolute;inset:0;background:var(--grade);mix-blend-mode:color;opacity:.72}
+.hero .fade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 30%,rgba(20,8,24,.55) 100%)}
+[data-theme=daylight] .hero .bg{filter:brightness(2.1) contrast(.92)}
+[data-theme=daylight] .hero .grade{opacity:.6}
+.hero .in{position:relative;max-width:1180px;margin:0 auto;padding:18px 16px 20px;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:center}
+.hero img.badge{width:76px;height:76px;grid-row:span 2;filter:drop-shadow(0 2px 4px rgba(0,0,0,.45))}
+.hero h1{margin:0;font-size:30px;line-height:.95;font-weight:400}
+.hero .when{grid-column:1/-1;margin-top:10px;font-size:18px;line-height:1.15;text-shadow:0 2px 3px rgba(0,0,0,.5)}
+.hero .when b{color:var(--gold);font-weight:400}
+
+/* page */
+main{max-width:1180px;margin:0 auto;padding:20px 16px 40px;display:flex;flex-direction:column;gap:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;border-top:4px solid var(--accent)}
+.card.t-gold{border-top-color:#E0A526}.card.t-blue{border-top-color:var(--blue)}.card.t-green{border-top-color:var(--green)}
+h2{margin:0;font:800 24px/1.2 Inter,system-ui,sans-serif;letter-spacing:-.01em;color:var(--ink)}
+h3,.label{margin:0 0 10px;font:700 12px/1.2 Inter,system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+p{margin:6px 0}
+.hint{font-size:14px;color:var(--soft)}
+.sechead{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin:0 0 18px}
+.sechead .sub{font:700 12px/1.3 Inter,system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-top:4px}
+.ico{flex:0 0 auto;width:52px;height:52px;border-radius:14px;display:grid;place-items:center;background:var(--accent-tint);color:var(--accent)}
+.ico svg{width:26px;height:26px}
+.ico.gold{background:var(--gold-tint);color:#B7791F}.ico.blue{background:var(--blue-tint);color:var(--blue)}.ico.green{background:var(--green-tint);color:var(--green)}
+
+/* page tabs: a white bar, the page you are on filled gold (like Imhotep Med) */
+.navbar{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:8px}
+.navbar button{display:flex;align-items:center;justify-content:center;gap:10px;min-height:58px;padding:10px 14px;border:0;border-radius:12px;background:transparent;color:var(--soft);font:600 clamp(15px,1.6vw,18px)/1.2 Inter,system-ui,sans-serif;white-space:nowrap;cursor:pointer;transition:background .15s,color .15s}
+.navbar button svg{width:22px;height:22px;flex:0 0 auto;color:var(--accent)}
+.navbar button:nth-child(2) svg{color:#B7791F}.navbar button:nth-child(3) svg{color:var(--blue)}
+.navbar button:hover{background:#F4F6FA;color:var(--ink)}
+.navbar button[aria-pressed=true]{background:var(--tab-gold);color:#fff;font-weight:800;box-shadow:0 2px 8px rgba(200,132,58,.35)}
+.navbar button[aria-pressed=true] svg{color:#fff}
+@media (max-width:560px){.navbar{gap:4px;padding:6px}.navbar button{flex-direction:column;gap:5px;min-height:66px;padding:8px 4px;font-size:14px;text-align:center;white-space:normal}}
+.seatpill{margin-left:auto;align-self:flex-start;background:var(--accent-tint);color:var(--accent);font:700 13px/1 Inter,system-ui,sans-serif;padding:8px 12px;border-radius:999px;white-space:nowrap}
+.seatpill:empty{display:none}
+
+/* forms: panels in two columns on a computer, one column on a phone */
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+.panel2{background:#FAFBFD;border:1px solid var(--line);border-radius:12px;padding:18px}
+.span2{grid-column:1/-1}
+@media (max-width:860px){.fgrid{grid-template-columns:1fr}.card{padding:18px}.panel2{padding:14px}}
+/* Get tickets on a computer: Tickets + donation, then Gift a seat, in the left column; Your details on the right.
+   On a phone the order is the page order: Tickets + donation, Your details, Gift a seat + receipt, Pay. */
+/* Get tickets: one column next to the steps (Tamer 2026-09-25): tickets + donation · your details · gift · pay */
+label.f{display:block;margin:0 0 12px;font:600 13px/1.3 Inter,system-ui,sans-serif;color:var(--ink)}
+label.f span{font-weight:400;color:var(--soft)}
+label.f input,label.f select,label.f textarea{display:block;width:100%;margin-top:6px;font:16px/1.3 Inter,system-ui,sans-serif;padding:11px 12px;border:1px solid var(--fieldline);border-radius:10px;background:var(--field);color:var(--ink);min-height:46px}
+label.f textarea{resize:vertical}
+label.f input:focus,label.f textarea:focus,.money input:focus,.stepper input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:420px){.two{grid-template-columns:1fr}}
+.stepper{display:inline-flex;align-items:stretch;border:1px solid var(--fieldline);border-radius:12px;overflow:hidden;background:#fff}
+.stepper button{border:0;background:var(--accent-tint);color:var(--accent);font:700 22px/1 Inter,system-ui,sans-serif;width:48px;cursor:pointer}
+.stepper button:hover{background:color-mix(in srgb,var(--accent) 14%,#fff)}
+.stepper input{border:0;width:64px;text-align:center;font:800 22px/1 Inter,system-ui,sans-serif;color:var(--ink);outline:none;-moz-appearance:textfield}
+.stepper input::-webkit-inner-spin-button,.stepper input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:6px 0 10px}
+.row>span:first-child{min-width:120px;font-weight:600}
+.money{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.money b{font:800 24px/1 Inter,system-ui,sans-serif;color:var(--soft)}
+.money input{font:800 24px/1 Inter,system-ui,sans-serif;width:140px;padding:9px 12px;border:1px solid var(--fieldline);border-radius:10px;color:var(--ink)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 10px}
+.pills label{display:flex;align-items:center;gap:8px;border:1px solid var(--fieldline);border-radius:12px;padding:10px 14px;cursor:pointer;min-height:46px;background:#fff;font-weight:600;font-size:15px}
+.pills label:has(input:checked){border-color:var(--accent);background:var(--accent-tint);color:var(--accent)}
+.pills input{accent-color:var(--accent);width:18px;height:18px;margin:0}
+.pay{background:var(--accent-tint);border:1px solid color-mix(in srgb,var(--accent) 18%,#fff);border-radius:12px;padding:14px;margin:8px 0}
+.copy{display:flex;align-items:center;gap:8px;justify-content:space-between;background:#fff;border:1px dashed color-mix(in srgb,var(--accent) 45%,#fff);border-radius:10px;padding:9px 11px;margin:6px 0;font:15px/1.2 Inter,system-ui,sans-serif;word-break:break-all}
+.copy button{flex-shrink:0;border:0;background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:7px 12px;font:600 13px Inter,system-ui,sans-serif;cursor:pointer}
+.warn{border-left:4px solid var(--warn);background:#FFF7E8;padding:11px 13px;border-radius:10px;font-size:14.5px;margin:8px 0}
+.okbox{border-left:4px solid var(--ok);background:#EDF8F2;padding:11px 13px;border-radius:10px;font-size:14.5px;margin:8px 0}
+.badbox{border-left:4px solid var(--bad);background:#FDEEEC;padding:11px 13px;border-radius:10px;font-size:14.5px;margin:8px 0}
+.btn{display:inline-block;border:0;border-radius:12px;background:var(--accent);color:var(--accent-ink);font:700 16px/1 Inter,system-ui,sans-serif;letter-spacing:.01em;padding:15px 20px;min-height:52px;cursor:pointer;text-decoration:none;box-shadow:0 2px 6px color-mix(in srgb,var(--accent) 30%,transparent)}
+.btn:hover{background:var(--accent-2)}
+.btn.wide{display:block;width:100%}
+.btn.ghost{background:#fff;color:var(--accent);border:1.5px solid var(--accent);box-shadow:none}
+.btn:disabled{opacity:.55;cursor:default}
+.btn:focus-visible,.navbar button:focus-visible,.link:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 45%,transparent);outline-offset:2px}
+.link{background:none;border:0;color:var(--accent);text-decoration:underline;font:inherit;cursor:pointer;padding:0}
+.err{color:var(--bad);font-size:15px;min-height:20px;margin:10px 0 6px;font-weight:600}
+.shot{position:relative;margin:8px 0;touch-action:none}
+.shot canvas{max-width:100%;border-radius:10px;border:1px solid var(--line);display:block}
+.big{font:800 36px/1 Inter,system-ui,sans-serif;letter-spacing:-.01em;color:var(--accent)}
+.tix{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.tix span{background:var(--sky1);color:var(--gold);font:400 22px/1 "Bebas Neue",Impact,sans-serif;letter-spacing:1px;padding:9px 13px;border-radius:10px}
+.hide{display:none!important}
+table.t{width:100%;border-collapse:collapse;font:14px/1.35 Inter,system-ui,sans-serif}
+table.t th,table.t td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.t th{color:var(--soft);font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+footer{max-width:1180px;margin:0 auto;padding:0 16px 30px;font-size:13px;color:var(--faint);display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between}
+/* privacy line (Tamer 2026-09-24): bold, one line on a computer; it wraps only where a phone is too narrow */
+footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:nowrap}
+@media (max-width:900px){footer .privacy{white-space:normal}}
+.ver{display:inline-block;border:1px solid var(--line);border-radius:8px;padding:1px 7px;font:600 12px/1.6 Inter,system-ui,sans-serif;color:var(--soft);background:#fff}
+.hp{position:absolute;left:-5000px;width:1px;height:1px;overflow:hidden}
+@media (prefers-reduced-motion:reduce){.navbar button{transition:none}}
+
+/* quick guide (help tour): a spotlight on one part of the page and a short bubble; no sliding (Tamer: "it's jumping") */
+.tour-hole{position:fixed;z-index:9998;border-radius:14px;box-shadow:0 0 0 9999px rgba(17,20,33,.62);pointer-events:none}
+.tour-tip{position:fixed;z-index:9999;background:#fff;color:var(--ink);border-radius:14px;box-shadow:0 14px 40px rgba(0,0,0,.35);padding:16px 18px 14px;border-top:4px solid var(--tab-gold);opacity:0;visibility:hidden}
+.tour-tip.on{opacity:1;visibility:visible;transition:opacity .15s}
+.tour-tip>b{display:block;font:800 19px/1.25 Inter,system-ui,sans-serif}
+.tour-tip p{margin:6px 0 14px;color:var(--soft);font-size:16px;line-height:1.45}.tour-tip p b{color:var(--ink)}
+.tour-n{font:700 11px/1 Inter,system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--tab-gold);margin-bottom:8px}
+.tour-b{display:flex;align-items:center;justify-content:space-between;gap:8px}.tour-b .btn{min-height:42px;padding:10px 18px;font-size:15px}
+/* Guide switch in the bubble: off = stop the guide (Tamer: "a toggle that can stop the help") */
+.tour-sw{display:inline-flex;align-items:center;gap:8px;font:600 14px Inter,system-ui,sans-serif;color:var(--soft);cursor:pointer}
+.tour-sw input{position:absolute;opacity:0;width:1px;height:1px}
+.tour-sw span{position:relative;width:40px;height:24px;border-radius:12px;background:#C9CFDA;transition:background .15s}
+.tour-sw span::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .15s}
+.tour-sw input:checked+span{background:var(--tab-gold)}.tour-sw input:checked+span::after{transform:translateX(16px)}
+.tour-sw input:focus-visible+span{outline:3px solid color-mix(in srgb,var(--tab-gold) 45%,transparent);outline-offset:2px}
+/* Help button: always in the bottom corner */
+.help-fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:900;display:flex;align-items:center;gap:8px;border:0;border-radius:999px;background:var(--tab-gold);color:#fff;font:700 15px/1 Inter,system-ui,sans-serif;padding:11px 16px 11px 11px;box-shadow:0 6px 18px rgba(0,0,0,.25);cursor:pointer}
+.help-fab span{width:24px;height:24px;border-radius:50%;background:#fff;color:var(--tab-gold);display:grid;place-items:center;font-weight:800}
+.help-fab.hide{display:none}
+@media (prefers-reduced-motion:reduce){.tour-tip.on{transition:none}}
+
+/* team page counter (Tamer 2026-09-24): sold, printed, e-tickets, gifted (not in total), seats left; warning when low */
+.soldbar{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px}
+.soldbar>div{text-align:center}.soldbar>div>b{display:block;font:800 22px/1.1 Inter,system-ui,sans-serif;color:var(--ink)}.soldbar>div>span{font-size:12px;color:var(--soft)}
+.soldbar>div:first-child>b{color:var(--accent)}
+.soldbar .lowwarn{grid-column:1/-1;margin:4px 0 0;background:#FDECEA;color:#8A1C12;border-radius:10px;padding:9px 11px;font-size:14.5px}
+@media (max-width:560px){.soldbar{grid-template-columns:repeat(3,1fr)}}
+
+/* One ticket picture to save (Tamer 2026-09-25: "direct download from the email just the ticket pic"). The tickets email links
+   here with ?n=1003&k=…; the engine checks the signed key and sends the picture. iPhone: Save opens the share menu (Save Image
+   puts it in Photos); elsewhere the picture downloads by itself. */
+body{background:linear-gradient(180deg,#0B1530,#1A2D57);min-height:100vh}
+.tw{max-width:560px;margin:0 auto;padding:22px 16px 40px;display:grid;gap:14px;color:#FFF3D6;text-align:center}
+.tw h1{margin:0;font:400 28px/1 "Bebas Neue",Impact,sans-serif;letter-spacing:.08em;color:#F6CB5C}
+.tw .when{margin:-6px 0 0;color:#C9D2E4;font-size:14px}
+.tk img{display:block;width:100%;height:auto;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.45);-webkit-touch-callout:default}
+.tw .btn.save{background:#F6CB5C;color:#0B1530;font-size:17px;min-height:56px;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.tw .how{margin:0;color:#C9D2E4;font-size:14px;line-height:1.5}
+.tw .how b{color:#FFF3D6}
+.tw .msg{background:#fff;color:#1B2233;border-radius:12px;padding:14px;text-align:left;font-size:15px}
+.tw .home{color:#F6CB5C;font-size:14px}
+</style>
+</head>
+<body>
+<main class="tw">
+  <h1>Nativity Celebration 2027</h1>
+  <p class="when">Saturday, January 30, 2027 · 3:00 – 8:00 PM · Bert Church LIVE Theatre, Airdrie</p>
+  <div class="tk" id="tk"><p class="how">Getting your ticket…</p></div>
+  <button class="btn wide save hide" id="save" type="button">Save ticket</button>
+  <p class="how hide" id="how"></p>
+  <a class="home" href="/">thewonderworker.ca</a>
+</main>
+<script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
+   Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
+   Online demo (window.WW_DEMO): the engine runs in the page around this one; ask it by message. */
+var WW_API = window.WW_API || '/api', _wwCalls = {}, _wwSeq = 0;
+if (window.WW_DEMO) window.addEventListener('message', function (ev) {
+  var d = ev.data || {}; if (d.ww !== 'api-reply' || !_wwCalls[d.id]) return;
+  _wwCalls[d.id](d.result); delete _wwCalls[d.id];
+});
+function api(action, payload) {
+  return new Promise(function (resolve, reject) {
+    function done(r) { if (r && r.ok === false) reject(new Error(r.error || 'Something went wrong.')); else resolve(r); }
+    if (window.WW_DEMO) {
+      var id = ++_wwSeq; _wwCalls[id] = done;
+      parent.postMessage({ ww: 'api', id: id, action: action, payload: payload || {} }, '*');
+    } else if (window.google && google.script && google.script.run) {
+      google.script.run.withSuccessHandler(done).withFailureHandler(function (e) { var x = new Error((e && e.message) || 'Connection problem. Please try again.'); x.net = true; reject(x); }).api(action, payload || {});
+    } else {
+      fetch(WW_API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: action, payload: payload || {} }) })
+        .then(function (r) { return r.json(); }).then(done, function () { var x = new Error('Connection problem. Please try again.'); x.net = true; reject(x); });
+    }
+  });
+}
+function $(s, r) { return (r || document).querySelector(s); }
+function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function money(n) { n = Math.round((Number(n) || 0) * 100) / 100; return '$' + n.toLocaleString('en-CA', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }); }
+// Calgary time for everything shown to people
+function when(iso) { var d = new Date(iso); return isNaN(d) ? '' : d.toLocaleString('en-CA', { timeZone: 'America/Edmonton', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
+function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 10); }
+function param(name) { if (window.WW_DEMO && WW_DEMO.params) return WW_DEMO.params[name] || ''; if (window.WW_PARAMS) return String(WW_PARAMS[name] || ''); var m = (location.search + '&' + location.hash.replace(/^#/, '&')).match(new RegExp('[?&]' + name + '=([^&]*)')); return m ? decodeURIComponent(m[1]) : ''; }
+// −/+ steppers: <div class=stepper><button data-d=-1>…<input>…<button data-d=1>
+document.addEventListener('click', function (ev) {
+  var b = ev.target.closest && ev.target.closest('.stepper button'); if (!b) return;
+  var i = b.parentNode.querySelector('input'), v = (Number(i.value) || 0) + Number(b.getAttribute('data-d'));
+  v = Math.max(Number(i.min || 0), Math.min(Number(i.max || 999), v)); i.value = v; i.dispatchEvent(new Event('input', { bubbles: true }));
+});
+// amount boxes are plain boxes to type in: no up/down arrows, no mouse-wheel changes (Tamer 2026-09-25: "very sensitive");
+// they keep only digits and one decimal point, and phones still show the number keypad (inputmode="decimal")
+document.addEventListener('input', function (ev) {
+  var i = ev.target; if (!i || !i.hasAttribute || !i.hasAttribute('data-money')) return;
+  var v = i.value.replace(/[^\d.]/g, ''), d = v.indexOf('.');
+  if (d > -1) v = v.slice(0, d + 1) + v.slice(d + 1).replace(/\./g, '').slice(0, 2);
+  if (v !== i.value) i.value = v;
+}, true);
+function copyBtn(root) {
+  $$('.copy button', root).forEach(function (b) {
+    b.onclick = function () {
+      var t = b.previousElementSibling.textContent.trim();
+      (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1500); },
+        function () { var r = document.createRange(); r.selectNodeContents(b.previousElementSibling); var s = getSelection(); s.removeAllRanges(); s.addRange(r); });
+    };
+  });
+}
+</script>
+<script>
+(function () {
+  var IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+  var pic = '', name = 'Nativity-2027-ticket.jpg', file = null;
+  function download() { var a = document.createElement('a'); a.href = pic; a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+  api('ticket_picture', { n: param('n'), k: param('k') }).then(function (r) {
+    pic = r.image; name = r.name;
+    $('#tk').innerHTML = '<img src="' + r.image + '" alt="Your ticket ' + esc(r.n) + '">';
+    $('#save').classList.remove('hide'); $('#how').classList.remove('hide');
+    $('#how').innerHTML = IOS ? 'Tap <b>Save ticket</b>, then <b>Save Image</b>: it goes to your Photos. You can also press and hold the ticket.'
+      : 'Your ticket is downloading. If it doesn\'t, tap <b>Save ticket</b>.';
+    fetch(pic).then(function (x) { return x.blob(); }).then(function (b) { try { file = new File([b], name, { type: 'image/jpeg' }); } catch (x) { } });
+    if (!IOS) download();   // Android and computers: straight to Downloads
+  }, function (x) { $('#tk').innerHTML = '<div class="msg">' + esc(x.message) + '</div>'; });
+  $('#save').onclick = function () {
+    if (IOS && file && navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file] }).catch(function () { }); return; }
+    download();
+  };
+})();
+</script>
+</body>
+</html>

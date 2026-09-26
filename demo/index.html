@@ -2766,9 +2766,12 @@ var Core = (function () {
     var demo = !!e.demo, lab = function (n) { return demo ? 'DEMO ' + n : 'No. ' + n; };
     var cids = {}, imgs = '', w = numbers.length > 1 ? 380 : 560;
     numbers.forEach(function (n) {
-      var blob = env.ticketImage(demo ? 'demo-' + ('0' + n).slice(-2) : n); if (!blob) return;
+      var key = demo ? 'demo-' + ('0' + n).slice(-2) : n, blob = env.ticketImage(key); if (!blob) return;
       cids['t' + n] = blob;
-      imgs += '<div style="margin:0 0 10px"><img src="cid:t' + n + '" alt="Ticket ' + lab(n) + '" width="' + w + '" style="width:100%;max-width:' + w + 'px;height:auto;border-radius:8px;display:block"></div>';
+      imgs += '<div style="margin:0 0 12px"><img src="cid:t' + n + '" alt="Ticket ' + lab(n) + '" width="' + w + '" style="width:100%;max-width:' + w + 'px;height:auto;border-radius:8px;display:block">' +
+        // Tamer 2026-09-25: "direct download from the email just the ticket pic" (Apple Mail doesn't offer it): a link that opens
+        // the picture on thewonderworker.ca with a Save button (iPhone: Save Image to Photos; elsewhere it downloads)
+        (env.sign ? '<a href="' + ticketLink(env, s, key) + '" style="display:inline-block;margin-top:6px;background:#F6CB5C;color:#0B1530;text-decoration:none;padding:8px 14px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px;font-weight:bold">&#11015; Save ticket ' + lab(n) + '</a>' : '') + '</div>';
     });
     // wording set by Tamer 2026-09-24 (the church sends receipts at the end of the tax year); none for people who declined
     var receiptLine = e.receipt === 'N' ? '' : 'You will get a tax receipt for your donations.';
@@ -2792,6 +2795,19 @@ var Core = (function () {
     if (String(s.tickets_pdf).toUpperCase() === 'Y') { var pdf = ticketsPdf(env, e, numbers, cids, demo); if (pdf) atts.push(pdf); }   // the tickets as a PDF too, when switched on
     if (!demo && walletOn(env, s)) numbers.forEach(function (n) { atts.push(walletPass(env, s, e, n)); });   // and one Apple Wallet pass per ticket
     env.mail({ to: e.email, subject: (demo ? 'DEMO · ' : '') + 'Your tickets · Nativity Celebration 2027 (' + (demo ? numbers.map(lab).join(', ') : 'No. ' + numbers.join(', ')) + ')', html: html, inline: cids, attachments: atts, replyTo: s.team_email, name: s.from_name });
+  }
+
+  // ---------- one ticket picture to save (Tamer 2026-09-25) ----------
+  // The email links to thewonderworker.ca/ticket/?n=1003&k=… ; k is signed with the owner key, so ticket numbers can't be tried one
+  // by one. The page asks for the picture here and offers Save. Only the picture: no name, no email, nothing else about the buyer.
+  function ticketKey(env, n) { return env.sign('ticket-' + n); }
+  function ticketLink(env, s, n) { return str(s.site_url || 'https://thewonderworker.ca/') + 'ticket/?n=' + encodeURIComponent(n) + '&k=' + ticketKey(env, n); }
+  function ticketPicture(env, p) {
+    var n = str(p.n);
+    if (!/^(\d{1,4}|demo-\d{2})$/.test(n) || str(p.k) !== ticketKey(env, n)) throw err('This link is not valid. Please email artteam@stminacalgary.ca and we will send your ticket again.');
+    var b = env.ticketImage(/^demo-/.test(n) ? n : Number(n));
+    if (!b) throw err('Your ticket picture is not ready. Please email artteam@stminacalgary.ca and we will send it again.');
+    return { ok: true, n: n, name: 'Nativity-2027-ticket-' + (/^demo-/.test(n) ? n.toUpperCase() : n) + '.jpg', image: env.dataUri(b) };
   }
 
   // The tickets as one PDF to open, save or print: one page per ticket, with its door code (Tamer 2026-09-25: "make the barcode
@@ -3571,7 +3587,7 @@ var Core = (function () {
     owner_data: ownerData, owner_member_add: ownerMemberAdd, owner_member_reissue: ownerMemberReissue, owner_member_revoke: ownerMemberRevoke,
     owner_void: ownerVoid, owner_clear: ownerClear, owner_sponsor_show: ownerSponsorShow, owner_handover: ownerHandover, owner_setting: ownerSetting, owner_resend: ownerResend, owner_test_email: ownerTestEmail,
     owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); }, owner_sheet_key: ownerSheetKey, sheet_rows: sheetRows, owner_test_pdf: ownerTestPdf, owner_test_pass: ownerTestPass,
-    card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck, owner_free_tickets: ownerFreeTickets };
+    card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck, owner_free_tickets: ownerFreeTickets, ticket_picture: ticketPicture };
 
   var PUBLIC_WRITES = { order: 1, donate: 1, sponsor: 1, waitlist: 1 };
   function handle(env, action, payload) {
