@@ -550,7 +550,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.64</span></footer>
+<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.65</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3225,7 +3225,7 @@ var qrcode = function() {
     try { if (/[?&]v=/.test(location.search)) { var u0 = new URL(location.href); u0.searchParams.delete('v'); history.replaceState(null, '', u0.pathname + u0.search + u0.hash); } } catch (x) { }
     if (window.WW_DEMO || !/(^|\.)thewonderworker\.ca$/.test(location.hostname)) return;
     fetch('/version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
-      if (!j || !j.v || j.v === '1.64') return;
+      if (!j || !j.v || j.v === '1.65') return;
       try { var k = 'ww27-updated-' + j.v; if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (x) { return; }
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () { });
@@ -3547,6 +3547,11 @@ var qrcode = function() {
   // ---- result ----
   function done(action, r) {
     var h = '';
+    if (r && r.processing) {   // the same request went through a moment ago (the phone had lost the answer): its email is on its way
+      $('#done').innerHTML = '<h2>Thank you!</h2><p>We have it: your email is on its way.</p><p>If you didn\'t get your email, please email us at <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a>.</p>' +
+        '<p><button type="button" class="btn ghost" onclick="location.reload()">Back to start</button></p>';
+      show('done'); window.scrollTo({ top: 0, behavior: 'smooth' }); return;
+    }
     if (action === 'waitlist') h = '<h2>You\'re on the waitlist</h2><p>We\'ll email you if seats open. Thank you!</p>';
     else if (action === 'sponsor') {
       h = '<h2>Thank you, ' + esc(r.business || r.first) + '!</h2><p>Your sponsorship of <b>' + money(r.amount) + '</b> is recorded (ref. ' + esc(r.order) + '). A thank-you email is on its way to <b>' + esc(r.email) + '</b>.</p>' +

@@ -2633,6 +2633,21 @@ var Core = (function () {
     var hit = env.list('entries').filter(function (e) { return e.submit_id === id; });
     return hit.length ? hit[0] : null;
   }
+  // Inside the lock: has this request (submit_id) been handled already? The page sends the same request again when a phone
+  // loses the answer, and the sheet can lag behind the first run (2026-09-25: WW27-0003 was issued tickets twice), so besides
+  // the sheet a mark in the script's own store (set when the entry is saved) says whether the first run happened; if it did but
+  // the sheet does not show it yet, wait for it. Returns the earlier result (built by answer) or null when this is the first time.
+  function seenBefore(env, p, answer) {
+    var id = str(p.submit_id); if (!id) return null;
+    var again = findBySubmit(env, id); if (again) return answer(again);
+    if (!env.marked || !env.marked('submit-' + id)) return null;   // set by env.append when the entry was saved; a failed try sets none
+    for (var i = 0; i < 8; i++) {
+      if (env.sleep) env.sleep(1000);
+      if (env.fresh) env.fresh();
+      again = findBySubmit(env, id); if (again) return answer(again);
+    }
+    return { ok: true, processing: true };   // it went through the first time; its email is on the way
+  }
 
   function memberByKey(env, key) {
     key = str(key); if (key.length < 16) return null;
@@ -2992,7 +3007,7 @@ var Core = (function () {
     if (/card/i.test(p.method)) return cardStart(env, s, who, p, { kind: 'order', qty: qty, gift_qty: gq, amount: amount }, qty + ' ticket' + (qty > 1 ? 's' : ''), '');
     var method = /cheque/i.test(p.method) ? 'Cheque' : 'e-Transfer';
     return env.lock(function () {
-      var again = findBySubmit(env, p.submit_id); if (again) return outcome(again, { status: again.proof_status });   // same request sent twice
+      var again = seenBefore(env, p, function (a) { return outcome(a, { status: a.proof_status }); }); if (again) return again;   // same request sent twice
       if (!fits(env, s, qty, gq)) throw err('Sorry, only ' + Math.max(0, seatsLeft(env, s)) + ' seats are left. You can join the waitlist.');
       var code = orderCode(env, s);
       p.nameForFile = code + ' - ' + who.last + ' - ' + money(amount);
@@ -3012,7 +3027,7 @@ var Core = (function () {
   // Seats are held (hold_days); the buyer gets a QR code by email; a team member scans it, takes the cash and taps Paid.
   function book(env, s, who, qty, gq, amount, p) {
     return env.lock(function () {
-      var again = findBySubmit(env, p.submit_id); if (again) return bookingOutcome(env, again);   // same request sent twice
+      var again = seenBefore(env, p, function (a) { return bookingOutcome(env, a); }); if (again) return again;   // same request sent twice
       if (!fits(env, s, qty, gq)) throw err('Sorry, only ' + Math.max(0, seatsLeft(env, s)) + ' seats are left. You can join the waitlist.');
       var e = mk(env, who, { kind: 'booking', status: 'pending', qty: qty, gift_qty: gq, amount: amount, method: 'Cash', order_code: orderCode(env, s),
         token: env.random(8), submit_id: str(p.submit_id), proof_status: 'none' });
@@ -3115,7 +3130,7 @@ var Core = (function () {
     }, 'sponsorship', 'sponsor/');
     var method = /cheque/i.test(p.method) ? 'Cheque' : 'e-Transfer';
     return env.lock(function () {
-      var again = findBySubmit(env, p.submit_id); if (again) return outcome(again, { status: again.proof_status }, { business: again.business, silent: again.silent === 'Y' });
+      var again = seenBefore(env, p, function (a) { return outcome(a, { status: a.proof_status }, { business: a.business, silent: a.silent === 'Y' }); }); if (again) return again;
       var code = orderCode(env, s);
       p.nameForFile = code + ' - ' + label + ' - ' + money(tier) + ' - sponsor' + (silent ? ' (silent)' : '');
       var checked = checkProof(env, p, tier);
@@ -3153,7 +3168,7 @@ var Core = (function () {
     if (!(amount > 0)) throw err('Please enter the amount you are giving.');
     if (/card/i.test(p.method)) return cardStart(env, s, who, p, { kind: 'donation', amount: amount }, 'donation', 'donate/');
     return env.lock(function () {
-      var again = findBySubmit(env, p.submit_id); if (again) return outcome(again, null, { raised: raised(env) });   // same request sent twice
+      var again = seenBefore(env, p, function (a) { return outcome(a, null, { raised: raised(env) }); }); if (again) return again;   // same request sent twice
       var code = orderCode(env, s);
       // Tamer 2026-09-25: donations need the e-Transfer screenshot too, checked like a ticket order (was: no proof, 2026-09-24)
       p.nameForFile = code + ' - ' + who.last + ' - ' + money(amount) + ' - donation';
@@ -3190,7 +3205,7 @@ var Core = (function () {
   function cardStart(env, s, who, p, fields, what, page) {
     if (!squareOn(env, s)) throw err('Card payments are not available right now. Please pay by e-Transfer.');
     return env.lock(function () {
-      var again = findBySubmit(env, p.submit_id); if (again) return cardAgain(env, again);
+      var again = seenBefore(env, p, function (a) { return cardAgain(env, a); }); if (again) return again;
       if (typeof fields !== 'function' && fields.kind === 'order' && !fits(env, s, fields.qty, fields.gift_qty)) throw err('Sorry, only ' + Math.max(0, seatsLeft(env, s)) + ' seats are left. You can join the waitlist.');
       // Tamer 2026-09-25 (layout D): covering the fee is an optional tick (cover_fee Y/N), a gift rather than a surcharge, which
       // Square doesn't support in Canada. An older page that sends nothing had the fee added, so no answer means Y.
@@ -3303,7 +3318,7 @@ var Core = (function () {
     var printed = p.mode === 'printed';
     if (!printed && !email) throw err('No email? Then hand over printed tickets and choose "Printed tickets".');
     return env.lock(function () {
-      var again = findBySubmit(env, p.submit_id); if (again) return outcome(again, null, { cash: cashHeld(env, m) });   // same request sent twice
+      var again = seenBefore(env, p, function (a) { return outcome(a, null, { cash: cashHeld(env, m) }); }); if (again) return again;   // same request sent twice
       var nums;
       if (printed) {
         nums = parseNumbers(p.numbers);
@@ -3334,7 +3349,7 @@ var Core = (function () {
     if (!validEmail(email)) throw err('Enter the email address they wrote from.');
     if (q < 1 || q > 20) throw err('Number of tickets: 1 to 20.');
     return env.lock(function () {
-      var again = str(p.submit_id) && findBySubmit(env, p.submit_id); if (again) return outcome(again, null);   // same request sent twice
+      var again = seenBefore(env, p, function (a) { return outcome(a, null); }); if (again) return again;   // same request sent twice
       if (!fits(env, s, q, 0)) throw err('Only ' + Math.max(0, seatsLeft(env, s)) + ' seats left.');
       var nums = take(env, s, q), who = { first: str(p.first) || 'Guest', last: str(p.last), email: email, phone: '', receipt: 'N', address: '', city: '', postal: '' };
       var e = mk(env, who, { kind: 'cash', qty: q, amount: 0, method: 'Free', tickets: nums.join(', '), recorded_by: 'Tamer (free tickets)', proof_status: 'none',
@@ -3668,7 +3683,8 @@ if (typeof module !== 'undefined') module.exports = Core;
     settings: function () { return db.settings; },
     setSetting: function (k, v) { db.settings[k] = v; save(); },
     list: function (t) { return db[t]; },
-    append: function (t, o) { db[t].push(JSON.parse(JSON.stringify(o))); save(); },
+    append: function (t, o) { db[t].push(JSON.parse(JSON.stringify(o))); save(); if (t === 'entries' && o.submit_id) ONCE['submit-' + o.submit_id] = 1; },
+    marked: function (k) { return !!ONCE[k]; },
     update: function (t, id, patch) { var r = db[t].filter(function (x) { return x.id === id; })[0]; if (r) for (var k in patch) r[k] = patch[k]; save(); },
     mail: function (m) {
       var inline = {}; for (var cid in (m.inline || {})) inline[cid] = m.inline[cid].url;
@@ -3687,6 +3703,7 @@ if (typeof module !== 'undefined') module.exports = Core;
     makeXlsx: function (head, rows, name) { return { name: name + '.xlsx' }; },
     // a pretend Square (Tamer 2026-09-25: "the demo … not showing the payment changes"): the practice pages show "Pay by card" and the
     // fee tick like the real page; its payment page is a pretend step in the page ("practice-card:"), nothing is paid
+    sleep: function () { }, fresh: function () { },
     once: function (k) { if (ONCE[k]) return false; ONCE[k] = 1; return true; },
     squareReady: function () { return true; },
     square: function (method, api, body) {
