@@ -358,7 +358,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
 .paysub{margin:-6px 0 2px;font:500 15px/1.4 Inter,system-ui,sans-serif;color:var(--soft)}
 .payd{display:grid;gap:10px;max-width:560px;margin:0 auto}   /* centred in the Pay box (Tamer 2026-09-25) */
 .payd .btn{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;width:100%;padding:14px 18px;min-height:66px}
-.payd .pl b{display:block;font:800 17px/1.2 Inter,system-ui,sans-serif}
+.payd .pl b{display:block;font:700 17px/1.2 Inter,system-ui,sans-serif}   /* bold, not the heavier 800 (Tamer 2026-09-26: "pay lines font is thick") */
 .payd .pl small{display:block;margin-top:4px;font:500 12.5px/1.3 Inter,system-ui,sans-serif;opacity:.85}
 .payopt{appearance:none;-webkit-appearance:none;position:relative;display:flex;align-items:center;gap:13px;width:100%;border:2px solid var(--fieldline);border-radius:14px;background:#fff;padding:13px 16px;min-height:66px;cursor:pointer;font:inherit;text-align:left;color:inherit}
 .payopt .pr{flex:0 0 26px;height:26px;border-radius:50%;border:2px solid #C9D0DC;background:#fff;display:grid;place-items:center}
@@ -371,7 +371,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
 .payopt:focus-visible{outline:3px solid #F6CB5C;outline-offset:2px}
 .payd.nocard .paysub,.payd.nocard .payopt{display:none}
 .btn.paycard{background:#0B1530}.btn.paycard:hover{background:#1A2D57}
-.btn.paycard .amt{font:800 20px/1 Inter,system-ui,sans-serif;color:#fff;white-space:nowrap}   /* a normal pay-button amount, not the ticket's display font (Tamer 2026-09-26) */
+.btn.paycard .amt{font:700 20px/1 Inter,system-ui,sans-serif;color:#fff;white-space:nowrap}   /* a normal pay-button amount, not the ticket's display font (Tamer 2026-09-26) */
 .cover{position:relative;display:flex;gap:11px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px 12px;cursor:pointer;font-size:15px;line-height:1.4}
 .cover input{position:absolute;opacity:0;pointer-events:none}
 .cover .bx{flex:0 0 24px;height:24px;border-radius:7px;border:2px solid #C9D0DC;background:#fff;display:grid;place-items:center;margin-top:1px}
@@ -556,7 +556,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.71</span></footer>
+<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.72</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3243,7 +3243,7 @@ var qrcode = function() {
     try { if (/[?&]v=/.test(location.search)) { var u0 = new URL(location.href); u0.searchParams.delete('v'); history.replaceState(null, '', u0.pathname + u0.search + u0.hash); } } catch (x) { }
     if (window.WW_DEMO || !/(^|\.)thewonderworker\.ca$/.test(location.hostname)) return;
     fetch('/version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
-      if (!j || !j.v || j.v === '1.71') return;
+      if (!j || !j.v || j.v === '1.72') return;
       try { var k = 'ww27-updated-' + j.v; if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (x) { return; }
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () { });
