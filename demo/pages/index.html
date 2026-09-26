@@ -363,6 +363,14 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
 .demotag>b:first-child{display:inline-block;background:#0B1530;color:#F6CB5C;border-radius:6px;padding:1px 7px;margin-right:7px;font-size:12px;letter-spacing:.08em}
 @keyframes demobob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @media (prefers-reduced-motion:reduce){.demotag{animation:none}}
+/* card or e-Transfer (Square, 2026-09-25) */
+.paychoice{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 14px}
+.paychoice label{display:flex;flex-direction:column;gap:3px;border:2px solid var(--line);border-radius:12px;padding:11px 13px;cursor:pointer;background:#fff}
+.paychoice input{position:absolute;opacity:0;pointer-events:none}
+.paychoice label:has(input:checked){border-color:#1A2D57;background:#EAF0FA;box-shadow:inset 0 0 0 1px #1A2D57}
+.paychoice b{font-size:16px}.paychoice small{font-size:12.5px;color:var(--soft)}
+.cardbox{background:#EAF0FA;border:1px solid #C9D6EE;border-radius:12px;padding:12px 14px;margin:0 0 6px}.cardbox p{margin:0 0 6px}.cardbox .fee{font-size:15.5px}
+@media (max-width:520px){.paychoice{grid-template-columns:1fr}}
 .pay .howto{display:block;font-size:13.5px;font-weight:400;color:var(--soft);margin:2px 0 10px}
 .warn .shotstep{font-weight:700;font-size:16px;margin:0 0 8px;color:var(--ink)}
 .thermo{height:22px;background:#EDE3D2;border-radius:11px;overflow:hidden;position:relative;margin:8px 0 4px}
@@ -524,7 +532,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.53</span></footer>
+<footer><b class="privacy">Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b><span>Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary. Questions: artteam@stminacalgary.ca</span><span class="ver" title="Version of these pages">v1.54</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3215,6 +3223,7 @@ var qrcode = function() {
       }
       function ok(r) {
         if (settled) return; end();
+        if (r && r.card && r.card.url) { btn.textContent = 'Opening the card payment…'; location.href = r.card.url; return; }   // Square's page (2026-09-25)
         try { done(action, r); } catch (x) { $('#done').innerHTML = '<h2>Thank you!</h2><p>It went through' + (r && r.order ? ' (reference ' + esc(r.order) + ')' : '') + '. Your email is on its way.</p>'; show('done'); }
       }
       function bad(x) {
@@ -3238,7 +3247,7 @@ var qrcode = function() {
   }
   function need(p, keys) { keys.forEach(function (k) { if (!p[k]) throw new Error('Please fill in your ' + ({ first: 'first name', last: 'last name', email: 'email' })[k] + '.'); }); }
   function proofOf(box, method) {
-    if (method === 'Cash') return null;
+    if (method === 'Cash' || method === 'Card') return null;   // a card payment is confirmed by Square itself: no screenshot
     if (box.busy()) throw new Error('One moment: still checking your screenshot.');
     var v = box.value();
     if (!v) throw new Error('Please upload the screenshot of your e-Transfer. Every order needs one.');
@@ -3323,6 +3332,7 @@ var qrcode = function() {
     if (!(Number(p.qty) >= 1)) throw new Error('Please choose how many tickets you need.');
     if (!(Number(p.amount) > 0)) throw new Error('Please enter your donation. We suggest ' + money(((Number(p.qty) || 0) + (Number(p.gift_qty) || 0)) * CFG.suggested) + ' or more.');
     need(p, ['first', 'last', 'email']);
+    if (p.paywith === 'Card') p.method = 'Card'; delete p.paywith;
     p.proof = proofOf(buyProof, p.method); return p;
   });
 
@@ -3383,7 +3393,8 @@ var qrcode = function() {
   submit(give, 'donate', function (p) {
     if (!(Number(p.amount) > 0)) throw new Error('Please enter the amount you are giving.');
     need(p, ['first', 'last', 'email']);
-    p.proof = proofOf(giveProof, 'e-Transfer'); return p;
+    p.method = p.paywith === 'Card' ? 'Card' : 'e-Transfer'; delete p.paywith;
+    p.proof = proofOf(giveProof, p.method); return p;
   });
 
   // ---- BECOME A SPONSOR ----
@@ -3465,6 +3476,7 @@ var qrcode = function() {
     }
     need(p, ['first', 'last', 'email']);
     if (!p.silent) p.logo = logoData;
+    if (p.paywith === 'Card') p.method = 'Card'; delete p.paywith;
     p.proof = proofOf(sponProof, p.method); return p;
   });
 
@@ -3563,12 +3575,48 @@ var qrcode = function() {
     if (CFG.tiers.length) { $('[data-sponsub]', spon).textContent = CFG.tiers.map(money).join(', ') + ' or more'; $$('[data-genmin]', spon).forEach(function (x) { x.textContent = money(sponMost()); }); }
     $('[data-sponsors]', spon).innerHTML = sponsorsHtml(CFG.sponsors);
     buySync(); thermo(); sponSync(); sponSpot(); tourStart();
+    if (CFG.card) { payChoice(buy, function () { return Number($('[name=amount]', buy).value) || 0; }); payChoice(give, function () { return Number($('[name=amount]', give).value) || 0; }); payChoice(spon, sponAmt); }
   }, function () { buySync(); thermo(); sponSync(); sponSpot(); tourStart(); });
+
+  // ---- card payments (Square; Tamer 2026-09-25: online, the buyer pays Square's fee, shown as a hint) ----
+  function cardTotal(a) { return Math.ceil((a + CFG.card.fixed) / (1 - CFG.card.pct / 100) * 100) / 100; }
+  function payChoice(form, amountOf) {
+    var pay = $('[data-payhow]', form).closest('.panel2'), grid = $('[data-payhow]', form).closest('.fgrid'), btn = $('button[type=submit]', form), label = btn.textContent;
+    $('h3', pay).insertAdjacentHTML('afterend', '<div class="paychoice" role="radiogroup" aria-label="How you pay">' +
+      '<label><input type="radio" name="paywith" value="e-Transfer" checked><b>Interac e-Transfer</b><small>no fee</small></label>' +
+      '<label><input type="radio" name="paywith" value="Card"><b>Card</b><small>Visa · Mastercard · Amex · Apple Pay · Google Pay</small></label></div>' +
+      '<div class="cardbox hide" data-cardbox></div>');
+    var box = $('[data-cardbox]', form);
+    function sync() {
+      var card = (($('[name=paywith]:checked', form) || {}).value) === 'Card', a = amountOf();
+      grid.classList.toggle('hide', card); box.classList.toggle('hide', !card); btn.textContent = card ? 'Continue to card payment' : label;
+      if (!card) return;
+      var t = a > 0 ? cardTotal(a) : 0;
+      box.innerHTML = '<p><b>You pay by card on Square\'s secure page next.</b></p>' +
+        (a > 0 ? '<p class="fee">Card payments add Square\'s fee of <b>' + money(t - a) + '</b>, so the total is <b>' + money(t) + '</b> and the church receives your full ' + money(a) + '.</p>'
+               : '<p class="fee">Card payments add Square\'s fee (' + CFG.card.pct + '% + ' + Math.round(CFG.card.fixed * 100) + '¢).</p>') +
+        '<p class="hint">Interac e-Transfer has no fee.</p>';
+    }
+    form.addEventListener('change', sync); form.addEventListener('input', sync); sync();
+  }
+  // back from Square's page (?card=WW27-0005&t=…): Square is asked whether it is paid
+  function cardReturn() {
+    $('#done').innerHTML = '<h2>Checking your card payment…</h2><p>One moment.</p>'; show('done');
+    var kindAction = { donation: 'donate', sponsor: 'sponsor', order: 'order' };
+    api('card_status', { order: param('card'), t: param('t') }).then(function (r) {
+      try { history.replaceState(null, '', location.pathname); } catch (x) { }
+      if (!r.pending) return done(kindAction[r.kind] || 'order', r);
+      $('#done').innerHTML = '<h2>Your card payment is not finished</h2><p>Square has not confirmed a payment for <b>' + esc(param('card')) + '</b> yet. If you just paid, wait a moment and check again.</p>' +
+        '<p><button type="button" class="btn" onclick="location.reload()">Check again</button> <a class="btn ghost" href="' + esc(r.url) + '">Back to the card payment</a></p>' +
+        '<p class="hint">Or start over and pay by Interac e-Transfer. Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></p>';
+    }, function (x) { $('#done').innerHTML = '<h2>We could not check the payment</h2><p>' + esc(x.message) + '</p>'; });
+  }
   // direct links for the website buttons: ?p=buy (Get tickets) and ?p=donate
   // Get tickets is the page that opens by default
   if (param('p') === 'donate' || param('donate')) show('give', true);
   else if (param('p') === 'sponsor') show('spon', true);
   else show('buy', true);
+  if (param('card') && param('t')) cardReturn();
 })();
 </script>
 </body>

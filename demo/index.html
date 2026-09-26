@@ -2495,6 +2495,7 @@ var Core = (function () {
   var DEFAULTS = {
     capacity: 377, reserved: 0, suggested: 20, goal: 10000, hold_days: 10,
     given_before: 0,   // given before the website opened, counted toward the goal (Tamer 2026-09-25: $100)
+    square_on: 'N', square_env: 'sandbox', square_location_id: '', square_fee_pct: 2.8, square_fee_fixed: 0.30, site_url: 'https://thewonderworker.ca/',   // card payments (Square), off until connected
     tickets_pdf: 'N',   // the tickets PDF in the tickets email: off (Tamer 2026-09-25: with it, the email went to Yahoo's spam); 'Y' once DKIM/DMARC are set
     wallet_on: 'N', wallet_pass_type: '', wallet_team: '',   // Apple Wallet passes (Tamer 2026-09-25): 'Y' once the church's Apple certificate is in
     booking_max: 6,        // pay-in-cash booking: most of the buyer's own tickets per booking (gifted seats not counted)
@@ -2523,7 +2524,8 @@ var Core = (function () {
     'amount', 'method', 'order_code', 'interac_ref', 'proof', 'proof_status', 'flags', 'recorded_by', 'member_id',
     'receipt', 'address', 'city', 'postal', 'note', 'submit_id', 'emailed', 'token', 'business', 'website', 'logo', 'shown', 'ad_text',
     'proof_hash',   // fingerprint of the uploaded receipt, so the same one cannot be used twice (Tamer 2026-09-24)
-    'show_as', 'silent'];   // sponsors: how they want their name shown; Y = silent sponsor, never shown (Tamer 2026-09-25)
+    'show_as', 'silent',   // sponsors: how they want their name shown; Y = silent sponsor, never shown (Tamer 2026-09-25)
+    'card_fee', 'card_ref', 'card_link'];   // Square card payments (2026-09-25): the fee the buyer added, Square's order id, its payment page
   var MEMBER_COLS = ['id', 'name', 'key', 'active', 'created'];
   var HANDOVER_COLS = ['id', 'created', 'member_id', 'name', 'amount', 'note'];
 
@@ -2563,7 +2565,7 @@ var Core = (function () {
   }
 
   // what counts: paid sales and donations (not voided, not the waitlist, not a cash booking still waiting for payment)
-  function live(env) { return env.list('entries').filter(function (e) { return e.status !== 'void' && e.kind !== 'waitlist' && e.kind !== 'booking'; }); }
+  function live(env) { return env.list('entries').filter(function (e) { return e.status !== 'void' && e.status !== 'awaiting_card' && e.kind !== 'waitlist' && e.kind !== 'booking'; }); }
   function pendingHolds(env, s) {
     var cutoff = env.now().getTime() - num(s.hold_days) * 86400e3;
     return env.list('entries').filter(function (e) { return e.kind === 'booking' && e.status === 'pending' && new Date(e.created).getTime() > cutoff; });
@@ -2879,6 +2881,7 @@ var Core = (function () {
     return { suggested: num(s.suggested), etransfer: s.etransfer_email, seatsLeft: Math.max(0, seatsLeft(env, s)), open: salesOpen(env, s), event: EVENT, form: formToken(env),
       bookingMax: num(s.booking_max), minTable: String(s.min_table), orderMax: num(s.order_max), holdDays: num(s.hold_days),
       tiers: String(s.sponsor_tiers).split(/[\s,]+/).map(Number).filter(Boolean), sponsors: sponsorsShown(env),
+      card: squareOn(env, s) ? { pct: num(s.square_fee_pct), fixed: num(s.square_fee_fixed) } : null,
       goal: num(s.goal), raised: raised(env), givers: live(env).filter(function (e) { return num(e.amount) > 0; }).length, paused: str(s.paused) };
   }
 
@@ -2944,7 +2947,7 @@ var Core = (function () {
   // ---------- public: Get tickets (online order, e-Transfer or cheque, with proof) ----------
   function order(env, p) {
     var prev = findBySubmit(env, p.submit_id);
-    if (prev) return prev.kind === 'booking' ? bookingOutcome(env, prev) : outcome(prev, { status: prev.proof_status });
+    if (prev) return prev.kind === 'booking' ? bookingOutcome(env, prev) : prev.method === 'Card' ? cardAgain(env, prev) : outcome(prev, { status: prev.proof_status });
     antiSpam(env, p);
     var s = settings(env), who = person(p);
     if (!salesOpen(env, s)) throw err('Ticket sales are closed.');
@@ -2960,6 +2963,7 @@ var Core = (function () {
       if (open) throw err('You already have a booking (' + open.order_code + ') waiting for payment. Please pay that one first. The code is in your email.');
       return book(env, s, who, qty, gq, amount, p);
     }
+    if (/card/i.test(p.method)) return cardStart(env, s, who, p, { kind: 'order', qty: qty, gift_qty: gq, amount: amount }, qty + ' ticket' + (qty > 1 ? 's' : ''), '');
     var method = /cheque/i.test(p.method) ? 'Cheque' : 'e-Transfer';
     return env.lock(function () {
       var again = findBySubmit(env, p.submit_id); if (again) return outcome(again, { status: again.proof_status });   // same request sent twice
@@ -3050,7 +3054,7 @@ var Core = (function () {
       .sort(function (a, b) { return b.tier - a.tier || (a.business < b.business ? -1 : 1); });
   }
   function sponsor(env, p) {
-    var prev = findBySubmit(env, p.submit_id); if (prev) return outcome(prev, { status: prev.proof_status }, { business: prev.business, silent: prev.silent === 'Y' });
+    var prev = findBySubmit(env, p.submit_id); if (prev) return prev.method === 'Card' ? cardAgain(env, prev) : outcome(prev, { status: prev.proof_status }, { business: prev.business, silent: prev.silent === 'Y' });
     antiSpam(env, p);
     var s = settings(env), who = person(p), business = str(p.business), tier = Math.round(num(p.tier) * 100) / 100;
     var silent = p.silent === true || p.silent === 'true' || p.silent === 'Y';   // "I want to be a silent sponsor" (Tamer 2026-09-25)
@@ -3062,6 +3066,10 @@ var Core = (function () {
     if (!silent && !p.logo) throw err('Please add your logo.');
     // the sponsor's website comes as "site": "website" is the hidden anti-bot field, which used to overwrite it (found 2026-09-25)
     var showAs = silent ? '' : str(p.show_as).slice(0, 120), label = business || (str(p.first) + ' ' + str(p.last)).trim();
+    if (/card/i.test(p.method)) return cardStart(env, s, who, p, function (code) {
+      return { kind: 'sponsor', amount: tier, business: business, website: silent ? '' : str(p.site), logo: silent ? '' : env.saveLogo(p.logo, code + ' - ' + business), shown: 'N',
+        ad_text: silent ? '' : str(p.ad_text).slice(0, 120), show_as: showAs, silent: silent ? 'Y' : '' };
+    }, 'sponsorship', 'sponsor/');
     var method = /cheque/i.test(p.method) ? 'Cheque' : 'e-Transfer';
     return env.lock(function () {
       var again = findBySubmit(env, p.submit_id); if (again) return outcome(again, { status: again.proof_status }, { business: again.business, silent: again.silent === 'Y' });
@@ -3074,7 +3082,13 @@ var Core = (function () {
         interac_ref: checked.facts.ref || '', proof: checked.url, proof_hash: checked.hash, proof_status: checked.status, flags: checked.reasons.join(' | ') });
       e.status = checked.status === 'ok' ? 'ok' : 'flagged';
       env.append('entries', e);
-      env.mail({ to: e.email, subject: 'Thank you for sponsoring · Nativity Celebration 2027', name: s.from_name, replyTo: s.team_email,
+      sponsorThanks(env, s, e, checked.reasons);
+      return outcome(e, checked, { business: label, silent: silent, contact: !!(p.proof && p.proof.contact_me) });
+    });
+  }
+  function sponsorThanks(env, s, e, reasons) {
+    var business = e.business, tier = num(e.amount), code = e.order_code, silent = e.silent === 'Y', showAs = e.show_as, label = business || str(e.first + ' ' + e.last);
+    env.mail({ to: e.email, subject: 'Thank you for sponsoring · Nativity Celebration 2027', name: s.from_name, replyTo: s.team_email,
         html: shell('<p>Dear ' + esc(e.first) + ',</p><p>Thank you for sponsoring the Nativity Celebration 2027' + (business ? ' on behalf of <b>' + esc(business) + '</b>' : '') + ' (' + money(tier) + ', ref. ' + code + ').</p>' +
           // CRA: a sponsorship that advertises the business gets no donation receipt; a silent sponsor's gift does (Tamer 2026-09-25)
           (silent ? '<p>As you asked, you are a <b>silent sponsor</b>: your name will not be shown on our website or at the celebration. You will get an official donation receipt for your gift.</p>'
@@ -3083,17 +3097,16 @@ var Core = (function () {
               (showAs ? '<p>How you asked us to show your name: <b>' + esc(showAs) + '</b></p>' : '')) +
           '<p>The Wonder Worker Art Team<br>St. Mina Coptic Orthodox Church</p>') });
       teamAlert(env, s, e, [silent ? 'new SILENT sponsor: ' + label + ' (' + money(tier) + '). Do not show the name anywhere.'
-        : 'new sponsor: ' + business + ' (' + money(tier) + ')' + (showAs ? '; show the name as: "' + showAs + '"' : '') + '. Please look at the logo and tap "Show on page" on your dashboard.'].concat(checked.reasons), 'sponsor ' + code);
-      return outcome(e, checked, { business: label, silent: silent, contact: !!(p.proof && p.proof.contact_me) });
-    });
+        : 'new sponsor: ' + business + ' (' + money(tier) + ')' + (showAs ? '; show the name as: "' + showAs + '"' : '') + '. Please look at the logo and tap "Show on page" on your dashboard.'].concat(reasons), 'sponsor ' + code);
   }
 
   // ---------- public: Donate (no tickets; e-Transfer with proof, counts toward the goal) ----------
   function donate(env, p) {
-    var prev = findBySubmit(env, p.submit_id); if (prev) return outcome(prev, null, { raised: raised(env) });
+    var prev = findBySubmit(env, p.submit_id); if (prev) return prev.method === 'Card' ? cardAgain(env, prev) : outcome(prev, null, { raised: raised(env) });
     antiSpam(env, p);
     var s = settings(env), who = person(p), amount = num(p.amount);
     if (!(amount > 0)) throw err('Please enter the amount you are giving.');
+    if (/card/i.test(p.method)) return cardStart(env, s, who, p, { kind: 'donation', amount: amount }, 'donation', 'donate/');
     return env.lock(function () {
       var again = findBySubmit(env, p.submit_id); if (again) return outcome(again, null, { raised: raised(env) });   // same request sent twice
       var code = orderCode(env, s);
@@ -3104,16 +3117,100 @@ var Core = (function () {
         interac_ref: checked.facts.ref || '', proof: checked.url, proof_hash: checked.hash, proof_status: checked.status, flags: checked.reasons.join(' | ') });
       e.status = checked.status === 'ok' ? 'ok' : 'flagged';
       env.append('entries', e);
-      var total = raised(env);
-      env.mail({ to: e.email, subject: 'Thank you · Nativity Celebration 2027 donation', name: s.from_name, replyTo: s.team_email,
-        // wording set by Tamer 2026-09-24
-        html: shell('<p>Dear ' + esc(e.first) + ',</p><p>Thanks for your donation of <b>' + money(amount) + '</b> to the Nativity Celebration 2027.</p>' +
-          '<p>Together we have now given <b>' + money(total) + '</b> of our <b>' + money(s.goal) + '</b> goal.</p>' +
-          '<p>The Wonder Worker Art Team<br>St. Mina Coptic Orthodox Church</p>') });
-      env.update('entries', e.id, { emailed: env.now().toISOString() });
+      var total = donationThanks(env, s, e);
       if (checked.reasons.length) teamAlert(env, s, e, checked.reasons, 'donation ' + code);
       return outcome(e, checked, { raised: total, goal: num(s.goal), contact: !!(p.proof && p.proof.contact_me) });
     });
+  }
+
+  function donationThanks(env, s, e) {
+    var total = raised(env);
+    env.mail({ to: e.email, subject: 'Thank you · Nativity Celebration 2027 donation', name: s.from_name, replyTo: s.team_email,
+      // wording set by Tamer 2026-09-24
+      html: shell('<p>Dear ' + esc(e.first) + ',</p><p>Thanks for your donation of <b>' + money(e.amount) + '</b> to the Nativity Celebration 2027.</p>' +
+        '<p>Together we have now given <b>' + money(total) + '</b> of our <b>' + money(s.goal) + '</b> goal.</p>' +
+        '<p>The Wonder Worker Art Team<br>St. Mina Coptic Orthodox Church</p>') });
+    env.update('entries', e.id, { emailed: env.now().toISOString() });
+    return total;
+  }
+
+  // ---------- card payments through Square (Tamer 2026-09-25: online, the buyer pays the fee, shown as a hint) ----------
+  // Off until the church's Square account is connected (tools/square_setup.py) and square_on is 'Y'. Submit makes a Square payment
+  // page for exactly this order: the donation plus Square's fee (2.8% + 30¢, grossed up so the church receives the full donation).
+  // The entry waits as "awaiting_card" (no tickets, not counted anywhere) until Square itself says the order is paid: when the buyer
+  // comes back (card_status), when Square calls (square_event) or from the dashboard (owner_card_check). Never on the buyer's word.
+  function squareOn(env, s) { return String(s.square_on).toUpperCase() === 'Y' && !!str(s.square_location_id) && !!env.square && env.squareReady(); }
+  function cardTotal(s, amount) { var pct = num(s.square_fee_pct) / 100, fix = num(s.square_fee_fixed); return Math.ceil((amount + fix) / (1 - pct) * 100) / 100; }
+  function cardStart(env, s, who, p, fields, what, page) {
+    if (!squareOn(env, s)) throw err('Card payments are not available right now. Please pay by e-Transfer.');
+    return env.lock(function () {
+      var again = findBySubmit(env, p.submit_id); if (again) return cardAgain(env, again);
+      if (typeof fields !== 'function' && fields.kind === 'order' && !fits(env, s, fields.qty, fields.gift_qty)) throw err('Sorry, only ' + Math.max(0, seatsLeft(env, s)) + ' seats are left. You can join the waitlist.');
+      var code = orderCode(env, s), token = env.random(20), f = typeof fields === 'function' ? fields(code) : fields, total = cardTotal(s, f.amount);
+      var back = str(s.site_url || 'https://thewonderworker.ca/') + page + '?card=' + encodeURIComponent(code) + '&t=' + token;
+      var r = env.square('POST', '/v2/online-checkout/payment-links', { idempotency_key: code + '-' + token,
+        quick_pay: { name: 'Nativity Celebration 2027 · ' + what + ' · ' + code, price_money: { amount: Math.round(total * 100), currency: 'CAD' }, location_id: str(s.square_location_id) },
+        checkout_options: { redirect_url: back, ask_for_shipping_address: false }, pre_populated_data: { buyer_email: who.email },
+        payment_note: code + ' · ' + str(who.first + ' ' + who.last) });
+      var link = r.payment_link || {}, o = { method: 'Card', order_code: code, submit_id: str(p.submit_id), token: token, card_fee: Math.round((total - f.amount) * 100) / 100,
+        card_ref: link.order_id, card_link: link.url };
+      for (var k in f) o[k] = f[k];
+      var e = mk(env, who, o); e.status = 'awaiting_card';
+      env.append('entries', e);
+      return { ok: true, card: { url: link.url }, order: code };
+    });
+  }
+  function cardAgain(env, e) { return e.status === 'awaiting_card' ? { ok: true, card: { url: e.card_link }, order: e.order_code } : cardOutcome(env, e); }
+  function cardOutcome(env, e) {
+    var s = settings(env);
+    if (e.kind === 'donation') return outcome(e, null, { kind: 'donation', raised: raised(env), goal: num(s.goal) });
+    if (e.kind === 'sponsor') return outcome(e, { status: 'ok' }, { kind: 'sponsor', business: e.business || str(e.first + ' ' + e.last), silent: e.silent === 'Y' });
+    return outcome(e, { status: 'ok' }, { kind: 'order' });
+  }
+  function cardPaid(env, e) {   // Square's own answer: the order is paid in full
+    var o = ((env.square('GET', '/v2/orders/' + encodeURIComponent(e.card_ref)) || {}).order) || {};
+    var due = o.net_amount_due_money ? num(o.net_amount_due_money.amount) : -1, paidCents = o.total_money ? num(o.total_money.amount) : 0;
+    return (o.state === 'COMPLETED' || (o.tenders && o.tenders.length > 0 && due === 0)) && paidCents >= Math.round((num(e.amount) + num(e.card_fee)) * 100);
+  }
+  function cardSettle(env, e0) {
+    if (!e0 || e0.status !== 'awaiting_card' || !e0.card_ref || !cardPaid(env, e0)) return e0;
+    var s = settings(env);
+    return env.lock(function () {
+      var e = env.list('entries').filter(function (x) { return x.id === e0.id; })[0];
+      if (!e || e.status !== 'awaiting_card') return e;   // settled meanwhile (the buyer came back while Square called)
+      var reasons = [], patch = { status: 'ok', proof_status: 'card' };
+      if (e.kind === 'order') {
+        if (fits(env, s, num(e.qty), num(e.gift_qty))) { patch.tickets = take(env, s, num(e.qty)).join(', '); patch.gift_numbers = num(e.gift_qty) ? takeGift(env, s, num(e.gift_qty)).join(', ') : ''; }
+        else { patch.status = 'flagged'; reasons.push('paid by card, but the seats ran out before Square confirmed: please refund in Square or find seats'); }
+      }
+      env.update('entries', e.id, patch); for (var k in patch) e[k] = patch[k];
+      if (e.kind === 'order') {
+        if (e.tickets) finishSale(env, s, e, 'Thank you for your donation of <b>' + money(e.amount) + '</b>. Your tickets are below.', reasons, 'card order ' + e.order_code);
+        else teamAlert(env, s, e, reasons, 'card order ' + e.order_code);
+      } else if (e.kind === 'donation') donationThanks(env, s, e);
+      else if (e.kind === 'sponsor') sponsorThanks(env, s, e, []);
+      return e;
+    });
+  }
+  // the buyer is back from Square's page (?card=WW27-0005&t=…): settle it if Square says it is paid
+  function cardStatus(env, p) {
+    var e = env.list('entries').filter(function (x) { return x.method === 'Card' && x.order_code === str(p.order); })[0];
+    if (!e || !str(p.t) || e.token !== str(p.t)) throw err('We could not find that payment. If you paid, please email artteam@stminacalgary.ca.');
+    e = cardSettle(env, e);
+    return e.status === 'awaiting_card' ? { ok: true, pending: true, url: e.card_link, kind: e.kind } : cardOutcome(env, e);
+  }
+  // Square calls when a payment changes; what it says is not trusted: the order is asked again
+  function squareEvent(env, p) {
+    var obj = (p && p.data && p.data.object) || {}, id = str((obj.payment || {}).order_id || (obj.order_updated || {}).order_id || (obj.order || {}).id);
+    if (id) cardSettle(env, env.list('entries').filter(function (x) { return x.card_ref === id; })[0]);
+    return { ok: true };
+  }
+  // dashboard: ask Square about every card payment still waiting (last 3 days)
+  function ownerCardCheck(env, p) {
+    requireOwner(env, p.key);
+    var since = env.now().getTime() - 3 * 864e5, n = 0;
+    env.list('entries').filter(function (x) { return x.status === 'awaiting_card' && Date.parse(x.created) > since; }).forEach(function (x) { if (cardSettle(env, x).status !== 'awaiting_card') n++; });
+    return { ok: true, settled: n };
   }
 
   function waitlist(env, p) {
@@ -3261,7 +3358,7 @@ var Core = (function () {
   }
   function ownerSetting(env, p) {
     requireOwner(env, p.key);
-    var allowed = ['capacity', 'reserved', 'suggested', 'goal', 'given_before', 'demo_open_until', 'tickets_pdf', 'wallet_on', 'wallet_pass_type', 'wallet_team', 'sales_close', 'receipt_ticket_value', 'void_numbers', 'paused', 'booking_max', 'min_table', 'order_max', 'hold_days', 'sponsor_tiers', 'gift_seats', 'team_page_url', 'owner_page_url', 'low_seats'];
+    var allowed = ['capacity', 'reserved', 'suggested', 'goal', 'given_before', 'demo_open_until', 'square_on', 'square_env', 'square_location_id', 'square_fee_pct', 'square_fee_fixed', 'site_url', 'tickets_pdf', 'wallet_on', 'wallet_pass_type', 'wallet_team', 'sales_close', 'receipt_ticket_value', 'void_numbers', 'paused', 'booking_max', 'min_table', 'order_max', 'hold_days', 'sponsor_tiers', 'gift_seats', 'team_page_url', 'owner_page_url', 'low_seats'];
     if (allowed.indexOf(p.name) < 0) throw err('That setting cannot be changed here.');
     env.setSetting(p.name, str(p.value)); return { ok: true };
   }
@@ -3418,7 +3515,8 @@ var Core = (function () {
     member_me: memberMe, cash_sale: cashSale, demo_order: demoOrder, member_sheet_read: memberSheetRead, member_undo: memberUndo, member_booking: memberBooking, member_paid: memberPaid,
     owner_data: ownerData, owner_member_add: ownerMemberAdd, owner_member_reissue: ownerMemberReissue, owner_member_revoke: ownerMemberRevoke,
     owner_void: ownerVoid, owner_clear: ownerClear, owner_sponsor_show: ownerSponsorShow, owner_handover: ownerHandover, owner_setting: ownerSetting, owner_resend: ownerResend, owner_test_email: ownerTestEmail,
-    owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); }, owner_sheet_key: ownerSheetKey, sheet_rows: sheetRows, owner_test_pdf: ownerTestPdf, owner_test_pass: ownerTestPass };
+    owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); }, owner_sheet_key: ownerSheetKey, sheet_rows: sheetRows, owner_test_pdf: ownerTestPdf, owner_test_pass: ownerTestPass,
+    card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck };
 
   var PUBLIC_WRITES = { order: 1, donate: 1, sponsor: 1, waitlist: 1 };
   function handle(env, action, payload) {
