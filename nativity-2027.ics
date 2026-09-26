@@ -1,0 +1,13 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Wonder Worker Art Team//Nativity 2027//EN
+BEGIN:VEVENT
+UID:nativity-2027@stminacalgary.ca
+DTSTAMP:20260924T000000Z
+DTSTART:20270130T220000Z
+DTEND:20270131T030000Z
+SUMMARY:Nativity Celebration 2027
+LOCATION:Bert Church LIVE Theatre\, 1000 East Lake Blvd NE\, Airdrie\, AB
+DESCRIPTION:Followed by Tasbeha. Bring your tickets (phone or printed).
+END:VEVENT
+END:VCALENDAR

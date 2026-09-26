@@ -2756,9 +2756,9 @@ var Core = (function () {
   // phone screen, so the door team scans these with the team page (Tamer 2026-09-24)
   // door codes 220 px (were 150; Tamer 2026-09-25: with no PDF, the email is the only copy, so make them larger)
   function doorCodes(env, cids, numbers, demo) {
-    return '<p style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:1.5px;color:#8A3B2E;margin:14px 0 6px">DOOR CODE' + (numbers.length > 1 ? 'S' : '') + '</p><div>' +
+    return '<p style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:1.5px;color:#8A3B2E;margin:14px 0 6px;text-align:center">DOOR CODE' + (numbers.length > 1 ? 'S' : '') + '</p><div style="text-align:center">' +
       numbers.map(function (n) {
-        return '<div style="display:inline-block;vertical-align:top;margin:0 10px 10px 0;padding:8px;background:#fff;border:1px solid #E3D6BF;border-radius:8px;text-align:center">' +
+        return '<div style="display:inline-block;vertical-align:top;margin:0 5px 10px;padding:8px;background:#fff;border:1px solid #E3D6BF;border-radius:8px;text-align:center">' +
           (demo ? '<div style="width:220px;height:220px;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,#f3f3f3 0 8px,#e6e6e6 8px 16px);border:2px solid #C0392B;color:#C0392B;font:bold 24px Arial,sans-serif">DEMO<br>no code</div>' : qrImg(env, cids, 'd' + n, 'WW27-T' + n, 220)) + '<div style="font-family:Arial,sans-serif;font-size:14px;font-weight:bold;margin-top:6px">' + (demo ? 'DEMO ' : 'No. ') + n + '</div></div>';
       }).join('') + '</div>';
   }
@@ -2767,31 +2767,37 @@ var Core = (function () {
     // (Tamer 2026-09-24: the email came with 2 copies of the tickets); attachments: the calendar invite and, since 2026-09-25, one PDF of the tickets
     // demo (Tamer 2026-09-25): tickets DEMO 1 … DEMO N, "DEMO" pictures with no real code, nothing recorded
     var demo = !!e.demo, lab = function (n) { return demo ? 'DEMO ' + n : 'No. ' + n; };
-    var cids = {}, imgs = '', w = numbers.length > 1 ? 380 : 560;
+    var cids = {}, imgs = '', w = numbers.length > 1 ? 380 : 540;
     numbers.forEach(function (n) {
       var key = demo ? 'demo-' + ('0' + n).slice(-2) : n, blob = env.ticketImage(key); if (!blob) return;
       cids['t' + n] = blob;
-      imgs += '<div style="margin:0 0 12px"><img src="cid:t' + n + '" alt="Ticket ' + lab(n) + '" width="' + w + '" style="width:100%;max-width:' + w + 'px;height:auto;border-radius:8px;display:block">' +
-        // Tamer 2026-09-25: "direct download from the email just the ticket pic" (Apple Mail doesn't offer it): a link that opens
-        // the picture on thewonderworker.ca with a Save button (iPhone: Save Image to Photos; elsewhere it downloads)
-        (env.sign ? '<a href="' + ticketLink(env, s, key) + '" style="display:inline-block;margin-top:6px;background:#F6CB5C;color:#0B1530;text-decoration:none;padding:8px 14px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px;font-weight:bold">&#11015; Save ticket ' + lab(n) + '</a>' : '') + '</div>';
+      // Tamer 2026-09-25: "the email pic not centered": a centred table cell, which every mail app honours
+      imgs += '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px"><tr><td align="center" style="text-align:center">' +
+        '<img src="cid:t' + n + '" alt="Ticket ' + lab(n) + '" width="' + w + '" style="display:block;margin:0 auto;width:100%;max-width:' + w + 'px;height:auto;border-radius:8px">' +
+        // no link to a website here (Tamer 2026-09-25: "on phone just pressing the pic can download it … people get worried about any link")
+        '</td></tr></table>';
     });
     // wording set by Tamer 2026-09-24 (the church sends receipts at the end of the tax year); none for people who declined
     var receiptLine = e.receipt === 'N' ? '' : 'You will get a tax receipt for your donations.';
     var html = shell(
       (demo ? '<p style="background:#FDECEA;border:2px solid #C0392B;border-radius:8px;padding:10px 12px;color:#8A1C12"><b>DEMO ONLY.</b> These are not real tickets and nothing was recorded. This shows what a buyer receives.</p>' : '') +
       '<p>Dear ' + esc(e.first) + ',</p><p>' + opening + '</p>' +
-      '<p style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:1.5px;color:#8A3B2E;margin:18px 0 8px">YOUR TICKET' + (numbers.length > 1 ? 'S' : '') + ' · ' + (demo ? numbers.map(lab).join(', ') : 'NO. ' + numbers.join(', ')) + '</p>' +
-      imgs + doorCodes(env, cids, numbers, demo) +
+      '<p style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:1.5px;color:#8A3B2E;margin:18px 0 8px;text-align:center">YOUR TICKET' + (numbers.length > 1 ? 'S' : '') + ' · ' + (demo ? numbers.map(lab).join(', ') : 'NO. ' + numbers.join(', ')) + '</p>' +
+      imgs + '<p style="text-align:center;font-family:Arial,sans-serif;font-size:13px;color:#7A6A5A;margin:-4px 0 12px">To save ' + (numbers.length > 1 ? 'a ticket' : 'your ticket') + ' on your phone, press and hold it, then tap Save.</p>' +
+      doorCodes(env, cids, numbers, demo) +
       '<p style="font-size:15px">' + (numbers.length > 1 ? 'Show them on your phone at the door or print them. Each ticket is one seat.' : 'Show it on your phone at the door or print it.') + '</p>' +
       (gifts.length ? '<p>Your ' + gifts.length + ' gifted seat' + (gifts.length > 1 ? 's' : '') + ' will be given quietly to a senior. Thank you.</p>' : '') +
       '<table style="border-collapse:collapse;font-size:15px;margin:10px 0 14px">' +
       '<tr><td style="padding:3px 12px 3px 0;color:#7A6A5A">When</td><td>' + EVENT.when + '</td></tr>' +
       '<tr><td style="padding:3px 12px 3px 0;color:#7A6A5A">Where</td><td>' + EVENT.where + ' · <a href="' + EVENT.map + '">map</a></td></tr>' +
-      '<tr><td style="padding:3px 12px 3px 0;color:#7A6A5A">Donation</td><td>' + money(e.amount) + ' by ' + esc(e.method) + (e.order_code ? ' · ref. ' + esc(e.order_code) : '') + '</td></tr>' +
+      (e.method === 'Free' ? '' :   // free tickets (asked for by email): no "$0 by Free" line
+      '<tr><td style="padding:3px 12px 3px 0;color:#7A6A5A">Donation</td><td>' + money(e.amount) + ' by ' + esc(e.method) + (e.order_code ? ' · ref. ' + esc(e.order_code) : '') + '</td></tr>') +
       '</table>' +
       (!demo && walletOn(env, s) ? '<p style="font-size:15px">On an iPhone, tap the attached ticket' + (numbers.length > 1 ? 's' : '') + ' (Ticket ' + numbers[0] + '.pkpass' + (numbers.length > 1 ? ' …' : '') + ') to add ' + (numbers.length > 1 ? 'them' : 'it') + ' to Apple Wallet.</p>' : '') +
-      '<p style="margin:0 0 6px"><a href="' + calendarLink() + '" style="display:inline-block;background:#1A2D57;color:#FFF3D6;text-decoration:none;padding:9px 14px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px">Add to Google Calendar</a> &nbsp; <span style="font-size:13px;color:#7A6A5A">(iPhone: open the attached nativity-2027.ics)</span></p>' +
+      // Google and Apple side by side (Tamer 2026-09-25: "can it be also apple calendar"); the Apple one is the same invite as the
+      // attachment, on thewonderworker.ca (published by publish.sh), which an iPhone or a Mac opens straight into Calendar
+      '<p style="margin:0 0 6px"><a href="' + calendarLink() + '" style="display:inline-block;margin:0 6px 6px 0;background:#1A2D57;color:#FFF3D6;text-decoration:none;padding:9px 14px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px">Add to Google Calendar</a>' +
+        '<a href="' + str(s.site_url || 'https://thewonderworker.ca/') + 'nativity-2027.ics" style="display:inline-block;margin:0 0 6px;background:#1A2D57;color:#FFF3D6;text-decoration:none;padding:9px 14px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px">Add to Apple Calendar</a></p>' +
       (receiptLine ? '<p style="font-size:15px">' + receiptLine + '</p>' : '') +
       '<p>See you there,<br>The Wonder Worker Art Team<br>St. Mina Coptic Orthodox Church</p>');
     var atts = [env.textBlob('nativity-2027.ics', 'text/calendar', ics())];
@@ -3608,7 +3614,7 @@ var Core = (function () {
     }
   }
 
-  return { handle: handle, ENTRY_COLS: ENTRY_COLS, MEMBER_COLS: MEMBER_COLS, HANDOVER_COLS: HANDOVER_COLS, DEFAULTS: DEFAULTS, EVENT: EVENT, parseNumbers: parseNumbers };
+  return { handle: handle, ics: ics, ENTRY_COLS: ENTRY_COLS, MEMBER_COLS: MEMBER_COLS, HANDOVER_COLS: HANDOVER_COLS, DEFAULTS: DEFAULTS, EVENT: EVENT, parseNumbers: parseNumbers };
 })();
 if (typeof module !== 'undefined') module.exports = Core;
 </script>
