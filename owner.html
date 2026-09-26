@@ -192,7 +192,7 @@ input.s{font:15px Arial,sans-serif;padding:7px 10px;border:1px solid var(--line)
   <section id="t-settings" class="hide"></section>
   <section class="card hide" id="bad"><h2>Link not valid</h2></section>
 </main>
-<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.56</span></footer>
+<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.57</span></footer>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -276,10 +276,24 @@ function copyBtn(root) {
       stat(money(t.total), 'raised of ' + money(t.goal) + ' goal') + stat(t.seatsUsed + ' / ' + (t.capacity - t.reserved), 'seats issued · ' + (t.printed || 0) + ' printed · ' + (t.eticket || 0) + ' e-tickets (' + t.seatsLeft + ' left)') +
       stat(money(t.byKind.order || 0), 'online tickets') + stat(money(t.byKind.cash || 0), 'team cash / cheque sales') + stat(money(t.byKind.donation || 0), 'donations') + stat(money(t.byKind.sponsor || 0), 'sponsors') +
       stat(money(held), 'cash held by team') + stat(flagged, 'need a look') + giftStat(t.gifts) + '</div>' +
+      // Tamer 2026-09-25: someone who can't give right now emails artteam@ with how many tickets they need (no name needed, any email);
+      // only you issue these: $0, e-tickets to the email they wrote from, counted as seats like any ticket
+      '<div class="card" style="margin-top:12px"><h2>Free tickets (asked for by email)</h2><p class="hint">For someone who wrote to artteam@ asking for tickets they can\'t give for. No name needed: it shows as "Guest". The e-tickets go to the email you type here.</p>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><input class="s" id="ft-email" type="email" placeholder="Their email" style="min-width:240px"> <input class="s" id="ft-qty" type="number" min="1" max="20" value="1" style="width:70px" aria-label="Tickets"> tickets ' +
+      '<input class="s" id="ft-name" placeholder="Name (optional)"> <button class="btn" id="ft-go" style="padding:9px 16px;min-height:0">Send the free tickets</button></div><p id="ft-out" class="hint"></p></div>' +
       '<div class="card" style="margin-top:12px"><h2>Cash held by each member</h2><table class="t"><tr><th>Member</th><th>Holds</th><th>Record hand-over to Hany</th></tr>' +
       D.members.map(function (m) { return '<tr><td>' + esc(m.name) + (m.active ? '' : ' <span class="pill void">link off</span>') + '</td><td>' + money(m.cash) + '</td><td><input class="s" type="number" placeholder="$" data-ho="' + m.id + '" style="width:90px"> <button class="link" data-hob="' + m.id + '">Record</button></td></tr>'; }).join('') +
       '</table></div>';
     $$('[data-hob]').forEach(function (b) { b.onclick = function () { var id = b.getAttribute('data-hob'), a = $('[data-ho="' + id + '"]').value; run('owner_handover', { member_id: id, amount: a }).then(reload, function (x) { alert(x.message); }); }; });
+    var ftId = newId();
+    $('#ft-go').onclick = function () {
+      var b = this, out = $('#ft-out'), nm = $('#ft-name').value.trim().split(/\s+/);
+      b.disabled = true; out.textContent = 'Sending…';
+      run('owner_free_tickets', { email: $('#ft-email').value.trim(), qty: $('#ft-qty').value, first: nm[0] || '', last: nm.slice(1).join(' '), submit_id: ftId }).then(function (r) {
+        out.innerHTML = '<b>Sent:</b> ticket' + (r.tickets.length > 1 ? 's' : '') + ' No. ' + esc(r.tickets.join(', ')) + ' to ' + esc(r.email) + '.'; ftId = newId(); b.disabled = false;
+        $('#ft-email').value = ''; $('#ft-name').value = ''; $('#ft-qty').value = 1;
+      }, function (x) { out.textContent = x.message; b.disabled = false; });
+    };
   }
 
   function entries() {

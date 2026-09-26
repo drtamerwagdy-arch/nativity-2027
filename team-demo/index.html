@@ -3060,7 +3060,7 @@ var Core = (function () {
       var who = str((e.first || '') + ' ' + (e.last || '')) || e.business || '', n = list(e.tickets).length;
       var what = e.kind === 'donation' ? 'donation' : e.kind === 'sponsor' ? 'sponsorship' + (e.silent === 'Y' ? ' (silent)' : '') : n + ' ticket' + (n === 1 ? '' : 's');
       var rows = [['Name', who], ['Email', e.email], ['For', what + (e.kind === 'sponsor' && e.business ? ' · ' + e.business : '')],
-        ['Amount', money(e.amount) + (num(e.card_fee) ? ' (+ card fee ' + money(e.card_fee) + ', paid by the buyer)' : '')], ['Paid by', e.method],
+        ['Amount', money(e.amount) + (num(e.card_fee) ? ' (+ card fee ' + money(e.card_fee) + ', covered by the buyer)' : /card/i.test(e.method) ? ' (card fee not covered: the church pays it)' : '')], ['Paid by', e.method],
         ['Tickets', [e.tickets, e.gift_numbers ? 'gift seats ' + e.gift_numbers : ''].filter(Boolean).join(' · ')], ['Reference', e.order_code], ['Recorded by', e.recorded_by],
         ['Status', e.status === 'flagged' ? 'needs a look (see the "Check needed" email)' : 'ok']].filter(function (r) { return str(r[1]); });
       env.mail({ to: to, subject: 'Payment · ' + money(e.amount) + ' · ' + (who || 'no name') + ' · ' + what + (e.order_code ? ' · ' + e.order_code : ''), name: 'Nativity payments', replyTo: e.email || s.team_email,
@@ -3169,10 +3169,15 @@ var Core = (function () {
     return env.lock(function () {
       var again = findBySubmit(env, p.submit_id); if (again) return cardAgain(env, again);
       if (typeof fields !== 'function' && fields.kind === 'order' && !fits(env, s, fields.qty, fields.gift_qty)) throw err('Sorry, only ' + Math.max(0, seatsLeft(env, s)) + ' seats are left. You can join the waitlist.');
-      var code = orderCode(env, s), token = env.random(20), f = typeof fields === 'function' ? fields(code) : fields, total = cardTotal(s, f.amount);
+      // Tamer 2026-09-25 (layout D): covering the fee is an optional tick (cover_fee Y/N), a gift rather than a surcharge, which
+      // Square doesn't support in Canada. An older page that sends nothing had the fee added, so no answer means Y.
+      var cover = !/^(n|no|false|0)$/i.test(str(p.cover_fee));
+      var code = orderCode(env, s), token = env.random(20), f = typeof fields === 'function' ? fields(code) : fields, total = cover ? cardTotal(s, f.amount) : num(f.amount);
       var back = str(s.site_url || 'https://thewonderworker.ca/') + page + '?card=' + encodeURIComponent(code) + '&t=' + token;
       var r = env.square('POST', '/v2/online-checkout/payment-links', { idempotency_key: code + '-' + token,
-        quick_pay: { name: 'Nativity Celebration 2027 · ' + what + ' · ' + code, price_money: { amount: Math.round(total * 100), currency: 'CAD' }, location_id: str(s.square_location_id) },
+        // Square's page and receipt show the split: "… · $40.00 donation + $1.47 to cover the card fee"
+        quick_pay: { name: 'Nativity Celebration 2027 · ' + what + ' · ' + code + (total > num(f.amount) ? ' · ' + money(f.amount) + ' donation + ' + money(total - num(f.amount)) + ' to cover the card fee' : ''),
+          price_money: { amount: Math.round(total * 100), currency: 'CAD' }, location_id: str(s.square_location_id) },
         checkout_options: { redirect_url: back, ask_for_shipping_address: false }, pre_populated_data: { buyer_email: who.email },
         payment_note: code + ' · ' + str(who.first + ' ' + who.last) });
       var link = r.payment_link || {}, o = { method: 'Card', order_code: code, submit_id: str(p.submit_id), token: token, card_fee: Math.round((total - f.amount) * 100) / 100,
@@ -3291,6 +3296,24 @@ var Core = (function () {
       env.append('entries', e);
       finishSale(env, s, e, 'Thank you for your donation of <b>' + money(amount) + '</b>, received by ' + esc(m.name) + '. ' + (printed ? 'Here is a copy of your printed ticket' + (nums.length > 1 ? 's' : '') + '.' : 'Your tickets are below.'), [], 'cash sale');
       return outcome(e, null, { cash: cashHeld(env, m) });
+    });
+  }
+  // Free tickets, the owner only (Tamer 2026-09-25: "myself only can issue those tickets"). Someone who can't give right now emails
+  // artteam@ with how many tickets they need; no name needed, any email. $0, method "Free", e-tickets to that email, counted as seats.
+  function ownerFreeTickets(env, p) {
+    requireOwner(env, p.key);
+    var s = settings(env), email = str(p.email).toLowerCase(), q = Math.floor(num(p.qty));
+    if (!validEmail(email)) throw err('Enter the email address they wrote from.');
+    if (q < 1 || q > 20) throw err('Number of tickets: 1 to 20.');
+    return env.lock(function () {
+      var again = str(p.submit_id) && findBySubmit(env, p.submit_id); if (again) return outcome(again, null);   // same request sent twice
+      if (!fits(env, s, q, 0)) throw err('Only ' + Math.max(0, seatsLeft(env, s)) + ' seats left.');
+      var nums = take(env, s, q), who = { first: str(p.first) || 'Guest', last: str(p.last), email: email, phone: '', receipt: 'N', address: '', city: '', postal: '' };
+      var e = mk(env, who, { kind: 'cash', qty: q, amount: 0, method: 'Free', tickets: nums.join(', '), recorded_by: 'Tamer (free tickets)', proof_status: 'none',
+        submit_id: str(p.submit_id), note: 'free tickets, asked for by email' });
+      env.append('entries', e);
+      finishSale(env, s, e, 'You are very welcome. Here ' + (q > 1 ? 'are your tickets' : 'is your ticket') + ' for the Nativity Celebration 2027. We look forward to seeing you there.', [], 'free tickets');
+      return outcome(e, null);
     });
   }
   function memberUndo(env, p) {
@@ -3539,7 +3562,7 @@ var Core = (function () {
     owner_data: ownerData, owner_member_add: ownerMemberAdd, owner_member_reissue: ownerMemberReissue, owner_member_revoke: ownerMemberRevoke,
     owner_void: ownerVoid, owner_clear: ownerClear, owner_sponsor_show: ownerSponsorShow, owner_handover: ownerHandover, owner_setting: ownerSetting, owner_resend: ownerResend, owner_test_email: ownerTestEmail,
     owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); }, owner_sheet_key: ownerSheetKey, sheet_rows: sheetRows, owner_test_pdf: ownerTestPdf, owner_test_pass: ownerTestPass,
-    card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck };
+    card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck, owner_free_tickets: ownerFreeTickets };
 
   var PUBLIC_WRITES = { order: 1, donate: 1, sponsor: 1, waitlist: 1 };
   function handle(env, action, payload) {
