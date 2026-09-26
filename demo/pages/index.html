@@ -371,7 +371,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
 .payopt:focus-visible{outline:3px solid #F6CB5C;outline-offset:2px}
 .payd.nocard .paysub,.payd.nocard .payopt{display:none}
 .btn.paycard{background:#0B1530}.btn.paycard:hover{background:#1A2D57}
-.btn.paycard .amt{font:400 32px/1 "Bebas Neue",Impact,sans-serif;color:#F6CB5C;letter-spacing:.03em;white-space:nowrap}
+.btn.paycard .amt{font:800 20px/1 Inter,system-ui,sans-serif;color:#fff;white-space:nowrap}   /* a normal pay-button amount, not the ticket's display font (Tamer 2026-09-26) */
 .cover{position:relative;display:flex;gap:11px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px 12px;cursor:pointer;font-size:15px;line-height:1.4}
 .cover input{position:absolute;opacity:0;pointer-events:none}
 .cover .bx{flex:0 0 24px;height:24px;border-radius:7px;border:2px solid #C9D0DC;background:#fff;display:grid;place-items:center;margin-top:1px}
@@ -556,7 +556,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.70</span></footer>
+<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.71</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3243,7 +3243,7 @@ var qrcode = function() {
     try { if (/[?&]v=/.test(location.search)) { var u0 = new URL(location.href); u0.searchParams.delete('v'); history.replaceState(null, '', u0.pathname + u0.search + u0.hash); } } catch (x) { }
     if (window.WW_DEMO || !/(^|\.)thewonderworker\.ca$/.test(location.hostname)) return;
     fetch('/version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
-      if (!j || !j.v || j.v === '1.70') return;
+      if (!j || !j.v || j.v === '1.71') return;
       try { var k = 'ww27-updated-' + j.v; if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (x) { return; }
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () { });
