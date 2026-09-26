@@ -351,12 +351,24 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
 .demotag>b:first-child{display:inline-block;background:#0B1530;color:#F6CB5C;border-radius:6px;padding:1px 7px;margin-right:7px;font-size:12px;letter-spacing:.08em}
 @keyframes demobob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @media (prefers-reduced-motion:reduce){.demotag{animation:none}}
-/* Pay, on all three pages (Tamer 2026-09-25, layout D): "Pay by card" with the total on it and an optional tick to cover the card
-   fee; then "Pay by Interac e-Transfer · No fees", which opens the message, the two Copy rows and the big square uploader */
+/* Pay, on all three pages (Tamer 2026-09-26, layout E, from his sample picture): "Payment method · Choose how you'd
+   like to pay", then two selectable cards — Pay by card and Pay by Interac e-Transfer · No fees. The chosen card shows
+   its part below: card = the fee tick + the navy Pay button with the total; e-Transfer = the message, Copy rows and uploader. */
+.payh3{max-width:560px;margin:0 auto 12px;font:800 26px/1.2 Inter,system-ui,sans-serif;letter-spacing:0;text-transform:none;color:var(--ink)}
+.paysub{margin:-6px 0 2px;font:500 15px/1.4 Inter,system-ui,sans-serif;color:var(--soft)}
 .payd{display:grid;gap:10px;max-width:560px;margin:0 auto}   /* centred in the Pay box (Tamer 2026-09-25) */
 .payd .btn{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;width:100%;padding:14px 18px;min-height:66px}
 .payd .pl b{display:block;font:800 17px/1.2 Inter,system-ui,sans-serif}
 .payd .pl small{display:block;margin-top:4px;font:500 12.5px/1.3 Inter,system-ui,sans-serif;opacity:.85}
+.payopt{position:relative;display:flex;align-items:center;gap:13px;border:2px solid var(--fieldline);border-radius:14px;background:#fff;padding:13px 16px;min-height:66px;cursor:pointer}
+.payopt input{position:absolute;opacity:0;pointer-events:none}
+.payopt .pr{flex:0 0 26px;height:26px;border-radius:50%;border:2px solid #C9D0DC;background:#fff;display:grid;place-items:center}
+.payopt .pic{flex:0 0 auto;display:grid;place-items:center}
+.payopt .pl b{color:var(--ink)}.payopt .pl small{color:var(--soft);opacity:1}
+.payopt.sel{border-color:#2B6BE4;background:#F5F9FF}
+.payopt.sel .pr{border-color:#2B6BE4}.payopt.sel .pr::after{content:"";width:13px;height:13px;border-radius:50%;background:#2B6BE4}
+.payopt input:focus-visible~.pr{outline:3px solid #F6CB5C;outline-offset:2px}
+.payd.nocard .paysub,.payd.nocard .payopt{display:none}
 .btn.paycard{background:#0B1530}.btn.paycard:hover{background:#1A2D57}
 .btn.paycard .amt{font:400 32px/1 "Bebas Neue",Impact,sans-serif;color:#F6CB5C;letter-spacing:.03em;white-space:nowrap}
 .cover{position:relative;display:flex;gap:11px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px 12px;cursor:pointer;font-size:15px;line-height:1.4}
@@ -367,15 +379,7 @@ footer{justify-content:center;text-align:center}   /* the two bottom lines cente
 .cover input:focus-visible+.bx{outline:3px solid #F6CB5C;outline-offset:2px}
 .cover small{display:block;color:var(--soft);font-size:12.5px}
 .payd .cardpart{display:grid;gap:10px}
-.payd .or{display:flex;align-items:center;gap:10px;margin:6px 0;color:var(--faint);font:700 12px/1 Inter,system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase}
-.payd .or::before,.payd .or::after{content:"";flex:1;height:1px;background:var(--line)}
-.btn.etoggle{background:#fff;color:#1A2D57;border:2px solid #1A2D57;box-shadow:none}
-.btn.etoggle:hover{background:#EAF0FA}
-.btn.etoggle[aria-expanded=true]{background:#EAF0FA;border-radius:12px 12px 4px 4px}
-.btn.etoggle .chev{flex:0 0 auto;width:12px;height:12px;border:solid #1A2D57;border-width:0 3px 3px 0;transform:rotate(45deg);margin:-6px 6px 0 0;transition:transform .15s}
-.btn.etoggle[aria-expanded=true] .chev{transform:rotate(-135deg);margin-top:6px}
-.etpart{background:#EAF0FA;border:1px solid #C9D6EE;border-radius:4px 4px 12px 12px;padding:14px;margin-top:-6px;display:grid;gap:12px}
-.payd.nocard .etpart{margin-top:0;border-radius:12px}
+.etpart{background:#EAF0FA;border:1px solid #C9D6EE;border-radius:12px;padding:14px;display:grid;gap:12px}
 .etmsg{margin:0;background:#fff;border:1px solid #C9D6EE;border-radius:10px;padding:11px 13px;font-size:16px;line-height:1.5}
 .etmsg b{color:#1A2D57}
 .payrows .lbl{display:block;margin:6px 0 0;font:700 11.5px/1 Inter,system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--soft)}
@@ -467,7 +471,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
         <div class="row qrow"><span class="big">Gift a seat to a senior<small class="sub" data-giftnote>$20 donation · optional</small></span><div class="stepper"><button type="button" data-d="-1" aria-label="fewer">−</button><input name="gift_qty" id="b-gift" type="number" min="0" max="20" value="0" inputmode="numeric" aria-label="Gift seats"><button type="button" data-d="1" aria-label="more">+</button></div></div>
       </div>
       <div class="panel2 span2 paypanel">
-        <h3>Pay</h3>
+        <h3 class="payh3">Payment method</h3>
         <input type="hidden" name="method" value="e-Transfer">   <!-- no cheque, no pay-in-cash booking online (Tamer 2026-09-25) -->
         <div data-paypanel="Submit and get my tickets"></div>
       </div>
@@ -492,7 +496,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
         <p class="okbox hide" data-preview></p>
       </div>
       <div class="panel2"><div data-person></div></div>
-      <div class="panel2 span2 paypanel"><h3>Pay</h3><div data-paypanel="Submit my donation"></div></div>
+      <div class="panel2 span2 paypanel"><h3 class="payh3">Payment method</h3><div data-paypanel="Submit my donation"></div></div>
     </div>
     <div class="err" data-err></div>
     <p class="fine">Your details are private: used only by authorized church personnel for your tax receipt, and deleted once receipts are issued.</p>
@@ -529,7 +533,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
       </div>
       <div class="panel2"><div data-person></div></div>
       <div class="panel2 span2 paypanel">
-        <h3>Pay</h3>
+        <h3 class="payh3">Payment method</h3>
         <input type="hidden" name="method" value="e-Transfer">
         <div data-paypanel="Submit my sponsorship"></div>
       </div>
@@ -3208,17 +3212,22 @@ var qrcode = function() {
       '<span class="lbl">Message</span><div class="copy"><span>Wonder Worker</span><button type="button">Copy</button></div>' +
       '<div class="row"><span>Amount</span><b class="bebas" style="font-size:22px" data-payamt>—</b></div></div>';   // always a dash: the amount is the one chosen above (Tamer 2026-09-25: "so we don't confuse people")
   }
-  // The Pay section, the same on all three pages (Tamer 2026-09-25, layout D). "Pay by card" shows the total and goes straight to
-  // Square; covering Square's fee is an optional tick (a gift, not a surcharge: Square doesn't support surcharges in Canada).
-  // "Pay by Interac e-Transfer · No fees" opens the message, the Copy rows, the screenshot and its own Submit.
+  // The Pay section, the same on all three pages (Tamer 2026-09-26, layout E, from his sample picture): two radio cards
+  // choose the method. Card shows the fee tick (a gift, not a surcharge: Square doesn't support surcharges in Canada) and
+  // the navy Pay button with the total; e-Transfer shows the message, the Copy rows, the screenshot and its own Submit.
   function payPanel(label) {
     return '<input type="hidden" name="paywith" value="e-Transfer"><div class="payd">' +
+      '<p class="paysub">Choose how you’d like to pay</p>' +
+      '<label class="payopt sel" data-optcard><input type="radio" name="paysel" value="Card" checked><span class="pr" aria-hidden="true"></span>' +
+        '<span class="pic" aria-hidden="true"><svg width="46" height="34" viewBox="0 0 46 34" fill="none"><rect x="1.5" y="1.5" width="43" height="31" rx="6" stroke="#0B1530" stroke-width="3"/><rect x="3" y="8" width="40" height="7" fill="#0B1530"/><rect x="8" y="23" width="10" height="5" rx="1.5" fill="#0B1530"/></svg></span>' +
+        '<span class="pl"><b>Pay by card</b><small>Visa · Mastercard · Amex · Apple Pay · Google Pay</small></span></label>' +
+      '<label class="payopt" data-optet><input type="radio" name="paysel" value="e-Transfer"><span class="pr" aria-hidden="true"></span>' +
+        '<span class="pic" aria-hidden="true"><svg width="38" height="38" viewBox="0 0 38 38"><rect width="38" height="38" rx="8" fill="#FDB913"/><text x="19" y="21" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="9.5" font-weight="bold" font-style="italic" fill="#231F20">Interac</text><path d="M15 25h8v2.5h-8z" fill="#231F20"/></svg></span>' +
+        '<span class="pl"><b>Pay by Interac e-Transfer</b><small>No fees</small></span></label>' +
       '<div class="cardpart" data-cardpart>' +
-        '<button type="submit" class="btn paycard" data-pay="Card"><span class="pl"><b>Pay by card</b><small>Visa · Mastercard · Amex · Apple Pay · Google Pay</small></span><span class="amt" data-cardamt></span></button>' +
         '<label class="cover hide" data-coverrow><input type="checkbox" name="cover_fee" checked><span class="bx" aria-hidden="true"></span>' +
           '<span>Add <b data-feeamt></b> to cover the card fee<small>Optional · thank you!</small></span></label>' +
-        '<div class="or">or</div></div>' +
-      '<button type="button" class="btn etoggle" data-etoggle aria-expanded="false"><span class="pl"><b>Pay by Interac e-Transfer</b><small>No fees</small></span><span class="chev" aria-hidden="true"></span></button>' +
+        '<button type="submit" class="btn paycard" data-pay="Card"><span class="pl"><b>Pay by card</b></span><span class="amt" data-cardamt></span></button></div>' +
       '<div class="etpart hide" data-etpart>' +
         '<p class="etmsg">Send your e-Transfer as usual from your online banking and write <b>Wonder Worker</b> in the message. Then take a screenshot, upload it with the button below and submit.</p>' +
         '<div data-payhow></div><div data-proof></div>' +
@@ -3323,7 +3332,7 @@ var qrcode = function() {
   }
   // the button they pressed decides how they pay; "cover the card fee" goes with card payments only (Y/N)
   function payFields(p) {
-    p.method = p.paywith === 'Card' ? 'Card' : 'e-Transfer'; delete p.paywith;
+    p.method = p.paywith === 'Card' ? 'Card' : 'e-Transfer'; delete p.paywith; delete p.paysel;   // the radio only picks the view; the pressed button decides
     if (p.method === 'Card') p.cover_fee = p.cover_fee ? 'Y' : 'N'; else delete p.cover_fee;
   }
   function need(p, keys) { keys.forEach(function (k) { if (!p[k]) throw new Error('Please fill in your ' + ({ first: 'first name', last: 'last name', email: 'email' })[k] + '.'); }); }
@@ -3617,7 +3626,7 @@ var qrcode = function() {
   var GIVE_STEPS = [
     { el: function () { return $('#give .sechead'); }, t: 'Donating', d: 'On the <b>Donate</b> page: choose your donation, add your details and pay.', pre: onGive },
     { el: function () { return $('#give .g-amt'); }, t: 'Your donation', d: 'Tap an amount or type your own. The bar shows how your donation helps.', pre: onGive },
-    { el: function () { return $('#give .payd'); }, t: 'Pay', d: 'By card on Square\'s secure page, or tap <b>Pay by Interac e-Transfer</b> (no fees): send it as usual with <b>Wonder Worker</b> in the message, upload a screenshot and submit. Your details stay private: only the organizers and the church treasurer see them, for your tax receipt.', pre: onGive }
+    { el: function () { return $('#give .payd'); }, t: 'Pay', d: 'By card on Square\'s secure page, or choose <b>Pay by Interac e-Transfer</b> (no fees): send it as usual with <b>Wonder Worker</b> in the message, upload a screenshot and submit. Your details stay private: only the organizers and the church treasurer see them, for your tax receipt.', pre: onGive }
   ];
   // Help on the Donate page shows just the donation part
   var GIVE_TOUR = [{ el: null, t: 'Donating', d: 'A quick guide to donating to the Nativity Celebration 2027.', go: 'Start', pre: onGive }].concat(GIVE_STEPS);
@@ -3627,7 +3636,7 @@ var qrcode = function() {
     { el: function () { return $('#pick'); }, t: 'Choose', d: 'Get tickets, donate, or become a sponsor.', pre: onBuy },
     { el: function () { return $('#buy .b-tix'); }, t: '1 · Tickets and donation', d: 'Choose how many tickets you need and how much you would like to donate.', pre: onBuy },
     { el: function () { return $('#buy .b-who'); }, t: '2 · Your details', d: 'Your name and email. Your e-tickets are sent to this email.', pre: onBuy },
-    { el: function () { return $('#buy .payd'); }, t: '3 · Pay', d: '<b>Pay by card</b> on Square\'s secure page, or tap <b>Pay by Interac e-Transfer</b> (no fees): send it as usual with <b>Wonder Worker</b> in the message, upload a screenshot and submit. Your e-tickets arrive by email.', pre: onBuy }
+    { el: function () { return $('#buy .payd'); }, t: '3 · Pay', d: '<b>Pay by card</b> on Square\'s secure page, or choose <b>Pay by Interac e-Transfer</b> (no fees): send it as usual with <b>Wonder Worker</b> in the message, upload a screenshot and submit. Your e-tickets arrive by email.', pre: onBuy }
   ].concat(GIVE_STEPS);
   // Become a sponsor: its own short guide, shown the first time someone opens it (Tamer 2026-09-24)
   var SPON_TOUR = [
@@ -3709,23 +3718,31 @@ var qrcode = function() {
       api('practice_pay', { id: id }).then(function (r) { z.remove(); done(action, r); }, function (x) { z.remove(); $('[data-err]', form).textContent = x.message; });
     };
   }
-  function payOpen(form, on) { var tg = $('[data-etoggle]', form), et = $('[data-etpart]', form); et.classList.toggle('hide', !on); tg.setAttribute('aria-expanded', on ? 'true' : 'false'); }
+  function payOpen(form, on) {   // on = e-Transfer chosen; the radios, their highlight and the two parts follow
+    var et = $('[data-etpart]', form), cp = $('[data-cardpart]', form), oc = $('[data-optcard]', form), oe = $('[data-optet]', form);
+    et.classList.toggle('hide', !on); if (cp) cp.classList.toggle('hide', on);
+    if (oc) { oc.classList.toggle('sel', !on); $('input', oc).checked = !on; }
+    if (oe) { oe.classList.toggle('sel', on); $('input', oe).checked = on; }
+  }
   function payInit() {   // at once, before the settings arrive (2026-09-26: the buttons were dead during the engine's cold start)
     [buy, give, spon].forEach(function (form) {
-      var d = $('.payd', form), tg = $('[data-etoggle]', form), et = $('[data-etpart]', form);
+      var d = $('.payd', form);
       if (d.getAttribute('data-ready')) return; d.setAttribute('data-ready', '1');
-      tg.onclick = function () {
-        var on = et.classList.contains('hide'); payOpen(form, on);
-        if (on) setTimeout(function () { et.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 40);
-      };
+      $$('.payopt input', form).forEach(function (r) {
+        r.addEventListener('change', function () {
+          if (!r.checked) return;
+          var on = r.value === 'e-Transfer'; payOpen(form, on);
+          if (on) setTimeout(function () { $('[data-etpart]', form).scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 40);
+        });
+      });
       form.addEventListener('input', function () { paySync(form); }); form.addEventListener('change', function () { paySync(form); });
     });
   }
-  function payMode() {   // once the settings are known: card on (totals) or off (the e-Transfer part is simply there)
+  function payMode() {   // once the settings are known: card on (both choices) or off (the e-Transfer part is simply there)
     [buy, give, spon].forEach(function (form) {
-      var d = $('.payd', form);
-      if (CFG.card) { $('[data-cardpart]', form).classList.remove('hide'); d.classList.remove('nocard'); $('[data-etoggle]', form).classList.remove('hide'); paySync(form); }
-      else { $('[data-cardpart]', form).classList.add('hide'); d.classList.add('nocard'); $('[data-etoggle]', form).classList.add('hide'); payOpen(form, true); }
+      var d = $('.payd', form), re = $('[data-optet] input', form);
+      if (CFG.card) { d.classList.remove('nocard'); paySync(form); payOpen(form, !!(re && re.checked)); }
+      else { d.classList.add('nocard'); payOpen(form, true); }
     });
   }
   // back from Square's page (?card=WW27-0005&t=…): Square is asked whether it is paid
