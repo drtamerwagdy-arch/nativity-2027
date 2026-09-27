@@ -3696,6 +3696,18 @@ var Core = (function () {
   // A separate key that can only READ the sales (tools/sales_sheet_sync.py keeps it in the Mac's Keychain), so the dashboard
   // key never sits on the Mac. The dashboard key makes a new one (owner_sheet_key), which also cancels the old one.
   function ownerSheetKey(env, p) { requireOwner(env, p.key); var k = env.random(32); env.setSetting('sheet_key', k); return { ok: true, sheet_key: k }; }
+  // The daily full backup for Tamer's Mac (2026-09-26, RECOVERY.md): everything needed to rebuild the sheet, behind the
+  // same read-only key as the sales list. The keys themselves stay out (owner_key, sheet_key) and a team member's key is
+  // masked — after a restore, reissue member keys (owner_member_reissue) and a fresh sheet key.
+  function sheetBackup(env, p) {
+    var s = settings(env);
+    if (!s.sheet_key || str(p.key) !== String(s.sheet_key)) throw err('Not allowed.');
+    var set = {}; Object.keys(s).forEach(function (k) { if (k !== 'owner_key' && k !== 'sheet_key') set[k] = s[k]; });
+    var members = env.list('members').map(function (m) {
+      var o = {}; Object.keys(m).forEach(function (k) { o[k] = k === 'key' ? '(reissue after a restore)' : m[k]; }); return o;
+    });
+    return { ok: true, now: env.now().toISOString(), settings: set, entries: env.list('entries'), members: members, handovers: env.list('handovers') };
+  }
   function sheetRows(env, p) {
     var s = settings(env);
     if (!s.sheet_key || str(p.key) !== String(s.sheet_key)) throw err('Not allowed.');
@@ -3717,7 +3729,7 @@ var Core = (function () {
     member_me: memberMe, cash_sale: cashSale, demo_order: demoOrder, member_sheet_read: memberSheetRead, member_undo: memberUndo, member_booking: memberBooking, member_paid: memberPaid,
     owner_data: ownerData, owner_member_add: ownerMemberAdd, owner_member_reissue: ownerMemberReissue, owner_member_revoke: ownerMemberRevoke,
     owner_void: ownerVoid, owner_clear: ownerClear, owner_sponsor_show: ownerSponsorShow, owner_handover: ownerHandover, owner_setting: ownerSetting, owner_resend: ownerResend, owner_test_email: ownerTestEmail,
-    owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); }, owner_sheet_key: ownerSheetKey, sheet_rows: sheetRows, owner_test_pdf: ownerTestPdf, owner_test_pass: ownerTestPass,
+    owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); }, owner_sheet_key: ownerSheetKey, sheet_rows: sheetRows, sheet_backup: sheetBackup, owner_test_pdf: ownerTestPdf, owner_test_pass: ownerTestPass,
     card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck, owner_free_tickets: ownerFreeTickets, ticket_picture: ticketPicture, owner_set_tickets: ownerSetTickets, owner_refunded: ownerRefunded };
 
   var PUBLIC_WRITES = { order: 1, donate: 1, sponsor: 1, waitlist: 1 };
