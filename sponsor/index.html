@@ -541,7 +541,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.77</span></footer>
+<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.78</span></footer>
 
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3228,7 +3228,7 @@ var qrcode = function() {
     try { if (/[?&]v=/.test(location.search)) { var u0 = new URL(location.href); u0.searchParams.delete('v'); history.replaceState(null, '', u0.pathname + u0.search + u0.hash); } } catch (x) { }
     if (window.WW_DEMO || !/(^|\.)thewonderworker\.ca$/.test(location.hostname)) return;
     fetch('/version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
-      if (!j || !j.v || j.v === '1.77') return;
+      if (!j || !j.v || j.v === '1.78') return;
       try { var k = 'ww27-updated-' + j.v; if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (x) { return; }
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () { });
@@ -3290,7 +3290,12 @@ var qrcode = function() {
       function ok(r) {
         if (settled) return; end();
         if (r && r.card && /^practice-card:/.test(r.card.url)) { restore(); return practiceCard(r.card.url.replace(/^practice-card:/, ''), form, action); }   // practice pages: pretend Square
-        if (r && r.card && r.card.url) { btn.textContent = 'Opening the card payment…'; location.href = r.card.url; return; }   // Square's page (2026-09-25)
+        if (r && r.card && r.card.url) {
+          // Tamer 2026-09-26 ("my main fear ... a fake square page"): the page follows the card link ONLY to Square
+          // itself (or this same site, for the local demo). Anything else is refused, whatever answered.
+          if (!squareUrlOk(r.card.url)) { errBox.textContent = 'The card payment page did not check out as Square, so it was not opened. Nothing was charged. Please try again, or pay by Interac e-Transfer.'; restore(); return; }
+          btn.textContent = 'Opening the card payment…'; location.href = r.card.url; return;
+        }   // Square's page (2026-09-25)
         try { done(action, r); } catch (x) { $('#done').innerHTML = '<h2>Thank you!</h2><p>It went through' + (r && r.order ? ' (reference ' + esc(r.order) + ')' : '') + '. Your email is on its way.</p>'; show('done'); }
       }
       function bad(x) {
@@ -3674,6 +3679,16 @@ var qrcode = function() {
     try { buySync(); thermo(); sponSync(); } catch (x) { }
   });
 
+  // only Square's own hosts may receive the buyer for the card step (plus this site itself, which serves the demo's
+  // pretend page); https only. Sub-hosts of Square's checkout domains pass, lookalikes (evilsquare.link,
+  // square.link.evil.com) do not — the pattern is anchored to the whole hostname.
+  function squareUrlOk(u) {
+    try {
+      var x = new URL(u, location.href);
+      if (x.origin === location.origin) return true;
+      return x.protocol === 'https:' && /^([a-z0-9-]+\.)*(square\.link|square\.site|squareup\.com|squareupsandbox\.com)$/.test(x.hostname);
+    } catch (e) { return false; }
+  }
   // ---- Pay (Tamer 2026-09-25, layout D): card with an optional tick to cover Square's fee, or e-Transfer with no fees ----
   function cardTotal(a) { return Math.ceil((a + CFG.card.fixed) / (1 - CFG.card.pct / 100) * 100) / 100; }
   function amountOf(form) { return form.id === 'spon' ? sponAmt() : Number($('[name=amount]', form).value) || 0; }
