@@ -541,7 +541,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.75</span></footer>
+<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.76</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3228,7 +3228,7 @@ var qrcode = function() {
     try { if (/[?&]v=/.test(location.search)) { var u0 = new URL(location.href); u0.searchParams.delete('v'); history.replaceState(null, '', u0.pathname + u0.search + u0.hash); } } catch (x) { }
     if (window.WW_DEMO || !/(^|\.)thewonderworker\.ca$/.test(location.hostname)) return;
     fetch('/version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
-      if (!j || !j.v || j.v === '1.75') return;
+      if (!j || !j.v || j.v === '1.76') return;
       try { var k = 'ww27-updated-' + j.v; if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (x) { return; }
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () { });
@@ -3566,7 +3566,6 @@ var qrcode = function() {
   // ---- result ----
   function done(action, r) {
     var h = '';
-    try { sessionStorage.removeItem('ww27-place'); } catch (x) { }   // "Back to start" starts at the top
     if (action === 'order' && r && r.order && (!r.tickets || !r.tickets.length) && !r.booking && !r.processing) r.contact = true;   // paid, but the seats ran out: the team will be in touch
     if (r && r.processing) {   // the same request went through a moment ago (the phone had lost the answer): its email is on its way
       $('#done').innerHTML = '<h2>Thank you!</h2><p>We have it: your email is on its way.</p><p>If you didn\'t get your email, please email us at <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a>.</p>' +
@@ -3662,23 +3661,18 @@ var qrcode = function() {
     $('[data-sponsors]', spon).innerHTML = sponsorsHtml(CFG.sponsors);
     if (CFG.sponsorAd >= 0) $$('[data-adval]', spon).forEach(function (x) { x.textContent = money(CFG.sponsorAd); });
     buySync(); thermo(); sponSync(); sponSpot(); tourStart();
-    payMode(); placeScroll();
-  }, function () { buySync(); thermo(); sponSync(); sponSpot(); tourStart(); payMode(); placeScroll(); });
+    payMode();
+  }, function () { buySync(); thermo(); sponSync(); sponSpot(); tourStart(); payMode(); });
 
-  // ---- a reload keeps your place (Tamer 2026-09-25: "when reload keep at same location"): the tab now, the scroll once drawn ----
-  var PLACE = null;
-  try {
-    if (((performance.getEntriesByType('navigation') || [])[0] || {}).type === 'reload') PLACE = JSON.parse(sessionStorage.getItem('ww27-place') || 'null');
-    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';   // the page grows once its settings arrive: we put it back ourselves
-  } catch (x) { }
-  function savePlace() { try { if (/^(buy|give|spon)$/.test(cur)) sessionStorage.setItem('ww27-place', JSON.stringify({ tab: cur, y: Math.round(window.scrollY) })); } catch (x) { } }
-  window.addEventListener('pagehide', savePlace); window.addEventListener('beforeunload', savePlace);
-  function placeTab() { if (PLACE && PLACE.tab && PLACE.tab !== cur && /^(buy|give|spon)$/.test(PLACE.tab)) show(PLACE.tab, true); }
-  function placeScroll() {
-    if (!PLACE || param('card')) return;
-    var y = PLACE.y; PLACE = null;
-    requestAnimationFrame(function () { window.scrollTo(0, y); });
-  }
+  // ---- a reload starts fresh (Tamer 2026-09-26, replacing his 2026-09-25 "when reload keep at same location"):
+  // the saved place made the top flash and then jump back down. Now nothing is saved: a reload opens the page at the
+  // top, on the tickets tab, and clears any earlier choices (some phones refill old values after a reload). ----
+  try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (x) { }
+  try { sessionStorage.removeItem('ww27-place'); } catch (x) { }   // left behind by the older pages
+  window.addEventListener('pageshow', function () {   // fires after the browser may have refilled old values
+    $$('form').forEach(function (f) { try { f.reset(); } catch (x) { } });
+    try { buySync(); thermo(); sponSync(); } catch (x) { }
+  });
 
   // ---- Pay (Tamer 2026-09-25, layout D): card with an optional tick to cover Square's fee, or e-Transfer with no fees ----
   function cardTotal(a) { return Math.ceil((a + CFG.card.fixed) / (1 - CFG.card.pct / 100) * 100) / 100; }
@@ -3747,7 +3741,7 @@ var qrcode = function() {
     var kindAction = { donation: 'donate', sponsor: 'sponsor', order: 'order' };
     var order = param('card'), t = param('t');
     CFG_READY.then(function () { return api('card_status', { order: order, t: t }); }).then(function (r) {
-      if (!r.pending) { try { history.replaceState(null, '', location.pathname); sessionStorage.removeItem('ww27-place'); } catch (x) { } }
+      if (!r.pending) { try { history.replaceState(null, '', location.pathname); } catch (x) { } }
       if (r.settling) {   // paid; the other confirmation (Square's notice) is sending the email right now
         $('#done').innerHTML = '<h2>Thank you' + (r.first ? ', ' + esc(r.first) : '') + '!</h2><p>Your card payment went through. Your email is on its way to <b>' + esc(r.email || 'you') + '</b>.</p>' +
           '<p>If you didn\'t get your email, please email us at <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a>.</p><p><button type="button" class="btn ghost" onclick="location.href=location.pathname">Back to start</button></p>';
@@ -3766,7 +3760,6 @@ var qrcode = function() {
   else show('buy', true);
   window.addEventListener('pageshow', function (e) { if (e.persisted) location.reload(); });   // back from Square's page with Back: a fresh form (2026-09-26)
   if (param('card') && param('t')) cardReturn();
-  else placeTab();
 })();
 </script>
 </body>
