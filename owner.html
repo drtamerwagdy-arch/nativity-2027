@@ -186,13 +186,14 @@ input.s{font:15px Arial,sans-serif;padding:7px 10px;border:1px solid var(--line)
   <div class="navbar tabs" id="tabs"></div>
   <section id="t-overview"></section>
   <section id="t-entries" class="hide"></section>
+  <section id="t-pending" class="hide"></section>
   <section id="t-sponsors" class="hide"></section>
   <section id="t-team" class="hide"></section>
   <section id="t-export" class="hide"></section>
   <section id="t-settings" class="hide"></section>
   <section class="card hide" id="bad"><h2>Link not valid</h2></section>
 </main>
-<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.80</span></footer>
+<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.81</span></footer>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -251,7 +252,7 @@ function copyBtn(root) {
 <script>
 (function () {
   var KEY = param('k'), D = null, TAB = 'overview', filter = 'all', q = '';
-  var TABS = [['overview', 'Overview'], ['entries', 'Entries'], ['sponsors', 'Sponsors'], ['team', 'Team links'], ['export', 'Export for Hany'], ['settings', 'Settings']];
+  var TABS = [['overview', 'Overview'], ['entries', 'Orders'], ['pending', "Didn't finish"], ['sponsors', 'Sponsors'], ['team', 'Team links'], ['export', 'Export for Hany'], ['settings', 'Settings']];
   $('#tabs').innerHTML = TABS.map(function (t) { return '<button data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('');
   $$('[data-tab]').forEach(function (b) { b.onclick = function () { TAB = b.getAttribute('data-tab'); draw(); }; });
   function run(action, p) { p = p || {}; p.key = KEY; return api(action, p); }
@@ -259,7 +260,7 @@ function copyBtn(root) {
   function draw() {
     $$('[data-tab]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-tab') === TAB); });
     TABS.forEach(function (t) { $('#t-' + t[0]).classList.toggle('hide', t[0] !== TAB); });
-    ({ overview: overview, entries: entries, sponsors: sponsorsTab, team: team, export: exporter, settings: settingsTab })[TAB]();
+    ({ overview: overview, entries: entries, pending: pendingTab, sponsors: sponsorsTab, team: team, export: exporter, settings: settingsTab })[TAB]();
   }
   function stat(v, l) { return '<div class="stat"><b>' + v + '</b><span>' + l + '</span></div>'; }
   // gift seats: only this dashboard shows their numbers (901 upward) and what is still set aside
@@ -297,8 +298,10 @@ function copyBtn(root) {
   }
 
   function entries() {
-    var list = D.entries.filter(function (e) { return (filter === 'all' || e.status === filter || e.kind === filter) && (!q || JSON.stringify(e).toLowerCase().indexOf(q) > -1); });
-    var fb = [['all', 'All'], ['flagged', 'Need a look'], ['order', 'Online'], ['cash', 'Team sales'], ['donation', 'Donations'], ['sponsor', 'Sponsors'], ['waitlist', 'Waitlist'], ['void', 'Voided']];
+    // only the real rows here (Tamer 2026-09-29): what never happened lives under "Didn't finish"
+    var real = D.entries.filter(function (e) { return e.status !== 'void' && e.status !== 'awaiting_card'; });
+    var list = real.filter(function (e) { return (filter === 'all' || e.status === filter || e.kind === filter) && (!q || JSON.stringify(e).toLowerCase().indexOf(q) > -1); });
+    var fb = [['all', 'All'], ['flagged', 'Need a look'], ['order', 'Online'], ['cash', 'Team sales'], ['donation', 'Donations'], ['sponsor', 'Sponsors'], ['waitlist', 'Waitlist']];
     $('#t-entries').innerHTML = '<div class="row">' + fb.map(function (f) { return '<button class="btn ghost" style="padding:6px 10px;min-height:0;font-size:16px' + (filter === f[0] ? ';background:var(--accent);color:var(--accent-ink)' : '') + '" data-f="' + f[0] + '">' + f[1] + '</button>'; }).join('') +
       '<input class="s" placeholder="Search name, email, ticket…" data-q value="' + esc(q) + '"></div>' +
       '<div class="card scroll"><table class="t"><tr><th>When</th><th>Who</th><th>What</th><th>Amount</th><th>Proof / notes</th><th></th></tr>' +
@@ -309,7 +312,7 @@ function copyBtn(root) {
           '<td>' + money(e.amount) + '<br><span class="hint">' + esc(e.method) + '</span></td>' +
           '<td>' + (e.proof ? '<a href="' + esc(e.proof) + '" target="_blank" rel="noopener">screenshot</a>' : '<span class="hint">' + esc(e.proof_status || '') + '</span>') + (e.interac_ref ? '<br><span class="hint">ref ' + esc(e.interac_ref) + '</span>' : '') + (e.flags ? '<div class="flag">' + esc(e.flags) + '</div>' : '') + (e.kind === 'waitlist' ? '' : '<div class="hint">' + (e.receipt === 'N' ? 'no tax receipt (declined)' : 'tax receipt: yes') + '</div>') + '</td>' +
           '<td style="white-space:nowrap">' + (e.status === 'flagged' ? '<button class="link" data-ok="' + e.id + '">Checked OK</button><br>' : '') + (e.tickets && e.email && e.status !== 'void' && e.status !== 'refunded' ? '<button class="link" data-rs="' + e.id + '">Resend</button><br>' : '') + (e.method === 'Card' && e.status === 'ok' ? '<button class="link" data-refund="' + e.id + '">Refunded in Square</button><br>' : '') + (e.status !== 'void' && e.status !== 'refunded' ? '<button class="link" data-void="' + e.id + '">Void</button>' : '') + '</td></tr>';
-      }).join('') + '</table>' + (list.length ? '' : '<p class="hint">Nothing here.</p>') + '</div>';
+      }).join('') + '</table>' + (list.length ? '' : '<p class="hint">No orders yet' + (filter !== 'all' || q ? ' for this filter' : '') + '. Unfinished card tries and voided rows are under "Didn\'t finish".</p>') + '</div>';
     $$('[data-f]').forEach(function (b) { b.onclick = function () { filter = b.getAttribute('data-f'); entries(); }; });
     $('[data-q]').oninput = function () { q = this.value.toLowerCase(); var pos = this.selectionStart; entries(); var i = $('[data-q]'); i.focus(); i.setSelectionRange(pos, pos); };
     $$('[data-ok]').forEach(function (b) { b.onclick = function () { run('owner_clear', { id: b.getAttribute('data-ok') }).then(reload); }; });
@@ -317,6 +320,24 @@ function copyBtn(root) {
     // a card payment refunded in Square (2026-09-26): its seats come back and it no longer counts, and it stays in Hany's export as refunded
     $$('[data-refund]').forEach(function (b) { b.onclick = function () { if (confirm('Mark this card payment as refunded? Do the refund in Square first. Its tickets are cancelled and its amount no longer counts.')) run('owner_refunded', { id: b.getAttribute('data-refund') }).then(reload, function (x) { alert(x.message); }); }; });
     $$('[data-rs]').forEach(function (b) { b.onclick = function () { var e = D.entries.filter(function (x) { return x.id === b.getAttribute('data-rs'); })[0]; var to = prompt('Send the tickets again to:', e.email || ''); if (to === null) return; run('owner_resend', { id: e.id, email: to }).then(function () { alert('Sent.'); reload(); }, function (x) { alert(x.message); }); }; });
+  }
+
+  // Tamer 2026-09-29: "one didn't go through can be in a separate subpage" — card tries nobody finished and
+  // voided rows. Nothing here holds a seat or counts a dollar; Delete removes a row for good (paid rows never
+  // show here and the engine refuses to delete them).
+  function pendingTab() {
+    var list = D.entries.filter(function (e) { return e.status === 'void' || e.status === 'awaiting_card'; });
+    var word = { awaiting_card: 'Pressed "Pay by card" and never finished on Square. No tickets were held.', void: 'Voided: its tickets were cancelled and its amount does not count.' };
+    $('#t-pending').innerHTML = '<div class="card"><h2>Didn\'t go through</h2><p class="hint">People who started a card payment and never finished, and voided rows. Nothing here counts or holds a seat. <button class="link" id="sq-again">Ask Square again about unfinished cards</button> <span id="sq-out" class="hint"></span></p>' +
+      (list.length ? '<table class="t"><tr><th>When</th><th>Who</th><th>What happened</th><th>Amount</th><th></th></tr>' + list.map(function (e) {
+        return '<tr><td>' + esc(when(e.created)) + '<br><span class="pill ' + esc(e.status) + '">' + esc(e.status === 'awaiting_card' ? 'card not finished' : 'void') + '</span></td>' +
+          '<td>' + esc(e.first + ' ' + e.last) + '<br><span class="hint">' + esc(e.email || 'no email') + (e.phone ? ' · ' + esc(e.phone) : '') + '</span></td>' +
+          '<td>' + esc(word[e.status] || e.status) + (e.order_code ? '<br><span class="hint">' + esc(e.order_code) + (e.tickets ? ' · was No. ' + esc(e.tickets) : '') + '</span>' : '') + '</td>' +
+          '<td>' + money(e.amount) + '<br><span class="hint">' + esc(e.method) + '</span></td>' +
+          '<td style="white-space:nowrap"><button class="link" data-del="' + e.id + '">Delete</button></td></tr>';
+      }).join('') + '</table>' : '<p class="hint">Nothing here — every order went through.</p>') + '</div>';
+    $$('[data-del]').forEach(function (b) { b.onclick = function () { if (confirm('Delete this row for good? It never counted; this only tidies the list.')) run('owner_delete', { id: b.getAttribute('data-del') }).then(reload, function (x) { alert(x.message); }); }; });
+    $('#sq-again').onclick = function () { var o = $('#sq-out'); o.textContent = 'Asking Square…'; run('owner_card_check').then(function (r) { o.textContent = r.settled ? r.settled + ' payment(s) found and settled — tickets sent.' : 'Square shows no completed payment for these.'; reload(); }, function (x) { o.textContent = x.message; }); };
   }
 
   function sponsorsTab() {
