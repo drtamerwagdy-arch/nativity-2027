@@ -2515,9 +2515,9 @@ var Core = (function () {
 
   var EVENT = {
     title: 'Nativity Celebration 2027',
-    when: 'Saturday, January 30, 2027 · 3:00–8:00 PM, followed by Tasbeha',
+    when: 'Saturday, January 30, 2027 · 3:00 – 8:00 PM, followed by Tasbeha',
     where: 'Bert Church LIVE Theatre, 1000 East Lake Blvd NE, Airdrie, AB',
-    map: 'https://maps.google.com/?q=Bert+Church+LIVE+Theatre+Airdrie',
+    map: 'https://maps.apple.com/?q=Bert+Church+LIVE+Theatre',   // the final-tickets-email.html link (Tamer 2026-09-29); opens a web map everywhere
     start: '20270130T220000Z', end: '20270131T030000Z'
   };
 
@@ -2767,23 +2767,24 @@ var Core = (function () {
       'DESCRIPTION:Followed by Tasbeha. Bring your tickets (phone or printed).', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
   }
 
-  function shell(inner) {
+  function shell(inner, noFooter) {
     // the approved look (Tamer 2026-09-29, built with Cowork): red header band, gold title, two-line subtitle, Georgia 18 px,
     // no fixed widths (phones show it full size), colours forced with bgcolor= so Apple Mail keeps the red band
+    // noFooter: the tickets email matches final-tickets-email.html EXACTLY (Tamer 2026-09-29) — no privacy footer there; other emails keep it
     var LABEL = 'font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;letter-spacing:2px;color:#8E2226;';
     return '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#f3efe7" style="background:#f3efe7"><tr><td align="center" bgcolor="#f3efe7" style="padding:14px 8px">' +
       '<table role="presentation" cellspacing="0" cellpadding="0" bgcolor="#ffffff" style="width:100%;max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden;font-family:Georgia,\'Times New Roman\',serif;color:#141010">' +
       '<tr><td bgcolor="#8E2226" style="background:#8E2226;background-color:#8E2226;padding:22px 20px;text-align:center"><div style="font-family:Georgia,serif;font-size:32px;font-weight:bold;line-height:1.15;color:#F6CB5C">Nativity Celebration 2027</div>' +
       '<div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;letter-spacing:2px;line-height:1.4;color:#FFF3D6;margin-top:8px">WONDER WORKER ART TEAM<br>ST. MINA COPTIC ORTHODOX CHURCH, CALGARY, AB.</div></td></tr>' +
       '<tr><td style="padding:24px 20px 6px 20px;font-size:18px;line-height:1.55;color:#141010">' + inner + '</td></tr>' +
-      '<tr><td style="padding:12px 20px 18px;font-family:Arial,sans-serif;font-size:12px;line-height:1.5;color:#7A6A5A;border-top:1px solid #EFE6D6">Reply to this email for any question.<br><b>Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b></td></tr>' +
+      (noFooter ? '' : '<tr><td style="padding:12px 20px 18px;font-family:Arial,sans-serif;font-size:12px;line-height:1.5;color:#7A6A5A;border-top:1px solid #EFE6D6">Reply to this email for any question.<br><b>Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b></td></tr>') +
       '</table></td></tr></table>';
   }
   shell.LABEL = 'font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;letter-spacing:2px;color:#8E2226;';
   // the sign-off used by the tickets email (Tamer 2026-09-29)
   function signOff() {
     return '<p style="margin:18px 0 6px 0">We are excited to welcome you.</p>' +
-      '<p style="margin:0 0 10px 0;font-size:19px;line-height:1.5"><b>The Wonder Worker Art Team</b><br><span style="color:#4a3b33">St. Mina Coptic Orthodox Church Calgary, AB.<br>Diocese of Mississauga, Vancouver and Western Canada</span><br><a href="mailto:artteam@stminacalgary.ca" style="color:#8E2226">artteam@stminacalgary.ca</a></p>';
+      '<p style="margin:0 0 26px 0;font-size:19px;line-height:1.5"><b>The Wonder Worker Art Team</b><br><span style="color:#4a3b33">St. Mina Coptic Orthodox Church Calgary, AB.<br>Diocese of Mississauga, Vancouver and Western Canada</span><br><a href="mailto:artteam@stminacalgary.ca" style="color:#8E2226">artteam@stminacalgary.ca</a></p>';
   }
 
   // a large scannable code per ticket (WW27-T377): the QR printed on the ticket image is too small to scan from a
@@ -2838,7 +2839,7 @@ var Core = (function () {
       '<p style="margin:16px 0 6px"><a href="' + calendarLink() + '" style="display:inline-block;margin:0 6px 6px 0;background:#1A2D57;color:#FFF3D6;text-decoration:none;padding:9px 14px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px">Add to Google Calendar</a>' +
         '<a href="' + siteUrl(s) + 'nativity-2027.ics" style="display:inline-block;margin:0 0 6px;background:#1A2D57;color:#FFF3D6;text-decoration:none;padding:9px 14px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px">Add to Apple Calendar</a></p>' +
       (receiptLine ? '<p style="font-size:17px;margin:14px 0 0 0">' + receiptLine + '</p>' : '') +
-      signOff());
+      signOff(), true);   // true = no privacy footer: exact final-tickets-email.html (Tamer 2026-09-29)
     var atts = [];   // no calendar attachment (Tamer 2026-09-26): it made Gmail draw its big balloon event card on top of the email; the two calendar buttons don't use it
     if (String(s.tickets_pdf).toUpperCase() === 'Y') { var pdf = ticketsPdf(env, e, numbers, cids, demo); if (pdf) atts.push(pdf); }   // the tickets as a PDF too, when switched on
     if (passes) numbers.forEach(function (n) { atts.push(walletPass(env, s, e, n)); });   // and one Apple Wallet pass per ticket
