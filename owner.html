@@ -193,7 +193,7 @@ input.s{font:15px Arial,sans-serif;padding:7px 10px;border:1px solid var(--line)
   <section id="t-settings" class="hide"></section>
   <section class="card hide" id="bad"><h2>Link not valid</h2></section>
 </main>
-<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.81</span></footer>
+<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.82</span></footer>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -282,9 +282,22 @@ function copyBtn(root) {
       '<div class="card" style="margin-top:12px"><h2>Free tickets (asked for by email)</h2><p class="hint">For someone who wrote to artteam@ asking for tickets they can\'t give for. No name needed: it shows as "Guest". The e-tickets go to the email you type here.</p>' +
       '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><input class="s" id="ft-email" type="email" placeholder="Their email" style="min-width:240px"> <input class="s" id="ft-qty" type="number" min="1" max="20" value="1" style="width:70px" aria-label="Tickets"> tickets ' +
       '<input class="s" id="ft-name" placeholder="Name (optional)"> <button class="btn" id="ft-go" style="padding:9px 16px;min-height:0">Send the free tickets</button></div><p id="ft-out" class="hint"></p></div>' +
+      // announcements for the St. Mina parish app (Tamer 2026-09-29): post here, the app shows them at once; "Take down" hides one
+      '<div class="card" style="margin-top:12px"><h2>Announcements (the parish app)</h2><p class="hint">What you post here appears in the St. Mina Calgary app for everyone. Keep it short; a link is optional.</p>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><input class="s" id="an-title" placeholder="Title" style="min-width:240px"> <input class="s" id="an-link" placeholder="Link (optional, https://…)" style="min-width:240px"></div>' +
+      '<textarea class="s" id="an-body" placeholder="Details (optional)" rows="3" style="width:100%;margin-top:8px;box-sizing:border-box"></textarea>' +
+      '<p style="margin:8px 0 0"><button class="btn" id="an-go" style="padding:9px 16px;min-height:0">Post</button> <span id="an-out" class="hint"></span></p>' +
+      (D.announcements && D.announcements.length ? '<table class="t" style="margin-top:10px"><tr><th>Posted</th><th>Announcement</th><th></th></tr>' + D.announcements.map(function (a) {
+        return '<tr><td style="white-space:nowrap">' + esc(when(a.created)) + '</td><td><b>' + esc(a.title) + '</b>' + (a.body ? '<br>' + esc(a.body) : '') + (a.link ? '<br><a href="' + esc(a.link) + '" target="_blank" rel="noopener">' + esc(a.link) + '</a>' : '') + '</td><td><button class="link" data-anoff="' + a.id + '">Take down</button></td></tr>';
+      }).join('') + '</table>' : '<p class="hint" style="margin-top:8px">Nothing posted right now.</p>') + '</div>' +
       '<div class="card" style="margin-top:12px"><h2>Cash held by each member</h2><table class="t"><tr><th>Member</th><th>Holds</th><th>Record hand-over to Hany</th></tr>' +
       D.members.map(function (m) { return '<tr><td>' + esc(m.name) + (m.active ? '' : ' <span class="pill void">link off</span>') + '</td><td>' + money(m.cash) + '</td><td><input class="s" type="number" placeholder="$" data-ho="' + m.id + '" style="width:90px"> <button class="link" data-hob="' + m.id + '">Record</button></td></tr>'; }).join('') +
       '</table></div>';
+    $('#an-go').onclick = function () {
+      var b = this, out = $('#an-out'); b.disabled = true; out.textContent = 'Posting…';
+      run('owner_announce', { title: $('#an-title').value.trim(), body: $('#an-body').value.trim(), link: $('#an-link').value.trim() }).then(function () { b.disabled = false; reload(); }, function (x) { out.textContent = x.message; b.disabled = false; });
+    };
+    $$('[data-anoff]').forEach(function (b) { b.onclick = function () { if (confirm('Take this announcement down?')) run('owner_announce_off', { id: b.getAttribute('data-anoff') }).then(reload, function (x) { alert(x.message); }); }; });
     $$('[data-hob]').forEach(function (b) { b.onclick = function () { var id = b.getAttribute('data-hob'), a = $('[data-ho="' + id + '"]').value; run('owner_handover', { member_id: id, amount: a }).then(reload, function (x) { alert(x.message); }); }; });
     var ftId = newId();
     $('#ft-go').onclick = function () {
