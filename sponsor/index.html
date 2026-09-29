@@ -268,6 +268,15 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 #buy .big small.sub{display:block;font:600 13.5px/1.3 Inter,sans-serif;color:#8E2226;margin-top:3px}
 #buy .qrow .stepper,#buy .qrow .money{width:172px;height:50px;box-sizing:border-box}
 #buy .qrow .stepper button{width:52px}#buy .qrow .stepper input{width:66px;font-size:22px}
+#buy .tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 0}
+#buy .tiles button{border:1px solid var(--fieldline);border-radius:14px;padding:12px 6px;background:#fff;cursor:pointer;text-align:center;min-height:86px;display:grid;gap:3px;align-content:center;font-family:Inter,system-ui,sans-serif}
+#buy .tiles .n{font:700 12px/1.2 Inter,system-ui,sans-serif;color:var(--soft);letter-spacing:.04em;text-transform:uppercase}
+#buy .tiles .a{font:800 20px/1.1 Inter,system-ui,sans-serif;color:var(--ink)}
+#buy .tiles .t{font:600 12px/1.2 Inter,system-ui,sans-serif;color:var(--soft)}
+#buy .tiles button[aria-pressed=true]{border-color:var(--accent);background:var(--accent-tint)}
+#buy .tiles button[aria-pressed=true] .n,#buy .tiles button[aria-pressed=true] .a,#buy .tiles button[aria-pressed=true] .t{color:var(--accent)}
+#buy .tiles button:focus-visible{outline:3px solid var(--tab-gold);outline-offset:1px}
+#buy .tilenote{margin:8px 0 0;font:600 13px/1.4 Inter,system-ui,sans-serif;color:var(--soft)}
 #buy .qrow .money{display:flex;align-items:center;gap:6px;border:2px solid #C8843A;border-radius:12px;background:#fff;padding:0 14px;flex-wrap:nowrap}   /* gold edge like "Feeling generous today?" (Tamer 2026-09-25) */
 #buy .qrow .money b{font:800 22px/1 Inter,system-ui,sans-serif;color:var(--soft)}
 #buy .qrow .money input{border:0;width:100%;padding:0;font:800 22px/1 Inter,system-ui,sans-serif;text-align:center;box-shadow:none}
@@ -442,7 +451,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
   <form class="card hide" id="buy" novalidate>
     <div class="sechead"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M13 6v2M13 11v2M13 16v2"/></svg></span><div><h2 class="sugh">E-tickets: suggested donation <span class="hl" data-sughead>$20</span> per ticket</h2></div><span id="seats" class="seatpill"></span></div>
     <!-- Tamer 2026-09-25 (layout D): one line instead of the "4 easy steps" box; the e-Transfer steps open under their own pay button -->
-    <p class="lead">Choose your tickets, add your details, then pay by card or Interac e-Transfer. Your e-tickets arrive by email.</p>
+    <p class="lead">Choose your number of tickets, add your details, then pay by card or Interac e-Transfer. Your e-tickets arrive by email.</p>
     <div class="leftcol">
     <div data-sponspot></div>   <!-- the sponsors, and the gold "Your business here?" box -->
     </div>
@@ -450,6 +459,10 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
       <div class="panel2 b-tix">
         <div class="row qrow"><span class="big">Tickets</span><div class="stepper"><button type="button" data-d="-1" aria-label="fewer">−</button><input name="qty" id="b-qty" type="number" min="1" max="20" value="1" inputmode="numeric" aria-label="Tickets"><button type="button" data-d="1" aria-label="more">+</button></div></div>
         <div class="row qrow don"><span class="big">Your donation</span><div class="money"><b>$</b><input name="amount" id="b-amount" type="text" inputmode="decimal" autocomplete="off" data-money aria-label="Donation amount"></div></div>
+        <!-- quick amounts (Tamer 2026-09-29, chosen on the tryout page: option C, names set 2): three tiles, Suggested / Supporter /
+             Patron per ticket, showing the total for the tickets chosen; tapping fills the box, typing your own amount un-selects -->
+        <div class="tiles" data-tiles role="group" aria-label="Quick amounts"></div>
+        <p class="tilenote">Any amount is welcome. Feeling generous? Type your own amount in the box above.</p>
         <div class="sgline" data-suggest role="button" tabindex="0" aria-live="polite">★ Suggested $20 or more for your 1 ticket ★<small>Tap here to fill it in · every dollar beyond supports the service.</small></div>
       </div>
       <div class="panel2 b-who"><div data-person></div></div>
@@ -541,7 +554,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.82</span></footer>
+<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.83</span></footer>
 
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3228,7 +3241,7 @@ var qrcode = function() {
     try { if (/[?&]v=/.test(location.search)) { var u0 = new URL(location.href); u0.searchParams.delete('v'); history.replaceState(null, '', u0.pathname + u0.search + u0.hash); } } catch (x) { }
     if (window.WW_DEMO || !/(^|\.)thewonderworker\.ca$/.test(location.hostname)) return;
     fetch('/version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
-      if (!j || !j.v || j.v === '1.82') return;
+      if (!j || !j.v || j.v === '1.83') return;
       try { var k = 'ww27-updated-' + j.v; if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (x) { return; }
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () { });
@@ -3401,16 +3414,37 @@ var qrcode = function() {
     $('[data-giftnote]', buy).textContent = money(CFG.suggested) + ' donation · optional';
     $('[data-sughead]', buy).textContent = money(CFG.suggested);
     $('[data-payhow]', buy).innerHTML = payHow();
-    copyBtn(buy); paySync(buy);
+    copyBtn(buy); paySync(buy); tilesSync();
   }
-  $('[name=amount]', buy).addEventListener('input', function () { buyTouched = true; buySync(); });
+  // Quick-amount tiles (Tamer 2026-09-29, option C / names set 2): Suggested = the suggested amount, Supporter $30, Patron $50 per
+  // ticket; a gifted seat stays a $20 donation on top. The tile whose total equals the box is the selected one, so typing any
+  // other amount simply un-selects — the box is the only truth, nothing new goes to the engine.
+  var TIERS = [['Suggested', CFG.suggested], ['Supporter', 30], ['Patron', 50]], tilePer = null;   // tilePer: the tile last tapped, so the box follows the ticket count until the buyer types
+  function tileTotal(per) { var q = Number($('[name=qty]', buy).value) || 0, g = Number($('[name=gift_qty]', buy).value) || 0; return per * q + CFG.suggested * g; }
+  function tilesSync() {
+    var box = $('[data-tiles]', buy); if (!box) return;
+    var a = Number($('[name=amount]', buy).value) || 0, q = Number($('[name=qty]', buy).value) || 0;
+    box.innerHTML = TIERS.map(function (t) {
+      var tot = tileTotal(t[1]);
+      return '<button type="button" data-per="' + t[1] + '" aria-pressed="' + (q >= 1 && a > 0 && Math.abs(a - tot) < 0.005 ? 'true' : 'false') + '">' +
+        '<span class="n">' + t[0] + '</span><span class="a">' + money(tot) + '</span><span class="t">' + money(t[1]) + ' / ticket</span></button>';
+    }).join('');
+    $$('[data-per]', box).forEach(function (b) {
+      b.addEventListener('click', function () { tilePer = Number(b.getAttribute('data-per')); $('[name=amount]', buy).value = tileTotal(tilePer); buyTouched = true; buySync(); });
+    });
+  }
+  $('[name=amount]', buy).addEventListener('input', function () { tilePer = null; buyTouched = true; buySync(); });
   $('[data-suggest]', buy).addEventListener('click', function () {   // tap the banner: use the suggested amount
     var q = Number($('[name=qty]', buy).value) || 0, g = Number($('[name=gift_qty]', buy).value) || 0;
     if (q < 1 && g < 1) return;
     $('[name=amount]', buy).value = (q + g) * CFG.suggested; buyTouched = true; buySync();
   });
   $('[data-suggest]', buy).addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.click(); } });
-  buy.addEventListener('input', function (e) { if (e.target.name === 'qty' || e.target.name === 'gift_qty') buySync(); });
+  buy.addEventListener('input', function (e) {
+    if (e.target.name !== 'qty' && e.target.name !== 'gift_qty') return;
+    if (tilePer) $('[name=amount]', buy).value = tileTotal(tilePer);   // a tapped tile follows the ticket count
+    buySync();
+  });
   buy.addEventListener('change', function (e) { if (e.target.name === 'method') buySync(); });
   submit(buy, 'order', function (p) {
     if (!(Number(p.qty) >= 1)) throw new Error('Please choose how many tickets you need.');
