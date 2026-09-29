@@ -2771,12 +2771,22 @@ var Core = (function () {
   }
 
   function shell(inner) {
-    return '<div style="background:#F4EEDC;padding:14px 4px;font-family:Georgia,serif;color:#2A1A2E">' +   // narrower margins: a bigger ticket on a phone (2026-09-25)
-      '<div style="max-width:660px;margin:0 auto;background:#fff;border-radius:10px;overflow:hidden;border:1px solid #E3D6BF">' +
-      '<div style="background:#0B1530;background:linear-gradient(180deg,#0B1530,#1A2D57);padding:14px 14px 16px;color:#F2C14E;font-family:Arial,sans-serif;letter-spacing:2px;font-weight:bold;font-size:13px"><div style="color:#F4EEDC;font-size:11px;letter-spacing:2.5px;margin-bottom:5px">ST. MINA COPTIC ORTHODOX CHURCH</div>WONDER WORKER ART TEAM · NATIVITY CELEBRATION 2027</div>' +
-      '<div style="padding:18px 14px;font-size:16px;line-height:1.5">' + inner + '</div>' +
-      '<div style="padding:12px 14px 18px;font-family:Arial,sans-serif;font-size:12px;color:#7A6A5A;border-top:1px solid #EFE6D6">Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary · reply to this email for any question.<br><b>Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b></div>' +
-      '</div></div>';
+    // the approved look (Tamer 2026-09-29, built with Cowork): red header band, gold title, two-line subtitle, Georgia 18 px,
+    // no fixed widths (phones show it full size), colours forced with bgcolor= so Apple Mail keeps the red band
+    var LABEL = 'font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;letter-spacing:2px;color:#8E2226;';
+    return '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#f3efe7" style="background:#f3efe7"><tr><td align="center" bgcolor="#f3efe7" style="padding:14px 8px">' +
+      '<table role="presentation" cellspacing="0" cellpadding="0" bgcolor="#ffffff" style="width:100%;max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden;font-family:Georgia,\'Times New Roman\',serif;color:#141010">' +
+      '<tr><td bgcolor="#8E2226" style="background:#8E2226;background-color:#8E2226;padding:22px 20px;text-align:center"><div style="font-family:Georgia,serif;font-size:32px;font-weight:bold;line-height:1.15;color:#F6CB5C">Nativity Celebration 2027</div>' +
+      '<div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;letter-spacing:2px;line-height:1.4;color:#FFF3D6;margin-top:8px">WONDER WORKER ART TEAM<br>ST. MINA COPTIC ORTHODOX CHURCH, CALGARY, AB.</div></td></tr>' +
+      '<tr><td style="padding:24px 20px 6px 20px;font-size:18px;line-height:1.55;color:#141010">' + inner + '</td></tr>' +
+      '<tr><td style="padding:12px 20px 18px;font-family:Arial,sans-serif;font-size:12px;line-height:1.5;color:#7A6A5A;border-top:1px solid #EFE6D6">Reply to this email for any question.<br><b>Your details are private: used only by authorized church personnel for your tickets and tax receipt, and deleted once receipts are issued.</b></td></tr>' +
+      '</table></td></tr></table>';
+  }
+  shell.LABEL = 'font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;letter-spacing:2px;color:#8E2226;';
+  // the sign-off used by the tickets email (Tamer 2026-09-29)
+  function signOff() {
+    return '<p style="margin:18px 0 6px 0">We are excited to welcome you.</p>' +
+      '<p style="margin:0 0 10px 0;font-size:19px;line-height:1.5"><b>The Wonder Worker Art Team</b><br><span style="color:#4a3b33">St. Mina Coptic Orthodox Church Calgary, AB.<br>Diocese of Mississauga, Vancouver and Western Canada</span><br><a href="mailto:artteam@stminacalgary.ca" style="color:#8E2226">artteam@stminacalgary.ca</a></p>';
   }
 
   // a large scannable code per ticket (WW27-T377): the QR printed on the ticket image is too small to scan from a
@@ -2790,51 +2800,51 @@ var Core = (function () {
       }).join('') + '</div>';
   }
   function ticketsEmail(env, s, e, numbers, gifts, opening, subjectPre) {
-    // one ticket shows large; several show smaller so the email stays short — Tamer 2026-09-24. No attached picture copies
-    // (Tamer 2026-09-24: the email came with 2 copies of the tickets); attachments: the calendar invite and, since 2026-09-25, one PDF of the tickets
+    // Layout approved by Tamer 2026-09-29 (Cowork test e-mails "combined design" / "final design"): opening line, YOUR TICKETS · NO. …,
+    // one gold box with the save tip and (when passes go out) the Apple Wallet tip, the phone-shaped tickets, door line, WHEN / WHERE,
+    // calendar buttons, tax-receipt line, "We are excited to welcome you." and the team sign-off. No donation/ref row (Tamer: not needed).
     // demo (Tamer 2026-09-25): tickets DEMO 1 … DEMO N, "DEMO" pictures with no real code, nothing recorded
     var demo = !!e.demo, lab = function (n) { return demo ? 'DEMO ' + n : 'No. ' + n; };
-    var cids = {}, imgs = '', w = numbers.length > 1 ? 460 : 632, missing = [];   // the full width of the email (Tamer 2026-09-25: "slightly bigger")
+    var passes = !demo && walletOn(env, s), LABEL = shell.LABEL;
+    var cids = {}, imgs = '', w = numbers.length > 1 ? 460 : 560, missing = [];
     numbers.forEach(function (n) {
       var key = demo ? 'demo-' + ('0' + n).slice(-2) : n, blob = env.ticketImage(key); if (!blob) { missing.push(n); return; }
       cids['t' + n] = blob;
-      // Tamer 2026-09-25: "the email pic not centered": a centred table cell, which every mail app honours
+      // no fixed width= (a fixed width makes Apple Mail shrink the whole e-mail); centred cell, which every mail app honours
       imgs += '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px"><tr><td align="center" style="text-align:center">' +
-        '<img src="cid:t' + n + '" alt="Ticket ' + lab(n) + '" width="' + w + '" style="display:block;margin:0 auto;width:100%;max-width:' + w + 'px;height:auto;border-radius:8px">' +
-        // no link to a website here (Tamer 2026-09-25: "on phone just pressing the pic can download it … people get worried about any link")
+        '<img src="cid:t' + n + '" alt="Ticket ' + lab(n) + '" style="display:block;margin:0 auto;width:100%;max-width:' + w + 'px;height:auto;border-radius:8px">' +
         '</td></tr></table>';
     });
-    // wording set by Tamer 2026-09-24 (the church sends receipts at the end of the tax year); none for people who declined
-    var receiptLine = e.receipt === 'N' ? '' : 'You will get a tax receipt for your donations.';
+    if (passes && /are below\.<\/p>$|are below\.$/.test(opening)) opening = opening.replace(/are below\./, 'are below and attached.');
+    // wording set by Tamer 2026-09-24 / 2026-09-29 ("you can"); none for people who declined
+    var receiptLine = e.receipt === 'N' ? '' : 'You can get a tax receipt for your donations.';
     var html = shell(
       (demo ? '<p style="background:#FDECEA;border:2px solid #C0392B;border-radius:8px;padding:10px 12px;color:#8A1C12"><b>DEMO ONLY.</b> These are not real tickets and nothing was recorded. This shows what a buyer receives.</p>' : '') +
-      '<p>Dear ' + esc(e.first) + ',</p><p>' + opening + '</p>' +
-      '<p style="font-family:Arial,sans-serif;font-size:13px;letter-spacing:1.5px;color:#8A3B2E;margin:18px 0 8px;text-align:center">YOUR TICKET' + (numbers.length > 1 ? 'S' : '') + ' · ' + (demo ? numbers.map(lab).join(', ') : 'NO. ' + numbers.join(', ')) + '</p>' +
-      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 12px"><tr><td align="center">' +
-        '<div style="display:inline-block;background:#FFF6E3;border:1px solid #C8843A;border-radius:10px;padding:10px 16px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;color:#0B1530">&#128190; To save ' + (numbers.length > 1 ? 'your tickets' : 'your ticket') + ': press and hold the picture, then tap <span style="color:#8A3B2E">Save</span>.</div>' +
-      '</td></tr></table>' +
+      '<p style="margin:0 0 14px 0">Dear ' + esc(e.first) + ',</p><p style="margin:0 0 18px 0">' + opening + '</p>' +
+      '<p style="' + LABEL + 'margin:18px 0 10px;text-align:center">YOUR TICKET' + (numbers.length > 1 ? 'S' : '') + ' · ' + (demo ? numbers.map(lab).join(', ') : 'NO. ' + numbers.join(', ')) + '</p>' +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px"><tr><td align="center">' +
+        '<div style="display:inline-block;background:#FFF6E3;border:1px solid #C8843A;border-radius:10px;padding:10px 16px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;color:#0B1530;text-align:left">' +
+        '<div' + (passes ? ' style="margin-bottom:8px"' : '') + '>&#128190; To save ' + (numbers.length > 1 ? 'your tickets' : 'your ticket') + ': press and hold or double click the picture, then tap <span style="color:#8A3B2E">Save</span>.</div>' +
+        (passes ? '<div>&#128241; iPhone users: tap the <span style="color:#8A3B2E">Apple Wallet ticket</span> attached at the bottom of this email to add it to your Wallet.</div>' : '') +
+        '</div></td></tr></table>' +
       imgs +
       // e-tickets carry their own big door code at the end of the picture (v7, Tamer 2026-09-26): no separate section.
       // Demo and printed-ticket copies keep it (their pictures have only the small code).
       (numbers.some(function (n) { return Number(n) < 1000 || demo; }) ? doorCodes(env, cids, numbers, demo) : '') +
-      '<p style="font-size:15px">' + (numbers.length > 1 ? 'Show them on your phone at the door or print them. Each ticket is one seat.' : 'Show it on your phone at the door or print it.') + '</p>' +
-      (gifts.length ? '<p>Your ' + gifts.length + ' gifted seat' + (gifts.length > 1 ? 's' : '') + ' will be given quietly to a senior. Thank you.</p>' : '') +
-      '<table style="border-collapse:collapse;font-size:15px;margin:10px 0 14px">' +
-      '<tr><td style="padding:3px 12px 3px 0;color:#7A6A5A">When</td><td>' + EVENT.when + '</td></tr>' +
-      '<tr><td style="padding:3px 12px 3px 0;color:#7A6A5A">Where</td><td>' + EVENT.where + ' · <a href="' + EVENT.map + '">map</a></td></tr>' +
-      (e.method === 'Free' ? '' :   // free tickets (asked for by email): no "$0 by Free" line
-      '<tr><td style="padding:3px 12px 3px 0;color:#7A6A5A">Donation</td><td>' + money(e.amount) + ' by ' + esc(e.method) + (e.order_code ? ' · ref. ' + esc(e.order_code) : '') + '</td></tr>') +
-      '</table>' +
-      (!demo && walletOn(env, s) ? '<p style="font-size:15px">On an iPhone, tap the attached ticket' + (numbers.length > 1 ? 's' : '') + ' (Ticket ' + numbers[0] + '.pkpass' + (numbers.length > 1 ? ' …' : '') + ') to add ' + (numbers.length > 1 ? 'them' : 'it') + ' to Apple Wallet.</p>' : '') +
+      '<p style="font-size:17px;margin:0 0 14px 0">' + (numbers.length > 1 ? 'Show them on your phone at the door or print them. Each ticket is one seat.' : 'Show it on your phone at the door or print it.') + '</p>' +
+      (gifts.length ? '<p style="font-size:17px;margin:0 0 14px 0">Your ' + gifts.length + ' gifted seat' + (gifts.length > 1 ? 's' : '') + ' will be given quietly to a senior. Thank you.</p>' : '') +
+      '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:17px">' +
+      '<tr><td style="padding:8px 0;border-top:1px solid #eee3cf"><span style="' + LABEL + '">WHEN</span><br>' + EVENT.when + '</td></tr>' +
+      '<tr><td style="padding:8px 0;border-top:1px solid #eee3cf;border-bottom:1px solid #eee3cf"><span style="' + LABEL + '">WHERE</span><br>' + EVENT.where + ' · <a href="' + EVENT.map + '" style="color:#8E2226">map</a></td></tr></table>' +
       // Google and Apple side by side (Tamer 2026-09-25: "can it be also apple calendar"); the Apple one is the same invite as the
       // attachment, on thewonderworker.ca (published by publish.sh), which an iPhone or a Mac opens straight into Calendar
-      '<p style="margin:0 0 6px"><a href="' + calendarLink() + '" style="display:inline-block;margin:0 6px 6px 0;background:#1A2D57;color:#FFF3D6;text-decoration:none;padding:9px 14px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px">Add to Google Calendar</a>' +
+      '<p style="margin:16px 0 6px"><a href="' + calendarLink() + '" style="display:inline-block;margin:0 6px 6px 0;background:#1A2D57;color:#FFF3D6;text-decoration:none;padding:9px 14px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px">Add to Google Calendar</a>' +
         '<a href="' + siteUrl(s) + 'nativity-2027.ics" style="display:inline-block;margin:0 0 6px;background:#1A2D57;color:#FFF3D6;text-decoration:none;padding:9px 14px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px">Add to Apple Calendar</a></p>' +
-      (receiptLine ? '<p style="font-size:15px">' + receiptLine + '</p>' : '') +
-      '<p>See you there,<br>The Wonder Worker Art Team<br>St. Mina Coptic Orthodox Church</p>');
+      (receiptLine ? '<p style="font-size:17px;margin:14px 0 0 0">' + receiptLine + '</p>' : '') +
+      signOff());
     var atts = [];   // no calendar attachment (Tamer 2026-09-26): it made Gmail draw its big balloon event card on top of the email; the two calendar buttons don't use it
     if (String(s.tickets_pdf).toUpperCase() === 'Y') { var pdf = ticketsPdf(env, e, numbers, cids, demo); if (pdf) atts.push(pdf); }   // the tickets as a PDF too, when switched on
-    if (!demo && walletOn(env, s)) numbers.forEach(function (n) { atts.push(walletPass(env, s, e, n)); });   // and one Apple Wallet pass per ticket
+    if (passes) numbers.forEach(function (n) { atts.push(walletPass(env, s, e, n)); });   // and one Apple Wallet pass per ticket
     ticketsEmail.missing = missing;   // read by finishSale: a ticket without its picture in Drive is flagged for the team (2026-09-26)
     env.mail({ to: e.email, subject: (subjectPre || '') + (demo ? 'DEMO · ' : '') + 'Your tickets · Nativity Celebration 2027 (' + (demo ? numbers.map(lab).join(', ') : 'No. ' + numbers.join(', ')) + ')', html: html, inline: cids, attachments: atts, replyTo: s.team_email, name: s.from_name });
   }
@@ -2890,7 +2900,7 @@ var Core = (function () {
     var who = str((e.first || '') + ' ' + (e.last || ''));
     var pass = { formatVersion: 1, passTypeIdentifier: str(s.wallet_pass_type), teamIdentifier: str(s.wallet_team), serialNumber: 'WW27-T' + n,
       organizationName: 'St. Mina Coptic Orthodox Church', description: 'Nativity Celebration 2027 · ticket No. ' + n, logoText: 'Nativity 2027',
-      foregroundColor: 'rgb(255, 243, 214)', backgroundColor: 'rgb(11, 21, 48)', labelColor: 'rgb(246, 203, 92)',
+      foregroundColor: 'rgb(255, 243, 214)', backgroundColor: 'rgb(142, 34, 38)', labelColor: 'rgb(246, 203, 92)',   // red like the ticket (Tamer 2026-09-29)
       relevantDate: '2027-01-30T15:00:00-07:00', expirationDate: '2027-01-31T06:00:00-07:00',
       barcodes: [{ format: 'PKBarcodeFormatQR', message: 'WW27-T' + n, messageEncoding: 'iso-8859-1', altText: 'No. ' + n }],
       eventTicket: {
@@ -2905,7 +2915,7 @@ var Core = (function () {
         ].concat(e.order_code ? [{ key: 'ref', label: 'REFERENCE', value: e.order_code }] : []).concat([{ key: 'contact', label: 'QUESTIONS', value: 'artteam@stminacalgary.ca' }])
       }
     };
-    return env.walletPkpass(pass, 'Ticket ' + n + '.pkpass');
+    return env.walletPkpass(pass, 'Apple Wallet - Ticket ' + n + '.pkpass');   // the name buyers see (Tamer 2026-09-29)
   }
   // Tamer's dashboard key only: a sample pass for ticket 1001 sent back to the caller (nothing emailed), to try on an iPhone
   function ownerTestPass(env, p) {
