@@ -3779,11 +3779,26 @@ var Core = (function () {
     card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck, owner_free_tickets: ownerFreeTickets, ticket_picture: ticketPicture, owner_set_tickets: ownerSetTickets, owner_refunded: ownerRefunded };
 
   var PUBLIC_WRITES = { order: 1, donate: 1, sponsor: 1, waitlist: 1 };
+  // Google's Sheets service fails now and then for a single call ("Service Spreadsheets failed while accessing document …":
+  // 2026-10-01 15:43, on the Mac's sales sync, which emailed Tamer an alert). The run's FIRST sheet read — before anything is
+  // written or sent — is tried up to three times, so such a blip costs a second instead of an error for the caller and an alert.
+  // Any other fault is reported at once, as before.
+  var SHEETS_BLIP = /Service Spreadsheets (failed|timed out)|Service (error|unavailable): Spreadsheets/i;
+  function firstRead(env) {
+    for (var i = 0; ; i++) {
+      try { return settings(env); }
+      catch (e) {
+        if (i >= 2 || !SHEETS_BLIP.test(String((e && e.message) || e))) throw e;
+        env.sleep(700 * (i + 1)); try { env.fresh(); } catch (x) { }
+      }
+    }
+  }
   function handle(env, action, payload) {
     var f = ACTIONS[action];
     if (!f) return { ok: false, error: 'Unknown action.' };
     try {
-      if (PUBLIC_WRITES[action]) { var paused = str(settings(env).paused); if (paused) throw err(paused); }
+      var s0 = firstRead(env);
+      if (PUBLIC_WRITES[action]) { var paused = str(s0.paused); if (paused) throw err(paused); }
       return f(env, payload || {});
     } catch (e) {
       if (e.userMessage) return { ok: false, error: e.userMessage };
