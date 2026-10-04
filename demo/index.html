@@ -2686,14 +2686,14 @@ var Core = (function () {
     res.hash = fingerprint(String(pr.dataUrl));
     if (receiptUsed(env, function (e) { return e.proof_hash === res.hash; })) throw err(DUPLICATE);
     var pre = p.proofText || readProofText(env, p), text = pre.text, serverRead = pre.serverRead;
-    if (pre.ocrFailed) res.reasons.push('server could not read the image');
+    if (pre.ocrFailed) res.reasons.push('The picture could not be read automatically - open it and check it by eye');
     // what the payment shows is read first, whatever else is on the picture
     var f = Proof.facts(text); res.facts = f;
-    if (!text) res.reasons.push('no text could be read from the screenshot');
+    if (!text) res.reasons.push('Nothing could be read from the screenshot - open the picture and check it by eye');
     else {
-      if (!f.recipient) res.reasons.push('recipient donations@stminacalgary.ca not visible');
-      if (expected > 0 && f.amount + 0.001 < expected) res.reasons.push('amount on screenshot ' + (f.amount ? money(f.amount) : 'not found') + ', expected ' + money(expected));
-      if (!f.keyword) res.reasons.push('message does not mention Wonder Worker / Art Team / Nativity');
+      if (!f.recipient) res.reasons.push('The screenshot does not show it was sent to donations@stminacalgary.ca - check who it was sent to');
+      if (expected > 0 && f.amount + 0.001 < expected) res.reasons.push('The screenshot shows ' + (f.amount ? money(f.amount) : 'no amount') + ' but ' + money(expected) + ' was entered - check which is right');
+      if (!f.keyword) res.reasons.push('Missed writing "Wonder Worker" in the e-Transfer message - match this payment in the bank by the name and the amount');
       if (f.ref && receiptUsed(env, function (e) { return e.interac_ref && e.interac_ref === f.ref; })) throw err(DUPLICATE);
     }
     // the phone scrambles private details before sending; anything private still readable here → the picture is not kept
@@ -3661,6 +3661,20 @@ var Core = (function () {
     return { ok: true };
   }
   // Export rows for Hany: columns chosen on the dashboard; env turns them into an .xlsx and emails artteam@.
+  var STATUS_WORDS = { ok: 'Paid', flagged: 'Paid - needs checking', awaiting_card: 'Card not finished', void: 'Cancelled', refunded: 'Refunded' };
+  // rows written before 2026-10-04 carry the old short wording: say the same thing in plain words on the way out
+  var OLD_FLAG_WORDS = [
+    [/message does not mention Wonder Worker \/ Art Team \/ Nativity/g,
+     'Missed writing "Wonder Worker" in the e-Transfer message - match this payment in the bank by the name and the amount'],
+    [/recipient donations@stminacalgary\.ca not visible/g, 'The screenshot does not show it was sent to donations@stminacalgary.ca - check who it was sent to'],
+    [/no text could be read from the screenshot/g, 'Nothing could be read from the screenshot - open the picture and check it by eye'],
+    [/server could not read the image/g, 'The picture could not be read automatically - open it and check it by eye']
+  ];
+  function plainFlags(v) {
+    var s = str(v); if (!s) return '';
+    OLD_FLAG_WORDS.forEach(function (r) { s = s.replace(r[0], r[1]); });
+    return s.split(' | ').join('\n');   // one line per thing to check
+  }
   var EXPORT_COLS = {
     date: ['Date', function (e) { return localDate(e.created); }],
     name: ['Name', function (e) { return e.first + ' ' + e.last; }],
@@ -3682,7 +3696,9 @@ var Core = (function () {
       return e.receipt === 'N' ? 'No (declined)' : adv > 0.8 * num(e.amount) ? 'No (what they got back is over 80%)' :
         e.kind === 'sponsor' && e.silent !== 'Y' && adv ? 'Yes, less ' + money(adv) + ' for the advertising' : 'Yes'; }],
     receiptable: ['Receiptable amount', null],
-    status: ['Status', function (e) { return e.status; }]
+    // Tamer 2026-10-04: "make it more clear in the sheet for Hany and myself" - the sheet says what to DO, not engine words.
+    status: ['Status', function (e) { return STATUS_WORDS[e.status] || e.status; }],
+    flags: ['Needs checking', function (e) { return plainFlags(e.flags); }]
   };
   // CRA split receipting (Tamer 2026-09-25): the receipt is for what was paid less the fair market value of what came back.
   // Tickets: no value (anyone who asks gets tickets free), receipt_ticket_value 0. A named sponsor's advertising (name, logo,

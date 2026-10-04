@@ -350,7 +350,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   #buy{display:grid;grid-template-columns:minmax(0,1fr) 250px;column-gap:22px;align-items:start}
   #buy>*{grid-column:1}#buy>.sechead,#buy>.lead{grid-column:1/-1}#buy>.leftcol{grid-column:2;grid-row:3/span 8;position:sticky;top:16px}
   #buy>.leftcol .spcta,#buy>.leftcol .spbox{margin-top:0}#buy>.leftcol .spcta{padding:10px 12px}#buy>.leftcol .spcta b{font-size:17px}#buy>.leftcol .spcta span{font-size:12.5px;line-height:1.4;display:block}
-  #buy>.leftcol .spbox{padding:11px}#buy>.leftcol .spbox h4{font-size:17px}#buy>.leftcol .spp{font-size:13px;padding:5px 8px}}
+  #buy>.leftcol .spbox{padding:11px}#buy>.leftcol .spbox h4{font-size:17px}#buy>.leftcol .spp{font-size:13px;padding:6px 9px}}
 #buy .fgrid{grid-template-columns:1fr}
 /* Get tickets: "Tickets", "Your donation" and "Gift a seat to a senior", their controls the same size, lined up */
 #buy .qrow{display:grid;grid-template-columns:270px 172px;align-items:center;gap:14px;margin:6px 0}
@@ -400,11 +400,22 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 /* Get tickets: sponsors under the steps, and the gold "Your business here?" box (Tamer 2026-09-25: design A, no example names) */
 .spbox{background:#fff;border:2px solid #C8843A;border-radius:14px;padding:14px;margin-top:16px;box-shadow:0 6px 18px rgba(11,21,48,.08)}
 .spbox h4{margin:0 0 10px;font:400 20px/1 "Bebas Neue",Impact,sans-serif;letter-spacing:1.5px;color:#0B1530}
-.spp{display:flex;align-items:center;gap:10px;padding:7px 10px;border:1px solid #E3E8F0;border-radius:999px;text-decoration:none;color:#0B1530;background:#FAFBFD;margin:0 0 8px;font:700 14.5px Inter,sans-serif}
-.spp img{width:34px;height:34px;border-radius:8px;flex:0 0 34px;object-fit:contain;background:#fff}.spp span{flex:1;min-width:0}.spp i{font-style:normal;color:#C8843A;font-weight:800}
+.spp{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid #E3E8F0;border-radius:14px;text-decoration:none;color:#0B1530;background:#FAFBFD;margin:0 0 8px;font:700 14.5px Inter,sans-serif}
+/* Tamer 2026-10-04: a 34px SQUARE made a wide logo (Insureline is 600x268) render at about 34x15 - a speck.
+   A wide slot shows it properly; object-fit:contain still protects a tall logo. */
+.spp img{width:104px;height:46px;border-radius:6px;flex:0 0 104px;object-fit:contain;background:#fff}.spp span{flex:1;min-width:0}.spp i{font-style:normal;color:#C8843A;font-weight:800}
 a.spp:hover{border-color:#C8843A;background:#FFF8EC}
 .spcta{display:block;width:100%;margin-top:16px;text-align:left;border:2px dashed #C8843A;background:linear-gradient(135deg,#FFF6E3,#FFFDF7);border-radius:14px;padding:12px 14px;cursor:pointer;color:#0B1530;font:inherit;animation:spglow 2.6s ease-in-out infinite}
 .spbox .spcta{margin-top:4px}
+/* the donation thermometer under the sponsors (Tamer 2026-10-04): the Donate page's own picture, side by side, in a narrow column */
+.dspot{display:block;text-decoration:none;color:inherit;margin-top:12px}
+.dspot .tbanner{margin:0}
+.dspot .tbanner svg{width:96px;height:auto}
+.dspot .tbanner .in{padding:12px 14px;gap:4px 10px}
+.dspot .tbanner .fig{font-size:27px}
+.dspot .tbanner .lab{font-size:12.5px;letter-spacing:1px}
+.dspot .godo{position:relative;display:block;margin:0 16px 13px;font:800 14px Inter,sans-serif;color:var(--gold)}
+.dspot:hover .godo{text-decoration:underline}
 .spcta b{display:block;font:400 21px/1 "Bebas Neue",Impact,sans-serif;letter-spacing:1.2px;color:#8E2226;margin-bottom:4px}.spcta span{font-size:13.5px;color:#5B6477}
 @keyframes spglow{0%,100%{box-shadow:0 0 0 0 rgba(200,132,58,0)}50%{box-shadow:0 0 0 6px rgba(200,132,58,.18)}}
 @media (prefers-reduced-motion:reduce){.spcta{animation:none}}
@@ -645,7 +656,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.92</span></footer>
+<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.93</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3333,7 +3344,7 @@ var qrcode = function() {
     try { if (/[?&]v=/.test(location.search)) { var u0 = new URL(location.href); u0.searchParams.delete('v'); history.replaceState(null, '', u0.pathname + u0.search + u0.hash); } } catch (x) { }
     if (window.WW_DEMO || !/(^|\.)thewonderworker\.ca$/.test(location.hostname)) return;
     fetch('/version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
-      if (!j || !j.v || j.v === '1.92') return;
+      if (!j || !j.v || j.v === '1.93') return;
       try { var k = 'ww27-updated-' + j.v; if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (x) { return; }
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () { });
@@ -3559,7 +3570,7 @@ var qrcode = function() {
   // Fundraising banner: a graduated thermometer (every 10 %, labels every 25 %), filled to what's given;
   // the gold dashed part shows where the total will be once this gift is completed.
   var gidN = 0;
-  function banner(raised, add, goal, givers) {
+  function banner(raised, add, goal, givers, footer) {   // footer: an extra line inside the picture (the tickets page adds "Donate")
     goal = goal || 1; var gid = 'fillg' + (++gidN);
     var H = 230, top = 12, bot = 196, x = 38, w = 22, span = bot - top;
     function y(v) { return bot - Math.min(1, Math.max(0, v / goal)) * span; }
@@ -3588,7 +3599,7 @@ var qrcode = function() {
       '<div class="lab" style="color:var(--gold);margin-top:10px">GIVEN SO FAR · ' + pct + '%</div><div class="fig">' + money(raised) + '</div>' +
       '<div class="lab" style="opacity:.85;margin-top:4px">' + (givers ? givers + (givers === 1 ? ' SUPPORTER' : ' SUPPORTERS') + ' · THANK YOU' : raised > 0 ? 'THANK YOU TO EVERYONE WHO HAS GIVEN' : 'BE THE FIRST TO GIVE') + '</div>' +
       (add > 0 ? '<div class="after">This will be the total after you complete your donation: <b style="color:var(--gold)">' + money(raised + add) + '</b> of ' + money(goal) + '.</div>' : '') +
-      '</div></div></div>';
+      '</div></div>' + (footer || '') + '</div>';
   }
   function thermo() {
     var a = Number($('[name=amount]', give).value) || 0, goal = CFG.goal || 1;
@@ -3647,6 +3658,11 @@ var qrcode = function() {
     m.textContent = 'Please type an amount over ' + money(sponMost()) + '. For ' + CFG.tiers.map(money).join(', ').replace(/, ([^,]*)$/, ' or $1') + ', tap it above.';
     m.classList.remove('hide'); sponSync();
   });
+  function donateSpot() {
+    if (!CFG.goal) return '';
+    return '<a class="dspot" href="#" data-todonate>' +
+      banner(CFG.raised, 0, CFG.goal, CFG.givers, '<span class="godo">Donate &#8594;</span>') + '</a>';
+  }
   // Get tickets: approved sponsors (name, logo, link to their website) and the gold box; before any sponsor, only the gold box
   function sponSpot() {
     var list = CFG.sponsors || [];
@@ -3656,9 +3672,13 @@ var qrcode = function() {
       return x.website ? '<a class="spp" href="' + esc(/^https?:/.test(x.website) ? x.website : 'https://' + x.website) + '" target="_blank" rel="noopener">' + img + '<span>' + esc(x.business) + '</span><i>↗</i></a>'
         : '<div class="spp">' + img + '<span>' + esc(x.business) + '</span></div>';
     }).join('') + cta + '</div>';
+    // Tamer 2026-10-04: "the donation banner in the front page below the sponsor ... the same pic" - the very same
+    // thermometer the Donate tab draws, sized for this column, the whole thing a link to Donate.
+    html += donateSpot();
     // two places: under the steps on a computer, under the Submit button on a phone (Tamer 2026-09-25)
     $$('[data-sponspot]').forEach(function (el) { el.innerHTML = html; });
     $$('[data-tospon]').forEach(function (b) { b.onclick = function () { show('spon'); }; });
+    $$('[data-todonate]').forEach(function (a) { a.onclick = function (e) { e.preventDefault(); show('give'); }; });
   }
   $('[data-logo]', spon).onchange = function () {
     var f = this.files[0]; this.value = ''; if (!f) return;
