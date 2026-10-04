@@ -1,2 +1,10 @@
 User-agent: *
-Disallow: /
+Allow: /
+Disallow: /team.html
+Disallow: /team-help.html
+Disallow: /owner.html
+Disallow: /ticket/
+Disallow: /demo/
+Disallow: /team-demo/
+
+Sitemap: https://thewonderworker.ca/sitemap.xml

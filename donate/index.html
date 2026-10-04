@@ -1,9 +1,24 @@
 <!doctype html>
 <html lang="en" data-theme="night">
-<head><script>window.WW_PARAMS=(function(){var q={};location.search.slice(1).split("&").forEach(function(kv){if(!kv)return;var i=kv.indexOf("=");q[decodeURIComponent(i<0?kv:kv.slice(0,i))]=i<0?"":decodeURIComponent(kv.slice(i+1).replace(/\+/g," "))});if(!q.p)q.p="donate";return q})();</script><meta name="robots" content="noindex,nofollow">
+<head><script>window.WW_PARAMS=(function(){var q={};location.search.slice(1).split("&").forEach(function(kv){if(!kv)return;var i=kv.indexOf("=");q[decodeURIComponent(i<0?kv:kv.slice(0,i))]=i<0?"":decodeURIComponent(kv.slice(i+1).replace(/\+/g," "))});if(!q.p)q.p="donate";return q})();</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Nativity Celebration 2027 · Tickets</title>
+<!-- Tamer 2026-10-04: a wrong link went out in the WhatsApp groups and the unity email. People who hit a dead link
+     search instead, so the page is findable again (the site-wide noindex was from the private-launch days, 24 Sep), and it
+     now carries a proper preview so a shared link shows the poster and the date instead of a bare blue address. -->
+<link rel="canonical" href="https://thewonderworker.ca/">
+<meta name="description" content="Nativity Celebration 2027 — Saturday, January 30, 2027, 3:00–8:00 PM followed by Tasbeha, at Bert Church LIVE Theatre, Airdrie. Presented by the Wonder Worker Art Team of St. Mina Coptic Orthodox Church, Calgary. Get your e-tickets, donate or become a sponsor.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Wonder Worker Art Team · St. Mina Coptic Orthodox Church, Calgary">
+<meta property="og:url" content="https://thewonderworker.ca/">
+<meta property="og:title" content="Nativity Celebration 2027 · Tickets">
+<meta property="og:description" content="Saturday, January 30, 2027 · 3:00–8:00 PM, followed by Tasbeha · Bert Church LIVE Theatre, Airdrie. The choir, the Sunday school's play &quot;Worth It&quot;, and the adult play &quot;ماليش دعوة&quot;.">
+<meta property="og:image" content="https://thewonderworker.ca/share-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="628">
+<meta property="og:locale" content="en_CA">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Ultra&family=Abril+Fatface&family=Amiri:wght@700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>/* Shared look for the ticket pages (v2, Tamer 2026-09-24: "like my app" — light page, white cards with a coloured
@@ -620,7 +635,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.90</span></footer>
+<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.91</span></footer>
 
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3308,7 +3323,7 @@ var qrcode = function() {
     try { if (/[?&]v=/.test(location.search)) { var u0 = new URL(location.href); u0.searchParams.delete('v'); history.replaceState(null, '', u0.pathname + u0.search + u0.hash); } } catch (x) { }
     if (window.WW_DEMO || !/(^|\.)thewonderworker\.ca$/.test(location.hostname)) return;
     fetch('/version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
-      if (!j || !j.v || j.v === '1.90') return;
+      if (!j || !j.v || j.v === '1.91') return;
       try { var k = 'ww27-updated-' + j.v; if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (x) { return; }
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () { });
