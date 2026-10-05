@@ -67,14 +67,27 @@ p{margin:6px 0}
 .ico.gold{background:var(--gold-tint);color:#B7791F}.ico.blue{background:var(--blue-tint);color:var(--blue)}.ico.green{background:var(--green-tint);color:var(--green)}
 
 /* page tabs: a white bar, the page you are on filled gold (like Imhotep Med) */
-.navbar{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:8px}
-.navbar button{display:flex;align-items:center;justify-content:center;gap:10px;min-height:58px;padding:10px 14px;border:0;border-radius:12px;background:transparent;color:var(--soft);font:600 clamp(15px,1.6vw,18px)/1.2 Inter,system-ui,sans-serif;white-space:nowrap;cursor:pointer;transition:background .15s,color .15s}
-.navbar button svg{width:22px;height:22px;flex:0 0 auto;color:var(--accent)}
-.navbar button:nth-child(2) svg{color:#B7791F}.navbar button:nth-child(3) svg{color:var(--blue)}
-.navbar button:hover{background:#F4F6FA;color:var(--ink)}
-.navbar button[aria-pressed=true]{background:var(--tab-gold);color:#fff;font-weight:800;box-shadow:0 2px 8px rgba(200,132,58,.35)}
+/* Navigation — option A + 5 + 6 (Tamer 2026-10-04, picked from the tryout after people said they could not tell
+   the other subpages existed). Was: one white card holding a gold pill and two grey labels with no border and no
+   background, so Donate and Become a sponsor read as writing rather than as buttons. Now each page is its own
+   raised button in its own colour (5), and the third keeps its full words "Become a sponsor" (6) rather than
+   shortening. The white wrapper card is gone: three bordered buttons inside a bordered card is a card in a card. */
+.navbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:transparent;border:0;box-shadow:none;padding:0}
+.navbar button{display:flex;align-items:center;justify-content:center;gap:10px;min-height:62px;padding:10px 12px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);font:700 clamp(14px,1.5vw,17px)/1.2 Inter,system-ui,sans-serif;white-space:normal;text-align:center;cursor:pointer;box-shadow:0 1px 2px rgba(16,24,40,.06);transition:background .15s,color .15s,box-shadow .15s,border-color .15s}
+/* Fixed colours on purpose, not the theme tokens: the night theme (which the live page uses) redefines
+   --accent-tint to a pale blue, which would make Get tickets and Become a sponsor the same colour and undo
+   the whole point of telling the three pages apart. */
+.navbar button[data-go=buy]{background:#F6EEF3;border-color:#E6D3DF}
+.navbar button[data-go=give]{background:#FFF6E3;border-color:#F0DCAE}
+.navbar button[data-go=spon]{background:#EDF3FC;border-color:#CFE0F5}
+.navbar button svg{width:22px;height:22px;flex:0 0 auto}
+.navbar button[data-go=buy] svg{color:#7A2F5E}
+.navbar button[data-go=give] svg{color:#B7791F}
+.navbar button[data-go=spon] svg{color:#1F4E8C}
+.navbar button:hover{box-shadow:0 4px 12px rgba(16,24,40,.13)}
+.navbar button[aria-pressed=true]{background:var(--tab-gold);border-color:var(--tab-gold);color:#fff;font-weight:800;box-shadow:0 3px 10px rgba(200,132,58,.4)}
 .navbar button[aria-pressed=true] svg{color:#fff}
-@media (max-width:560px){.navbar{gap:4px;padding:6px}.navbar button{flex-direction:column;gap:5px;min-height:66px;padding:8px 4px;font-size:14px;text-align:center;white-space:normal}}
+@media (max-width:560px){.navbar{gap:6px}.navbar button{flex-direction:column;gap:5px;min-height:74px;padding:9px 4px;font-size:13px;line-height:1.18}}
 .seatpill{margin-left:auto;align-self:flex-start;background:var(--accent-tint);color:var(--accent);font:700 13px/1 Inter,system-ui,sans-serif;padding:8px 12px;border-radius:999px;white-space:nowrap}
 .seatpill:empty{display:none}
 
@@ -227,7 +240,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   </section>
   <section class="card hide" id="bad"><h2>Link not valid</h2><p>This link is no longer valid. Please ask Tamer for a new one.</p></section>
 </main>
-<footer><span>Wonder Worker Art Team · team page</span><span class="ver">v1.93</span></footer>
+<footer><span>Wonder Worker Art Team · team page</span><span class="ver">v1.94</span></footer>
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
    Online demo (window.WW_DEMO): the engine runs in the page around this one; ask it by message. */

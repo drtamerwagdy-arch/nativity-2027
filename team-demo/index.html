@@ -2497,7 +2497,8 @@ var Core = (function () {
   var GIFT_MIN = 901, GIFT_MAX = 999, ETICKET_MIN = 1001, ETICKET_MAX = 1999;
   var DEFAULTS = {
     capacity: 377, reserved: 0, suggested: 20, goal: 10000, hold_days: 10,
-    given_before: 0,   // given before the website opened, counted toward the goal (Tamer 2026-09-25: $100)
+    given_before: 0,   // a lump sum given before the website opened, counted toward the goal (Tamer 2026-09-25: $100).
+                       // Single gifts handed over in person go in as their own rows now (owner_cash_gift), not in here.
     square_on: 'N', square_env: 'sandbox', square_location_id: '', square_fee_pct: 2.8, square_fee_fixed: 0.30, site_url: 'https://thewonderworker.ca/',   // card payments (Square), off until connected
     payments_email: 'artteam+payments@stminacalgary.ca',   // one email per payment (Tamer 2026-09-25); 'off' = none
     tickets_pdf: 'N',   // the tickets PDF in the tickets email: off (Tamer 2026-09-25: with it, the email went to Yahoo's spam); 'Y' once DKIM/DMARC are set
@@ -3240,6 +3241,9 @@ var Core = (function () {
       // wording set by Tamer 2026-09-24
       html: shell('<p>Dear ' + esc(e.first) + ',</p><p>Thanks for your donation of <b>' + money(e.amount) + '</b> to the Nativity Celebration 2027.</p>' +
         '<p>Together we have now given <b>' + money(total) + '</b> of our <b>' + money(s.goal) + '</b> goal.</p>' +
+        // Tamer 2026-10-04: the Donate form says "Email (your receipt goes here)" and the ticket email has carried a
+        // receipt line since 2026-09-25, but this one never did. Same "You can" wording as the ticket email.
+        (e.receipt === 'N' ? '' : '<p>You can get a tax receipt for your donation.</p>') +
         '<p>The Wonder Worker Art Team<br>St. Mina Coptic Orthodox Church</p>') });
     env.update('entries', e.id, { emailed: env.now().toISOString() });
     paymentNote(env, s, e);
@@ -3427,6 +3431,32 @@ var Core = (function () {
       env.append('entries', e);
       finishSale(env, s, e, 'Here ' + (q > 1 ? 'are your tickets' : 'is your ticket') + ' for the Nativity Celebration 2027. We look forward to seeing you there.', [], 'free tickets');
       return outcome(e, null);
+    });
+  }
+  // Cash or a cheque handed over in person (Tamer 2026-10-04: "some people will donate out of the website by cash,
+  // need an easy way to add it to the banner from my dashboard"). It is a REAL donation row, not a nudged number, so it
+  // counts on the thermometer, counts as a supporter, and reaches Hany's sheet with its tax-receipt line. No email is
+  // sent unless an address is given; the same submit_id twice adds only one row.
+  function ownerCashGift(env, p) {
+    requireOwner(env, p.key);
+    var amount = num(p.amount);
+    if (!(amount > 0)) throw err('How much was given?');
+    if (amount > 100000) throw err('That looks too large - please check the amount.');
+    var how = /cheque|check/i.test(str(p.how)) ? 'Cheque' : 'Cash';
+    var email = str(p.email).toLowerCase();
+    if (email && !validEmail(email)) throw err('That email address does not look right.');
+    return env.lock(function () {
+      var s = settings(env);
+      var again = seenBefore(env, p, function (a) { return outcome(a, null, { raised: raised(env) }); }); if (again) return again;
+      var who = { first: str(p.first) || 'Anonymous', last: str(p.last), email: email, phone: '', address: '', city: '', postal: '',
+        receipt: email ? 'Y' : 'N' };   // no address, no receipt to send: Hany still sees the amount on the sheet
+      var e = mk(env, who, { kind: 'donation', amount: amount, method: how, order_code: orderCode(env, s), status: 'ok',
+        submit_id: str(p.submit_id), proof_status: 'none', recorded_by: 'Tamer (' + how.toLowerCase() + ' in person)',
+        note: str(p.note) || (how + ' given in person') });
+      env.append('entries', e);
+      if (email) try { donationThanks(env, s, e); } catch (x) { env.log('cash gift thank-you failed: ' + x.message); }
+      try { paymentNote(env, s, e); } catch (x) { env.log('cash gift payment note failed: ' + x.message); }
+      return outcome(e, null, { raised: raised(env), goal: num(s.goal) });
     });
   }
   function memberUndo(env, p) {
@@ -3795,7 +3825,7 @@ var Core = (function () {
     announcements: announcements, owner_announce: ownerAnnounce, owner_announce_off: ownerAnnounceOff,
     owner_void: ownerVoid, owner_clear: ownerClear, owner_delete: ownerDelete, owner_sponsor_show: ownerSponsorShow, owner_handover: ownerHandover, owner_setting: ownerSetting, owner_resend: ownerResend, owner_test_email: ownerTestEmail,
     owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); }, owner_sheet_key: ownerSheetKey, sheet_rows: sheetRows, sheet_backup: sheetBackup, owner_test_pdf: ownerTestPdf, owner_test_pass: ownerTestPass,
-    card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck, owner_free_tickets: ownerFreeTickets, ticket_picture: ticketPicture, owner_set_tickets: ownerSetTickets, owner_refunded: ownerRefunded };
+    card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck, owner_free_tickets: ownerFreeTickets, owner_cash_gift: ownerCashGift, ticket_picture: ticketPicture, owner_set_tickets: ownerSetTickets, owner_refunded: ownerRefunded };
 
   var PUBLIC_WRITES = { order: 1, donate: 1, sponsor: 1, waitlist: 1 };
   // Google's Sheets service fails now and then for a single call ("Service Spreadsheets failed while accessing document …":
