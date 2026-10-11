@@ -1,0 +1,80 @@
+name: Adult choir film
+# Temporary helper for one file transfer.
+# "render" rebuilds the zoomed Adult Choir film with the same tooling and settings as run 21 of
+# the "Video zoom" workflow in nativity-2027-tickets and attaches it, with its sha256, to the
+# pre-release "adult-choir-zoom" of this public repository. From there the Colab notebook
+# .github/video-zoom/upload-to-drive.ipynb can fetch it without a GitHub login and copy it into
+# Google Drive. "remove" deletes that release and its tag again once the file is in Drive.
+on:
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: "render | remove"
+        required: true
+        default: "render"
+      drive_id:
+        description: "Google Drive file id of the source (sharing must be 'Anyone with the link')"
+        default: "1_FvZTMTYFcBwgjQr-1IrpFD5oQv8PCAg"
+      zoom:
+        description: "most the picture may be zoomed"
+        default: "1.3"
+      yshift:
+        description: "vertical shift of the window, fraction of its height"
+        default: "0.08"
+      start:
+        description: "zoom from this second"
+        default: "114"
+      end:
+        description: "zoom until this second"
+        default: "1703"
+      logo:
+        description: "none | path.png:X:Y:W:OPACITY (the watermark the crop removes, re-drawn)"
+        default: ".github/video-zoom/church-logo.png:1718:48:152:0.5"
+      cut:
+        description: "end the film at this second with a fade to black"
+        default: "1652.5"
+      card:
+        description: "then continue with the closing card from this second of the source"
+        default: "1699"
+      asset_name:
+        description: "name of the release asset"
+        default: "03-Adult-Choir-FINAL-1080p-branded-zoom.mp4"
+permissions:
+  contents: write
+jobs:
+  film:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: adult-choir-zoom
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove the release and its tag
+        if: inputs.phase == 'remove'
+        run: gh release delete "$TAG" --yes --cleanup-tag && echo "release removed" || echo "no release to remove"
+      - name: Tools
+        if: inputs.phase == 'render'
+        run: |
+          which ffmpeg >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg)
+          ffmpeg -version | head -1
+          pip install -q gdown numpy
+          df -h . | tail -1
+      - name: Download the source from Google Drive
+        if: inputs.phase == 'render'
+        run: |
+          mkdir -p work
+          gdown "${{ inputs.drive_id }}" -O work/source.mp4
+          ffprobe -v error -show_entries stream=codec_name,width,height,r_frame_rate:format=duration,size -of default=nw=1 work/source.mp4
+      - name: Render
+        if: inputs.phase == 'render'
+        run: |
+          bash .github/video-zoom/zoom.sh render work/source.mp4 "work/${{ inputs.asset_name }}" "${{ inputs.zoom }}" "${{ inputs.yshift }}" "${{ inputs.start }}" "${{ inputs.end }}" "${{ inputs.logo }}" "${{ inputs.cut }}" "${{ inputs.card }}"
+          ffprobe -v error -show_entries stream=codec_name,width,height,r_frame_rate:format=duration,size -of default=nw=1 "work/${{ inputs.asset_name }}"
+          (cd work && sha256sum "${{ inputs.asset_name }}" | tee sha256.txt)
+      - name: Attach to the release
+        if: inputs.phase == 'render'
+        run: |
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --prerelease --title "Adult Choir film (zoomed 1080p) - temporary download" --notes "Temporary copy of the zoomed Adult Choir film, kept here only so it can be copied into Google Drive without a GitHub login. It is removed afterwards."
+          gh release upload "$TAG" "work/${{ inputs.asset_name }}" work/sha256.txt --clobber
+          gh release view "$TAG" --json assets -q '.assets[] | "\(.name)  \(.size) bytes  \(.url)"'
