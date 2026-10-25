@@ -169,7 +169,9 @@ var Proof = (function () {
     var am = amounts(t), paid = amountPaid(t);
     var date = (t.match(/\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+20\d\d\b|\b20\d\d[\-\/]\d{2}[\-\/]\d{2}\b/i) || [''])[0];
     return {
-      recipient: /donations\s*@\s*stminacalgary\s*\.\s*ca/i.test(t) || /st\.?\s*mina\s+donation/i.test(t),
+      // read with every space and line break taken out: a narrow phone screen wraps the address mid-word
+      // (2026-10-25, Tarek Sorial: "donations@stmin" / "acalgary.ca" on two lines was flagged as not visible)
+      recipient: /donations@stminacalgary\.ca/i.test(t.replace(/\s+/g, '')) || /st\.?\s*mina\s+donation/i.test(t),
       amount: paid || (am.length ? Math.max.apply(null, am) : 0),
       keyword: keyword(t),
       ref: refs[0] || '',

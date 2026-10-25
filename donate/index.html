@@ -669,7 +669,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.95</span></footer>
+<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.96</span></footer>
 
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -840,7 +840,9 @@ var Proof = (function () {
     var am = amounts(t), paid = amountPaid(t);
     var date = (t.match(/\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+20\d\d\b|\b20\d\d[\-\/]\d{2}[\-\/]\d{2}\b/i) || [''])[0];
     return {
-      recipient: /donations\s*@\s*stminacalgary\s*\.\s*ca/i.test(t) || /st\.?\s*mina\s+donation/i.test(t),
+      // read with every space and line break taken out: a narrow phone screen wraps the address mid-word
+      // (2026-10-25, Tarek Sorial: "donations@stmin" / "acalgary.ca" on two lines was flagged as not visible)
+      recipient: /donations@stminacalgary\.ca/i.test(t.replace(/\s+/g, '')) || /st\.?\s*mina\s+donation/i.test(t),
       amount: paid || (am.length ? Math.max.apply(null, am) : 0),
       keyword: keyword(t),
       ref: refs[0] || '',
@@ -3357,7 +3359,7 @@ var qrcode = function() {
     try { if (/[?&]v=/.test(location.search)) { var u0 = new URL(location.href); u0.searchParams.delete('v'); history.replaceState(null, '', u0.pathname + u0.search + u0.hash); } } catch (x) { }
     if (window.WW_DEMO || !/(^|\.)thewonderworker\.ca$/.test(location.hostname)) return;
     fetch('/version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
-      if (!j || !j.v || j.v === '1.95') return;
+      if (!j || !j.v || j.v === '1.96') return;
       try { var k = 'ww27-updated-' + j.v; if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (x) { return; }
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () { });
