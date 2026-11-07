@@ -334,15 +334,15 @@ table.xl .xh th.ob{background:#DDEBF7}table.xl td.ob{background:#F4F9FD}table.xl
   function saveNews(){try{localStorage.setItem('store-news',JSON.stringify(NEWS))}catch(e){}}
   function news(){return NEWS.filter(function(n){return n.on&&n.t.trim()}).map(function(n){return '<div class="hero"><h1 dir="auto">'+esc(n.t)+'</h1></div>'}).join('')}
   function shown(c){var l=ITEMS.filter(function(i){return inCat(i,c)&&i.pics.length&&i.stock>0&&i.price!=null}),k=CATS.filter(function(x){return x.name===c})[0];if(k){var f=item(k.pic);if(f&&f.pics.length)l=[f].concat(l.filter(function(i){return i!==f}))}return l}
-  function pills(){return picks().map(function(p){return '<button data-cat="'+p.name+'">'+p.name+'</button>'}).join('')+PRICES.slice(1).map(function(p,i){return '<button data-band="'+(i+1)+'">'+esc(p[0])+'</button>'}).join('')}
-  function swipe(){var C=[['Shop Sale Items',SALE,'#B3261E'],['Featured Items',FRONT,'#F0C24B'],['Recently Added',NEW,'#1F4E8C'],['Shop Crosses','Crosses','#7A1F2B'],['Shop Icons','Icons','#5A3E8C'],['Shop Statues','Statues','#2F6B57'],['Shop Books','Books','#1F4E8C']];
-    var h=C.map(function(c){var l=shown(c[1]).slice(0,4);if(!l.length||(c[1]!==SALE&&c[1]!==NEW&&c[1]!==FRONT&&l.length<4))return '';return '<div class="bigc'+(c[2]==='#F0C24B'?' dk':'')+'" style="background:'+c[2]+'"><button class="bt" data-cat="'+c[1]+'">'+c[0]+'<small>See all ›</small></button><div class="sw4">'+l.map(function(it){return '<button class="tile" data-open="'+it.no+'" aria-label="'+esc(it.name)+'"><span class="pic">'+big(it)+'</span>'+'<b class="pt'+(it.sp!=null?' on':'')+'">'+(it.sp!=null?'<s>'+money(it.price)+'</s> ':'')+money(pr(it))+'</b>'+'</button>'}).join('')+'</div></div>'}).join('');
-    return '<div class="swr"><button class="swb l" data-sw="-1" aria-label="Back">‹</button><div class="swipe">'+h+'</div><button class="swb r" data-sw="1" aria-label="More">›</button></div>'}
+  function pills(){return PRICES.slice(1).map(function(p,i){return '<button data-band="'+(i+1)+'">'+esc(p[0])+'</button>'}).join('')}
+  function swipe(){var C=[['Shop Sale Items',SALE,'#B3261E'],['Featured Items',FRONT,'#F0C24B'],['Recently Added',NEW,'#1F4E8C']];
+    var h=C.map(function(c){var l=shown(c[1]).slice(0,4);if(!l.length||false)return '';return '<div class="bigc'+(c[2]==='#F0C24B'?' dk':'')+'" style="background:'+c[2]+'"><button class="bt" data-cat="'+c[1]+'">'+c[0]+'<small>See all ›</small></button><div class="sw4">'+l.map(function(it){return '<button class="tile" data-open="'+it.no+'" aria-label="'+esc(it.name)+'"><span class="pic">'+big(it)+'</span>'+'<b class="pt'+(it.sp!=null?' on':'')+'">'+(it.sp!=null?'<s>'+money(it.price)+'</s> ':'')+money(pr(it))+'</b>'+'</button>'}).join('')+'</div></div>'}).join('');
+    if(!h)return '';return '<div class="swr"><button class="swb l" data-sw="-1" aria-label="Back">‹</button><div class="swipe">'+h+'</div><button class="swb r" data-sw="1" aria-label="More">›</button></div>'}
   function smalls(){function one(t,a,it){return it?'<button class="smc" '+a+'><b>'+esc(t)+'</b><span class="tile"><span class="pic">'+big(it)+'</span></span></button>':''}
     var h=PRICES.slice(1,3).map(function(p,i){return one(p[0],'data-band="'+(i+1)+'"',ITEMS.filter(function(x){return x.pics.length&&x.price>=p[1]&&x.price<=p[2]&&x.stock>0})[i+3])}).join('')+['Rosaries','Gifts','Key chains','Bibles'].map(function(c){return one(c,'data-cat="'+c+'"',shown(c)[0])}).join('');
     return '<div class="swipe s2">'+h+'</div>'}
   V.home=function(){S.cat='All';S.sub='';S.pr=0;S.q='';qi.value='';
-    return '<div class="qchips">'+pills()+'</div>'+news()+swipe()+smalls()+
+    return news()+swipe()+'<div class="qchips">'+pills()+'</div>'+smalls()+
       '<div class="sec"><h2>Shop by category</h2></div><div class="tiles">'+CATS.map(function(c){var n=ITEMS.filter(function(i){return i.cat===c.name}).length,it=item(c.pic);return '<button class="tile" data-cat="'+esc(c.name)+'"><span class="pic">'+big(it)+'</span><b>'+esc(c.name)+'</b><small>'+n+' items</small></button>'}).join('')+'</div>'+
       (function(){var l=ITEMS.filter(function(i){return i.fp});return l.length?'<div class="sec"><h2>Featured items</h2></div><div class="grid">'+l.map(card).join('')+'</div>':''})()+
       '<p class="help">Prices in Canadian dollars. Exchange or refund within 14 days of pick-up. No refund on clothes. No delivery for now.</p>';
@@ -522,7 +522,7 @@ table.xl .xh th.ob{background:#DDEBF7}table.xl td.ob{background:#F4F9FD}table.xl
     $$('[data-open]',r).forEach(function(b){b.onclick=function(){go('item-'+b.getAttribute('data-open'))}});
     $$('[data-cat]',r).forEach(function(b){b.onclick=function(){S.cat=b.getAttribute('data-cat');S.sub='';S.q='';qi.value='';resetList();go('shop')}});
     $$('[data-band]',r).forEach(function(b){b.onclick=function(){S.cat='All';S.sub='';S.q='';qi.value='';S.pr=+b.getAttribute('data-band');resetList();go('shop')}});
-    $$('[data-sw]',r).forEach(function(b){b.onclick=function(){b.parentNode.querySelector('.swipe').scrollBy({left:+b.getAttribute('data-sw')*360,behavior:'smooth'})}});
+    $$('[data-sw]',r).forEach(function(b){var w=b.parentNode.querySelector('.swipe');b.hidden=w.scrollWidth<=w.clientWidth+2;b.onclick=function(){b.parentNode.querySelector('.swipe').scrollBy({left:+b.getAttribute('data-sw')*360,behavior:'smooth'})}});
     $$('[data-setcat]',r).forEach(function(b){b.onclick=function(){S.cat=b.getAttribute('data-setcat');S.sub='';resetList();route()}});
     $$('[data-setsub]',r).forEach(function(b){b.onclick=function(){S.sub=b.getAttribute('data-setsub');resetList();route()}});
     $$('[data-setcat2]',r).forEach(function(b){b.onclick=function(){S.cat=b.getAttribute('data-setcat2');S.sub='';S.q='';qi.value='';resetList();go('shop')}});
