@@ -651,7 +651,9 @@ table.xl .xh th.ob{background:#DDEBF7}table.xl td.ob{background:#F4F9FD}table.xl
   new MutationObserver(no1p).observe(document.body,{childList:true,subtree:true});no1p();
   var OQ=location.search.match(/[?&]order=([\w-]+)&k=([\w-]+)/);
   if(ENG&&OQ){lastOrder={id:OQ[1],live:1,wait:1};if(location.hash!=='#done')location.hash='done';(function chk(n){call('order_status',{order:OQ[1],key:OQ[2]}).then(function(r){if(r.ok&&r.status!=='hold'&&r.status!=='expired'&&r.status!=='released'){lastOrder={id:r.order,live:1,total:r.total,st:r.status,pick:((r.note||'').match(/^Pick-up: (.*?)(\. |$)/)||[])[1]||'',lines:(r.lines||[]).map(function(l){return l.n+' × '+l.name+' · '+money(l.price*l.n)})};try{history.replaceState(null,'',location.pathname+'#done')}catch(e){}route();return}if(n<8)setTimeout(function(){chk(n+1)},4000);else{lastOrder.wait=2;route()}})})(0)}
+  // show the last known stock at once (copy built into the page, or the newer one this browser kept), then the fresh one replaces it
+  if(ENG){var s0=window.STOCK0||null;try{var c0=JSON.parse(localStorage.getItem('store-stock'));if(c0&&c0.t&&(!s0||c0.t>s0.t))s0=c0}catch(e){}if(s0&&s0.t&&Date.now()-s0.t<14*864e5)applyStock(s0)}
   window.addEventListener('hashchange',route); route();
-  if(ENG)call('stock').then(function(s){applyStock(s);var h=(location.hash||'#home').replace('#','');if(/^(home|shop|item-\d+)$/.test(h)&&!$('#zoom')){var y=window.scrollY;route();window.scrollTo(0,y)}});
+  if(ENG)call('stock').then(function(s){if(s&&s.ok)try{localStorage.setItem('store-stock',JSON.stringify(s))}catch(e){}applyStock(s);var h=(location.hash||'#home').replace('#','');if(/^(home|shop|item-\d+)$/.test(h)&&!$('#zoom')){var y=window.scrollY;route();window.scrollTo(0,y)}});
 })();
 </script>
