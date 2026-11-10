@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self' https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<title>St. Mina App Portal</title>
+<style>
+:root{--red:#8e2226;--gold:#f6cb5c;--cream:#fff3d6;--navy:#0b1530;--paper:#f3efe7;--ink:#141010;--brown:#6d5e4f;--line:#ddd3c2;--card:#fff;--ok:#2e6b3a;color-scheme:light}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+header{background:var(--navy);color:var(--cream);padding:14px max(16px,env(safe-area-inset-right)) 14px max(16px,env(safe-area-inset-left));padding-top:max(14px,env(safe-area-inset-top));display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header h1{font:700 21px/1.15 Georgia,"Times New Roman",serif;margin:0;color:var(--gold);flex:1;min-width:0}
+header .who{font-size:13px;opacity:.9}
+.tier{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:1px 7px;border-radius:999px;background:var(--gold);color:var(--navy);margin-left:6px;vertical-align:1px}
+.tier.local{background:var(--cream)}
+nav{background:var(--red);display:flex;overflow-x:auto;padding:0 max(8px,env(safe-area-inset-right)) 0 max(8px,env(safe-area-inset-left));-webkit-overflow-scrolling:touch}
+nav button{all:unset;cursor:pointer;color:#fff;padding:12px 13px;font-weight:600;font-size:15px;white-space:nowrap;border-bottom:3px solid transparent;opacity:.82}
+nav button[aria-current=page]{border-bottom-color:var(--gold);opacity:1}
+nav button:focus-visible{outline:2px solid var(--gold);outline-offset:-3px}
+main{max-width:720px;margin:0 auto;padding-block:18px 96px;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));display:grid;gap:16px}
+h2{font:700 21px/1.2 Georgia,"Times New Roman",serif;margin:6px 0 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:13px;min-width:0}
+.card h3{font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:var(--red);margin:0}
+label.f{display:grid;gap:4px;font-weight:600;font-size:14px;min-width:0}
+input[type=text],input[type=password],input[type=url],input[type=email],input[type=datetime-local],textarea,select{font:inherit;font-weight:400;width:100%;max-width:100%;padding:10px 11px;border:1px solid #b9ac98;border-radius:8px;background:#fff;color:var(--ink)}
+textarea{min-height:92px;resize:vertical}
+.bool{display:flex;gap:10px;align-items:center;font-weight:600;font-size:15px}
+.bool input,.chk input{width:20px;height:20px;accent-color:var(--red)}
+.chk{display:flex;gap:7px;align-items:center;font-weight:400}
+.hint{font-size:13px;font-weight:400;color:var(--brown)}
+button.b{font:inherit;font-weight:700;border:0;border-radius:9px;padding:11px 18px;background:var(--red);color:#fff;cursor:pointer}
+button.b.plain{background:#fff;color:var(--red);border:1px solid var(--red)}
+button.b.small{padding:6px 12px;font-size:14px}
+button.b.danger{background:#fff;color:#a01515;border:1px solid #a01515}
+button.b:disabled{opacity:.55;cursor:default}
+button.out{all:unset;cursor:pointer;font-size:13px;text-decoration:underline}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.save{position:sticky;bottom:max(10px,env(safe-area-inset-bottom));display:flex;gap:12px;align-items:center;background:var(--navy);color:var(--cream);padding:10px 12px;border-radius:12px;box-shadow:0 4px 16px rgba(11,21,48,.28)}
+.save .msg{flex:1;font-size:14px;min-width:0}
+.save button.b{background:var(--gold);color:var(--navy)}
+.msg.bad,.bad{color:#a01515}
+.save .msg.bad{color:#ffc9c0}
+.good{color:var(--ok)}
+.notice{background:var(--cream);border:1px solid #e6cf97;border-radius:10px;padding:12px;font-size:14px}
+.news{border:1px solid var(--line);border-radius:9px;padding:12px;display:grid;gap:6px;min-width:0}
+.news.off{opacity:.62}
+.news b{overflow-wrap:anywhere}
+.news p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.meta{font-size:12px;color:var(--brown)}
+.log{display:grid;gap:2px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px;min-width:0;overflow-wrap:anywhere}
+.log:last-child{border:0}
+.sign{max-width:420px;margin:30px auto 0;width:100%}
+.temp{font:600 18px/1.3 ui-monospace,Menlo,monospace;background:var(--cream);padding:10px;border-radius:8px;overflow-wrap:anywhere;user-select:all}
+</style>
+</head>
+<body>
+<header><h1>St. Mina App Portal</h1><span class="who" id="who"></span></header>
+<nav id="nav" hidden></nav>
+<main id="view"><p>Loading…</p></main>
+<script>
+(function () {
+  'use strict';
+  var ENGINE = 'https://script.google.com/macros/s/AKfycbytE6-Y2eBZwcAKOjtbdDR0j7w7d-0a0XvgwLdQc0hzTPIAzpY1AYzzdo65-W6o1xh7/exec';
+  var TOKEN_KEY = 'stmina-portal-token';
+  var S = { token: null, me: null, data: null, tab: null };
+  var view = document.getElementById('view'), nav = document.getElementById('nav'), who = document.getElementById('who');
+
+  function store(k, v) { try { if (v == null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); } catch (e) { } }
+  function recall(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+  function el(tag, a) {
+    var n = document.createElement(tag);
+    if (a) Object.keys(a).forEach(function (k) {
+      if (k === 'text') n.textContent = a[k];
+      else if (k.slice(0, 2) === 'on') n.addEventListener(k.slice(2), a[k]);
+      else if (k === 'cls') n.className = a[k];
+      else if (a[k] === true) n.setAttribute(k, '');
+      else if (a[k] !== false && a[k] != null) n.setAttribute(k, a[k]);
+    });
+    for (var i = 2; i < arguments.length; i++) { var c = arguments[i]; if (c == null || c === false) continue; n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); }
+    return n;
+  }
+  function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+  function call(action, payload) {
+    var p = Object.assign({}, payload || {});
+    if (S.token) p.token = S.token;
+    return fetch(ENGINE, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: action, payload: p }) })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (!j.ok && /sign in again/i.test(j.error || '')) { signedOut(j.error); throw { quiet: true }; }
+        if (!j.ok) throw new Error(j.error || 'Something went wrong.');
+        return j;
+      }).catch(function (e) { if (e && e.quiet) throw e; throw new Error(e && e.message && !/fetch|network|load/i.test(e.message) ? e.message : 'Could not reach the server. Please try again.'); });
+  }
+  function signedOut(msg) { S.token = null; S.me = null; S.data = null; store(TOKEN_KEY, null); showSignIn(msg); }
+  function when(iso) { var d = new Date(iso); return isNaN(d) ? '' : d.toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short' }); }
+  function busy(btn, p, done) { btn.disabled = true; return p.then(done, function (e) { if (!e || !e.quiet) throw e; }).finally(function () { btn.disabled = false; }); }
+  function msgOf(e) { return (e && e.message) || 'Something went wrong.'; }
+  function tempPassword() {
+    var c = 'abcdefghjkmnpqrstuvwxyz23456789', a = new Uint8Array(12), s = '';
+    crypto.getRandomValues(a); a.forEach(function (b) { s += c[b % c.length]; });
+    return s.slice(0, 4) + '-' + s.slice(4, 8) + '-' + s.slice(8);
+  }
+  function shell() { nav.hidden = true; clear(who); clear(view); }
+
+  // ---------- sign in ----------
+  function field(label, type, name, auto, extra) { var i = el('input', Object.assign({ type: type, name: name, autocomplete: auto, required: true }, extra || {})); return { node: el('label', { cls: 'f' }, label, i), input: i }; }
+  function showSignIn(msg) {
+    shell();
+    var u = field('User name', 'text', 'username', 'username', { autocapitalize: 'none', spellcheck: 'false' }), p = field('Password', 'password', 'password', 'current-password');
+    var m = el('div', { cls: 'bad', role: 'alert', text: msg || '' }), b = el('button', { cls: 'b', type: 'submit', text: 'Sign in' });
+    var f = el('form', { cls: 'card sign', onsubmit: function (e) {
+      e.preventDefault(); m.textContent = '';
+      busy(b, call('login', { u: u.input.value, p: p.input.value }), function (r) { p.input.value = ''; signedIn(r); }).catch(function (x) { m.textContent = msgOf(x); });
+    } }, el('h2', { text: 'Sign in' }), u.node, p.node, m, b, el('p', { cls: 'hint', text: 'This is for the parish app only. Book store staff use the Staff Portal.' }));
+    view.appendChild(f); u.input.focus();
+  }
+  function showFirstMaster() {
+    shell();
+    var u = field('Choose a user name', 'text', 'username', 'username', { autocapitalize: 'none', spellcheck: 'false' }), n = field('Your name', 'text', 'name', 'name'), p = field('Choose a password (at least 8)', 'password', 'password', 'new-password', { minlength: 8 });
+    var m = el('div', { cls: 'bad', role: 'alert' }), b = el('button', { cls: 'b', type: 'submit', text: 'Make master admin' });
+    view.appendChild(el('form', { cls: 'card sign', onsubmit: function (e) {
+      e.preventDefault(); m.textContent = '';
+      busy(b, call('first_master', { u: u.input.value, name: n.input.value, p: p.input.value }), function () { showSignIn(); }).catch(function (x) { m.textContent = msgOf(x); });
+    } }, el('h2', { text: 'Make a master admin' }), el('p', { cls: 'hint', text: 'This window is open for 30 minutes and works one time.' }), n.node, u.node, p.node, m, b));
+  }
+  function signedIn(r) {
+    S.token = r.token; S.me = r.me; store(TOKEN_KEY, r.token);
+    if (r.me.must_change) return showChangePassword(true);
+    load();
+  }
+  function showChangePassword(first) {
+    shell();
+    var o = field(first ? 'Temporary password' : 'Current password', 'password', 'current', 'current-password'), p = field('New password (at least 8)', 'password', 'new', 'new-password', { minlength: 8 }), q = field('New password again', 'password', 'again', 'new-password', { minlength: 8 });
+    var m = el('div', { cls: 'bad', role: 'alert' }), b = el('button', { cls: 'b', type: 'submit', text: 'Save my password' });
+    view.appendChild(el('form', { cls: 'card sign', onsubmit: function (e) {
+      e.preventDefault(); m.textContent = '';
+      if (p.input.value !== q.input.value) { m.textContent = 'The two new passwords are not the same.'; return; }
+      busy(b, call('my_password', { old: o.input.value, p: p.input.value }), function (r) { S.token = r.token; S.me = r.me; store(TOKEN_KEY, r.token); load(); }).catch(function (x) { m.textContent = msgOf(x); });
+    } }, el('h2', { text: 'Choose your own password' }), first && el('p', { cls: 'hint', text: 'Only you should know it.' }), o.node, p.node, q.node, m, b));
+  }
+
+  // ---------- the screens ----------
+  function load(keepTab) {
+    return call('portal_load').then(function (r) { S.data = r; S.me = r.me; if (!keepTab || !S.tab) S.tab = firstTab(); paint(); }).catch(function (e) {
+      if (e && e.quiet) return;
+      if (/own password/.test(msgOf(e))) return showChangePassword(true);
+      shell(); view.appendChild(el('div', { cls: 'card' }, el('p', { cls: 'bad', text: msgOf(e) }), el('button', { cls: 'b', onclick: function () { load(); }, text: 'Try again' })));
+    });
+  }
+  function tabs() {
+    var t = [], a = S.data.areas;
+    ['church', 'artteam', 'home'].forEach(function (k) { if (a[k]) t.push({ k: k, l: a[k] }); });
+    if (S.me.role === 'master') { t.push({ k: 'admins', l: 'Admins' }); t.push({ k: 'log', l: 'Log' }); }
+    t.push({ k: 'account', l: 'My account' });
+    return t;
+  }
+  function firstTab() { return tabs()[0].k; }
+  function paint() {
+    clear(who); clear(nav); clear(view); nav.hidden = false;
+    who.appendChild(document.createTextNode(S.me.name || S.me.u));
+    who.appendChild(el('span', { cls: 'tier' + (S.me.role === 'master' ? '' : ' local'), text: S.me.role === 'master' ? 'Master' : 'Local' }));
+    who.appendChild(document.createTextNode('  '));
+    who.appendChild(el('button', { cls: 'out', text: 'Sign out', onclick: function () { call('logout').catch(function () { }).finally(function () { signedOut(); }); } }));
+    tabs().forEach(function (t) { var b = el('button', { type: 'button', text: t.l, onclick: function () { S.tab = t.k; paint(); window.scrollTo(0, 0); } }); if (t.k === S.tab) b.setAttribute('aria-current', 'page'); nav.appendChild(b); });
+    if (S.tab === 'admins') return paintAdmins();
+    if (S.tab === 'log') return paintLog();
+    if (S.tab === 'account') return paintAccount();
+    paintArea(S.tab);
+  }
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function stampToLocal(s) { var m = /^(\d{4})(\d\d)(\d\d)T(\d\d)(\d\d)(\d\d)Z$/.exec(s || ''); if (!m) return ''; var d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6])); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+  function localToStamp(v) { if (!v) return ''; return new Date(v).toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z'); }
+
+  function fieldInput(f) {
+    var shown = f.t === 'stamp' ? stampToLocal(f.v) : (f.v || f.d || ''), input, node;
+    if (f.t === 'bool') {
+      input = el('input', { type: 'checkbox' }); input.checked = (f.v || f.d) !== 'N';
+      node = el('div', {}, el('label', { cls: 'bool' }, input, f.l), f.h && el('div', { cls: 'hint', text: f.h }));
+      return { f: f, node: node, value: function () { return input.checked ? 'Y' : 'N'; }, shown: (f.v || f.d) === 'N' ? 'N' : 'Y' };
+    }
+    if (f.t === 'multi' || f.t === 'program') { input = el('textarea', { maxlength: f.m || null, dir: 'auto' }); input.value = shown; }
+    else { input = el('input', { type: f.t === 'stamp' ? 'datetime-local' : (f.t === 'url' ? 'url' : (f.t === 'email' ? 'email' : 'text')), maxlength: f.m || null, dir: f.t === 'text' ? 'auto' : null, autocapitalize: f.t === 'url' || f.t === 'email' ? 'none' : null }); input.value = shown; }
+    node = el('label', { cls: 'f' }, f.l, input, f.h && el('span', { cls: 'hint', text: f.h }));
+    return { f: f, node: node, value: function () { return f.t === 'stamp' ? localToStamp(input.value) : input.value; }, shown: f.t === 'stamp' ? (f.v || '') : shown };
+  }
+  function paintArea(area) {
+    if (area === 'church' && S.data.news) view.appendChild(newsCard());
+    var inputs = [], groups = {}, order = [];
+    S.data.fields.filter(function (f) { return f.a === area; }).forEach(function (f) { if (!groups[f.g]) { groups[f.g] = []; order.push(f.g); } groups[f.g].push(f); });
+    order.forEach(function (g) {
+      var c = el('section', { cls: 'card' }, el('h3', { text: g }));
+      groups[g].forEach(function (f) { var i = fieldInput(f); inputs.push(i); c.appendChild(i.node); });
+      view.appendChild(c);
+    });
+    var m = el('div', { cls: 'msg', role: 'status', text: 'Phones pick up changes the next time the app opens.' }), b = el('button', { cls: 'b', type: 'button', text: 'Save changes' });
+    b.addEventListener('click', function () {
+      var changes = {}, n = 0;
+      inputs.forEach(function (i) { var v = i.value(); if (v !== i.shown) { changes[i.f.k] = v; n++; } });
+      if (!n) { m.className = 'msg'; m.textContent = 'Nothing has changed.'; return; }
+      m.className = 'msg'; m.textContent = 'Saving…';
+      var y = window.scrollY;
+      busy(b, call('content_save', { changes: changes }), function (r) { S.data = r; paint(); window.scrollTo(0, y); var mm = view.querySelector('.save .msg'); if (mm) mm.textContent = 'Saved. The app shows it the next time it opens.'; }).catch(function (x) { m.className = 'msg bad'; m.textContent = msgOf(x); });
+    });
+    view.appendChild(el('div', { cls: 'save' }, m, b));
+  }
+
+  function newsForm(n, done) {
+    var t = el('input', { type: 'text', maxlength: 120, dir: 'auto', required: true }), body = el('textarea', { maxlength: 1500, dir: 'auto' }), link = el('input', { type: 'url', placeholder: 'https://', autocapitalize: 'none' });
+    if (n) { t.value = n.title; body.value = n.body; link.value = n.link; }
+    var m = el('div', { cls: 'bad', role: 'alert' }), b = el('button', { cls: 'b small', type: 'submit', text: n ? 'Save' : 'Post announcement' });
+    return el('form', { style: 'display:grid;gap:10px', onsubmit: function (e) {
+      e.preventDefault(); m.textContent = '';
+      var p = { title: t.value, body: body.value, link: link.value };
+      if (n) { p.id = n.id; p.hide = n.hide; }
+      busy(b, call(n ? 'news_edit' : 'news_add', p), function (r) { S.data = r; paint(); }).catch(function (x) { m.textContent = msgOf(x); });
+    } }, el('label', { cls: 'f' }, 'Title', t), el('label', { cls: 'f' }, 'Message', body), el('label', { cls: 'f' }, 'Link (optional)', link), m, el('div', { cls: 'row' }, b, done && el('button', { cls: 'b small plain', type: 'button', text: 'Cancel', onclick: done })));
+  }
+  function newsCard() {
+    var c = el('section', { cls: 'card' }, el('h3', { text: 'Announcements' })), form = el('div', { hidden: true }), add = el('button', { cls: 'b small', type: 'button', text: 'New announcement' });
+    add.addEventListener('click', function () { clear(form); form.hidden = false; add.hidden = true; form.appendChild(newsForm(null, function () { form.hidden = true; add.hidden = false; })); });
+    c.appendChild(add); c.appendChild(form);
+    if (!S.data.news.length) c.appendChild(el('p', { cls: 'hint', text: 'No announcements yet.' }));
+    S.data.news.forEach(function (n) { c.appendChild(newsRow(n)); });
+    return c;
+  }
+  function newsRow(n) {
+    var box = el('div', { cls: 'news' + (n.hide ? ' off' : '') });
+    function show() {
+      clear(box);
+      box.appendChild(el('b', { dir: 'auto', text: n.title }));
+      if (n.body) box.appendChild(el('p', { dir: 'auto', text: n.body }));
+      if (n.link) box.appendChild(el('div', { cls: 'meta', text: n.link }));
+      box.appendChild(el('div', { cls: 'meta', text: when(n.created) + (n.by ? ' · ' + n.by : '') + (n.hide ? ' · hidden from the app' : '') }));
+      box.appendChild(el('div', { cls: 'row' },
+        el('button', { cls: 'b small plain', type: 'button', text: 'Edit', onclick: function () { clear(box); box.appendChild(newsForm(n, show)); } }),
+        el('button', { cls: 'b small plain', type: 'button', text: n.hide ? 'Show' : 'Hide', onclick: function (e) { busy(e.target, call('news_edit', { id: n.id, title: n.title, body: n.body, link: n.link, hide: !n.hide }), function (r) { S.data = r; paint(); }).catch(problem); } }),
+        el('button', { cls: 'b small danger', type: 'button', text: 'Delete', onclick: function () { askDelete(); } })));
+    }
+    function askDelete() {
+      clear(box);
+      box.appendChild(el('b', { text: 'Delete "' + n.title + '"?' }));
+      box.appendChild(el('div', { cls: 'row' },
+        el('button', { cls: 'b small danger', type: 'button', text: 'Yes, delete it', onclick: function (e) { busy(e.target, call('news_delete', { id: n.id }), function (r) { S.data = r; paint(); }).catch(problem); } }),
+        el('button', { cls: 'b small plain', type: 'button', text: 'Keep it', onclick: show })));
+    }
+    show();
+    return box;
+  }
+  function problem(e) { var p = el('div', { cls: 'notice bad', role: 'alert', text: msgOf(e) }); view.insertBefore(p, view.firstChild); window.scrollTo(0, 0); }
+
+  // ---------- admins ----------
+  var U = { list: [], areas: [] };
+  function paintAdmins() {
+    view.appendChild(el('p', { text: 'Loading…' }));
+    call('users_list').then(function (r) { U.list = r.users; U.areas = r.areas; if (S.tab === 'admins') drawAdmins(); }).catch(function (e) { if (e && !e.quiet) problem(e); });
+  }
+  function roleControls(u) {
+    var role = el('select', { 'aria-label': 'Tier' }, el('option', { value: 'local', text: 'Local admin' }), el('option', { value: 'master', text: 'Master admin' })), boxes = {}, row = el('div', { cls: 'row' });
+    role.value = u ? u.role : 'local';
+    U.areas.forEach(function (a) { var c = el('input', { type: 'checkbox' }); c.checked = !!(u && u.areas.indexOf(a.k) > -1); boxes[a.k] = c; row.appendChild(el('label', { cls: 'chk' }, c, a.l)); });
+    function sync() { row.hidden = role.value === 'master'; }
+    role.addEventListener('change', sync); sync();
+    return { role: role, row: row, areas: function () { return Object.keys(boxes).filter(function (k) { return boxes[k].checked; }); } };
+  }
+  function showTemp(u, temp) {
+    var box = el('section', { cls: 'card' }, el('h3', { text: 'Temporary password for ' + u }), el('div', { cls: 'temp', text: temp }), el('p', { cls: 'hint', text: 'Give it to them in person or by phone. It is shown only now. They must choose their own when they sign in.' }), el('button', { cls: 'b small plain', type: 'button', text: 'Done', onclick: function () { box.remove(); } }));
+    view.insertBefore(box, view.firstChild); window.scrollTo(0, 0);
+  }
+  function drawAdmins() {
+    clear(view);
+    var uName = el('input', { type: 'text', autocapitalize: 'none', spellcheck: 'false', maxlength: 40, required: true }), full = el('input', { type: 'text', maxlength: 60 }), rc = roleControls(null), m = el('div', { cls: 'bad', role: 'alert' }), b = el('button', { cls: 'b', type: 'submit', text: 'Add admin' });
+    view.appendChild(el('form', { cls: 'card', onsubmit: function (e) {
+      e.preventDefault(); m.textContent = '';
+      var temp = tempPassword(), name = uName.value.trim().toLowerCase();
+      busy(b, call('user_add', { u: name, name: full.value, role: rc.role.value, areas: rc.areas(), temp: temp }), function (r) { U.list = r.users; drawAdmins(); showTemp(name, temp); }).catch(function (x) { m.textContent = msgOf(x); });
+    } }, el('h3', { text: 'Add an admin' }), el('label', { cls: 'f' }, 'Their name', full), el('label', { cls: 'f' }, 'User name', uName), el('label', { cls: 'f' }, 'Tier', rc.role), rc.row, m, b));
+    U.list.forEach(function (u) { view.appendChild(userCard(u)); });
+  }
+  function userCard(u) {
+    var me = u.u === S.me.u, locked = (u.main && !me) || (u.role === 'master' && !me && !S.me.main);
+    var c = el('section', { cls: 'card' });
+    var title = el('div', {}, el('b', { text: (u.name || u.u) }), el('span', { cls: 'tier' + (u.role === 'master' ? '' : ' local'), text: u.role === 'master' ? (u.main ? 'Main master' : 'Master') : 'Local' }), el('div', { cls: 'meta', text: u.u + (u.active ? '' : ' · turned off') + (u.must_change ? ' · has not chosen a password yet' : '') + (u.role === 'local' ? ' · ' + u.areas.map(areaName).join(', ') : '') }));
+    c.appendChild(title);
+    if (locked) { c.appendChild(el('p', { cls: 'hint', text: 'Only the main master admin can change this account.' })); return c; }
+    if (me) { c.appendChild(el('p', { cls: 'hint', text: 'This is you. Change your password in My account.' })); return c; }
+    var rc = roleControls(u), on = el('input', { type: 'checkbox' }), m = el('div', { cls: 'bad', role: 'alert' }), save = el('button', { cls: 'b small', type: 'button', text: 'Save' }), reset = el('button', { cls: 'b small plain', type: 'button', text: 'New temporary password' });
+    on.checked = u.active;
+    save.addEventListener('click', function () { m.textContent = ''; busy(save, call('user_edit', { u: u.u, role: rc.role.value, areas: rc.areas(), active: on.checked }), function (r) { U.list = r.users; drawAdmins(); }).catch(function (x) { m.textContent = msgOf(x); }); });
+    reset.addEventListener('click', function () { m.textContent = ''; var temp = tempPassword(); busy(reset, call('user_reset', { u: u.u, temp: temp }), function (r) { U.list = r.users; drawAdmins(); showTemp(u.u, temp); }).catch(function (x) { m.textContent = msgOf(x); }); });
+    c.appendChild(el('label', { cls: 'f' }, 'Tier', rc.role)); c.appendChild(rc.row);
+    c.appendChild(el('label', { cls: 'chk' }, on, 'Can sign in'));
+    c.appendChild(m); c.appendChild(el('div', { cls: 'row' }, save, reset));
+    return c;
+  }
+  function areaName(k) { var a = U.areas.filter(function (x) { return x.k === k; })[0]; return a ? a.l : k; }
+
+  function paintLog() {
+    view.appendChild(el('p', { text: 'Loading…' }));
+    call('log_list').then(function (r) {
+      if (S.tab !== 'log') return;
+      clear(view);
+      var c = el('section', { cls: 'card', style: 'gap:0' }, el('h3', { text: 'Who changed what', style: 'margin-bottom:6px' }));
+      if (!r.log.length) c.appendChild(el('p', { cls: 'hint', text: 'Nothing yet.' }));
+      r.log.forEach(function (l) { c.appendChild(el('div', { cls: 'log' }, el('div', {}, el('b', { text: l.who }), ' · ' + l.what), (l.before || l.after) && el('div', { dir: 'auto', text: (l.before ? l.before + '  →  ' : '') + (l.after || '(empty)') }), el('div', { cls: 'meta', text: when(l.at) }))); });
+      view.appendChild(c);
+    }).catch(function (e) { if (e && !e.quiet) problem(e); });
+  }
+  function paintAccount() {
+    var c = el('section', { cls: 'card' }, el('h3', { text: 'My account' }), el('div', { text: (S.me.name || S.me.u) + ' (' + S.me.u + ')' }), el('div', { cls: 'hint', text: S.me.role === 'master' ? 'Master admin: every area, admins and the log.' : 'Local admin: ' + S.me.areas.map(function (a) { return S.data.areas[a]; }).join(', ') + '.' }), el('button', { cls: 'b plain', type: 'button', text: 'Change my password', onclick: function () { showChangePassword(false); } }));
+    view.appendChild(c);
+  }
+
+  // ---------- start ----------
+  S.token = recall(TOKEN_KEY);
+  if (S.token) load();
+  else call('first_open').then(function (r) { if (r.open) showFirstMaster(); else showSignIn(); }).catch(function () { showSignIn('Could not reach the server. Please try again.'); });
+})();
+</script>
+</body>
+</html>
