@@ -341,15 +341,41 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   .tk h1{font-size:34px}.tk h1 small{font-size:24px}.tk .date .d{font-size:66px}.tk .date .m{font-size:23px}
 }
 @media (max-width:440px){.hero .tk img.badge{width:64px;height:64px}.tk .top{gap:6px;padding:10px}.tk .n1{font-size:11px;letter-spacing:.06em}.tk .n2{font-size:14px;letter-spacing:.08em}.tk .tag{font-size:11px;letter-spacing:.18em}}
-.tbanner{position:relative;overflow:hidden;border-radius:12px;color:var(--cream);margin:0 0 12px;background:var(--sky1)}
-.tbanner .bg,.tbanner .grade,.tbanner .fade{position:absolute;inset:0}
-.tbanner .bg{background:var(--bgimg) 70% 40%/cover}
-.tbanner .grade{background:var(--grade);mix-blend-mode:color;opacity:.72}
-.tbanner .fade{background:linear-gradient(90deg,rgba(20,8,24,.15),rgba(20,8,24,.55))}
-.tbanner .in{position:relative;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;align-items:center;padding:14px 16px}
-.tbanner svg{display:block}
-.tbanner .fig{font:400 44px/1 "Bebas Neue",Impact,sans-serif;color:var(--gold);text-shadow:0 2px 4px rgba(0,0,0,.5)}
-.tbanner .lab{font:400 17px/1.15 "Bebas Neue",Impact,sans-serif;letter-spacing:1.5px;text-shadow:0 2px 3px rgba(0,0,0,.5)}
+/* The donation card (Tamer 2026-11-18, picked on the tryout: "expense first"): the header's red, OUR EXPENSES first and
+   biggest, then COVERED SO FAR; the next step and the supporters small; a standing thermometer with bold marks. */
+.gc{position:relative;border-radius:18px;overflow:hidden;margin:0 0 16px;padding:20px 24px;color:#FBF4E4;--f:0%;--y:0%;
+  background:repeating-linear-gradient(115deg,rgba(255,255,255,.045) 0 2px,rgba(0,0,0,0) 2px 7px),linear-gradient(180deg,#96242A 0%,#7A1A20 55%,#5E1217 100%)}
+.gc *{box-sizing:border-box}
+.gc-in{position:relative;display:flex;align-items:center;gap:16px 26px;flex-wrap:wrap}
+.gc .txt{flex:1 1 230px;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:6px;justify-items:start;text-align:left}
+.gc .lab{font:400 17px/1.15 "Bebas Neue",Impact,sans-serif;letter-spacing:1.3px;text-transform:uppercase;color:#F6CB5C}
+.gc .num{font:400 46px/1.05 "Abril Fatface",Georgia,serif;font-variant-numeric:tabular-nums;color:#FBF4E4;text-shadow:0 2px 0 rgba(0,0,0,.25)}
+.gc .g .lab{font-size:24px}.gc .g .num{font-size:68px}
+.gc .v{display:flex;align-items:baseline;gap:4px 12px;flex-wrap:wrap;margin-top:8px;padding-top:10px;border-top:1px solid rgba(246,203,92,.5);width:100%}
+.gc .v .num{font-size:38px}
+.gc .next{font:400 15px/1.15 "Bebas Neue",Impact,sans-serif;letter-spacing:1px;text-transform:uppercase;background:#F6CB5C;color:#3A0D10;border-radius:999px;padding:5px 12px;margin-top:6px}
+.gc .sup{font-size:13px;letter-spacing:1px;color:#FBF4E4;opacity:.8}
+.gc .after{margin-top:6px;background:rgba(0,0,0,.28);border:1px dashed #F6CB5C;border-radius:8px;padding:8px 10px;font:400 15px/1.4 Inter,system-ui,sans-serif;color:#FBF4E4}
+.gc .after b{color:#F6CB5C}
+.gc-btn{position:relative;display:block;text-align:center;font:800 18px/1 Inter,system-ui,sans-serif;border-radius:12px;padding:13px 26px;flex:0 0 auto;align-self:flex-end;margin-left:auto;background:#F6CB5C;color:#0B1530}
+.gc .tube{position:relative;width:108px;height:204px;flex:none}
+.gc .tube .glass{position:absolute;left:8px;top:4px;width:22px;height:170px;border-radius:11px;background:rgba(255,255,255,.93);border:2px solid #3A0D10;overflow:hidden}
+.gc .tube .glass i{position:absolute;left:3px;right:3px;transition:height 1.6s cubic-bezier(.2,.8,.2,1),bottom 1.6s cubic-bezier(.2,.8,.2,1)}
+.gc .tube .fill{bottom:0;height:var(--f);background:linear-gradient(0deg,#A12A22,#D63A2E)}
+.gc .tube .you{bottom:var(--f);height:var(--y);background:#F2C14E}
+.gc .tube .bulb{position:absolute;left:1px;top:166px;width:36px;height:36px;border-radius:50%;background:radial-gradient(circle at 35% 32%,#EF6A5E,#A12A22 70%);border:2px solid #3A0D10}
+.gc .tube .ticks{position:absolute;left:34px;top:6px;height:166px;width:72px;color:#FBF4E4}
+.gc .tube .ticks span{position:absolute;left:0;transform:translateY(50%);font:800 16px/1 Inter,system-ui,sans-serif;white-space:nowrap}
+.gc .tube .ticks span::before{content:"";display:inline-block;width:9px;height:2px;background:currentColor;vertical-align:middle;margin-right:5px}
+@media (max-width:640px){
+  .gc{padding:14px}.gc-in{gap:12px 14px}
+  .gc .lab{font-size:14px;letter-spacing:1px}.gc .g .lab{font-size:20px}.gc .g .num{font-size:42px}.gc .v .num{font-size:28px}
+  .gc .next{font-size:14px}.gc .sup{font-size:12px}
+  .gc-btn{flex:1 1 100%;margin:4px 0 0}
+  .gc .tube{width:100px;height:184px}.gc .tube .glass{height:150px}.gc .tube .bulb{top:146px}.gc .tube .ticks{height:146px}.gc .tube .ticks span{font-size:15px}
+  .gc .txt{flex-basis:150px}
+}
+@media (prefers-reduced-motion:reduce){.gc .tube .glass i{transition:none}}
 /* the example screenshot opens full size (Tamer 2026-09-25: "if pressed gets enlarged") */
 .zoombox{position:fixed;inset:0;z-index:10000;background:rgba(11,21,48,.88);display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}
 .zoombox img{max-width:min(96vw,820px);max-height:88vh;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.5);background:#fff}
@@ -361,7 +387,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 /* Get tickets on a computer: the form, and a narrow column on the right with the sponsors and the gold box (Tamer 2026-09-25) */
 @media (min-width:900px){
   #buy{display:grid;grid-template-columns:minmax(0,1fr) 250px;column-gap:22px;align-items:start}
-  #buy>*{grid-column:1}#buy>.sechead,#buy>.lead,#buy>.topthermo{grid-column:1/-1}#buy>.leftcol{grid-column:2;grid-row:3/span 8;position:sticky;top:16px}#buy.has-top>.leftcol{grid-row:4/span 8}
+  #buy>*{grid-column:1}#buy>.leftcol{grid-column:2;grid-row:1/span 12;position:sticky;top:16px}   /* Tamer 2026-11-18: the whole ticket part on the left, the sponsors up at the top on the right */
   #buy>.leftcol .spcta,#buy>.leftcol .spbox{margin-top:0}#buy>.leftcol .spcta{padding:10px 12px}#buy>.leftcol .spcta b{font-size:17px}#buy>.leftcol .spcta span{font-size:12.5px;line-height:1.4;display:block}
   #buy>.leftcol .spbox{padding:11px}#buy>.leftcol .spbox h4{font-size:17px}#buy>.leftcol .spp{font-size:13px;padding:6px 9px}}
 #buy .fgrid{grid-template-columns:1fr}
@@ -397,18 +423,12 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 @media (max-width:440px){#buy .qrow{grid-template-columns:1fr 150px;gap:10px}#buy .qrow .stepper,#buy .qrow .money{width:150px;height:48px}
   #buy .qrow .stepper button{width:44px}#buy .qrow .stepper input{width:60px}#buy .big{font-size:18px}}
 /* Donate: the goal bar across the top, the form below */
-#give .mid{margin:0 0 16px}#give .mid .tbanner{margin:0}
-#give .mid .tbanner .in{grid-template-columns:auto 1fr;padding:22px 26px;gap:10px 26px}
-#give .mid .tbanner svg{width:250px;height:auto}
-#give .mid .tbanner .fig{font-size:56px}#give .mid .tbanner .lab{font-size:19px}
-@media (max-width:640px){#give .mid .tbanner .in{grid-template-columns:1fr;justify-items:center;text-align:center;padding:18px 12px}#give .mid .tbanner svg{width:220px}}
+#give .mid{margin:0 0 16px}#give .mid .gc{margin:0}
 #give .g-amt .money b{font-size:32px}#give .g-amt .money input{font-size:34px;width:210px;padding:12px 16px}
 #give .qamts{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:18px}
 #give .qamts label{position:relative;justify-content:center;font-size:15px;padding:8px 4px;margin:0;border-radius:10px;cursor:pointer}
 #give .qamts input{position:absolute;opacity:0;pointer-events:none}
 #give .qamts label:has(input:checked){background:#F6CB5C;border-color:#C8843A;color:#0B1530}
-[data-theme=night] .tbanner .grade{display:none}[data-theme=night] .tbanner .bg{background-position:100% 55%}
-.tbanner .after{margin-top:10px;background:rgba(20,8,24,.55);border:1px dashed var(--gold);border-radius:8px;padding:8px 10px;font-size:15px}
 .tiers label{font:800 20px/1 Inter,system-ui,sans-serif;padding:14px 20px}
 /* Get tickets: sponsors under the steps, and the gold "Your business here?" box (Tamer 2026-09-25: design A, no example names) */
 .spbox{background:#fff;border:2px solid #C8843A;border-radius:14px;padding:14px;margin-top:16px;box-shadow:0 6px 18px rgba(11,21,48,.08)}
@@ -426,17 +446,13 @@ a.spp:hover{border-color:#C8843A;background:#FFF8EC}
 #buy .b-tix.flag{border:2px solid #B3261E;box-shadow:0 0 0 4px rgba(179,38,30,.15)}
 /* the donation thermometer (Tamer 2026-10-04 the Donate page's own picture; 2026-11-17 moved across the top of Get tickets) */
 .dspot{display:block;text-decoration:none;color:inherit}
-.dspot .tbanner{margin:0}
+.dspot .gc{margin:0}
 /* the donation goal across the top (Tamer 2026-11-17) */
-.dbtn{position:relative;display:block;margin:4px 14px 14px;text-align:center;background:var(--gold);color:#0B1530;border-radius:10px;padding:10px;font:800 16px Inter,sans-serif}
-.dspot:hover .dbtn{filter:brightness(1.06)}
+.dspot:hover .gc-btn{filter:brightness(1.06)}
 .topthermo:empty{display:none}
+.tload{height:264px;margin:0 0 16px;border-radius:18px;background:linear-gradient(180deg,#96242A,#5E1217);opacity:.55}   /* the goal's place while the engine answers, no copy at hand (Tamer 2026-11-18) */
+@media (max-width:640px){.tload{height:287px}}
 .dspot.top{margin:0 0 16px}
-.dspot.top .tbanner .in{padding:18px 24px;gap:8px 24px}
-.dspot.top .tbanner svg{width:170px}
-.dspot.top .tbanner .fig{font-size:48px}.dspot.top .tbanner .lab{font-size:18px}
-.dspot.top .dbtn{position:absolute;right:22px;bottom:22px;margin:0;padding:12px 22px;font-size:18px}
-@media (max-width:640px){.dspot.top .tbanner .in{grid-template-columns:auto 1fr;padding:12px 14px 8px;gap:4px 12px}.dspot.top .tbanner svg{width:96px;height:auto}.dspot.top .tbanner .fig{font-size:34px}.dspot.top .tbanner .lab{font-size:14px}.dspot.top .dbtn{position:relative;right:auto;bottom:auto;margin:0 14px 12px;padding:10px;font-size:17px}}   /* Tamer 2026-11-17: on a phone the goal stays short, so the ticket box is still near the top */
 .spcta b{display:block;font:400 21px/1 "Bebas Neue",Impact,sans-serif;letter-spacing:1.2px;color:#8E2226;margin-bottom:4px}.spcta span{font-size:13.5px;color:#5B6477}
 /* sponsor cards (Tamer 2026-11-17) */
 .spcard{border:2px solid #7F8FB0;border-radius:14px;background:#fff;box-shadow:0 3px 10px rgba(11,21,48,.12);padding:12px;display:grid;gap:9px;margin:0 0 10px}
@@ -586,7 +602,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
 
   <!-- ============ GET TICKETS ============ -->
   <form class="card hide" id="buy" novalidate>
-    <div class="sechead"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M13 6v2M13 11v2M13 16v2"/></svg></span><div><h2 class="sugh">E-tickets: suggested donation <span class="hl" data-sughead>$20</span> per ticket</h2></div><span id="seats" class="seatpill"></span></div>
+    <div class="sechead"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M13 6v2M13 11v2M13 16v2"/></svg></span><div><h2 class="sugh">E-tickets: suggested donation <span class="hl" data-sughead>$20</span> per ticket</h2></div><span id="seats" class="seatpill" style="visibility:hidden">&nbsp;</span></div>   <!-- its place is kept while the engine answers (Tamer 2026-11-18); the count itself is never shown from a copy -->
     <!-- Tamer 2026-09-25 (layout D): one line instead of the "4 easy steps" box; the e-Transfer steps open under their own pay button -->
     <p class="lead">Choose your number of tickets, add your details, then pay by card or Interac e-Transfer. Your e-tickets arrive by email.</p>
     <div data-topthermo class="topthermo"></div>
@@ -693,7 +709,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.97</span></footer>
+<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.98</span></footer>
 
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3343,6 +3359,7 @@ var qrcode = function() {
 <script>
 (function () {
   var CFG = { tiers: [300, 400, 500], sponsors: [], suggested: 20, etransfer: 'donations@stminacalgary.ca', seatsLeft: 999, open: true, goal: 10000, raised: 0, givers: 0, bookingMax: 6, minTable: '10,25,45,70', orderMax: 20, holdDays: 10, form: '' };
+  var SNAP = {"t":1795033749938,"goal":10000,"raised":2550,"givers":11,"sponsors":[{"business":"Pixel Architecture","logo":"https://drive.google.com/thumbnail?id=1Nv8ZpN0kba2UOvoOdhHpQzeRbqpvLwGP&sz=w600","website":"www.pixelarch.ca","ad":"Architecture firm for healthcare, commercial and residential projects. Proud to support this community. pixelarch.ca"},{"business":"Tarek Younan","logo":"https://drive.google.com/thumbnail?id=1M3Fu3nrCvaq9Xdb9VEksjVRoLZnIeJOq&sz=w600","website":"https://insurelinehamptons.com/","ad":""}]};   // the goal and sponsors as of the last publish (build.py, tools/snapshot.py; Tamer 2026-11-18)
   var PERSON = '<h3>Your details</h3><div class="two"><label class="f">First name<input name="first" autocomplete="given-name"></label><label class="f">Last name<input name="last" autocomplete="family-name"></label></div>' +
     '<label class="f">Email (your tickets and receipt go here)<input name="email" type="email" inputmode="email" autocomplete="email"></label>' +
     '<label class="f">Mobile <span style="font-weight:400">(optional)</span><input name="phone" type="tel" inputmode="tel" autocomplete="tel"></label>' +
@@ -3383,7 +3400,7 @@ var qrcode = function() {
     try { if (/[?&]v=/.test(location.search)) { var u0 = new URL(location.href); u0.searchParams.delete('v'); history.replaceState(null, '', u0.pathname + u0.search + u0.hash); } } catch (x) { }
     if (window.WW_DEMO || !/(^|\.)thewonderworker\.ca$/.test(location.hostname)) return;
     fetch('/version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
-      if (!j || !j.v || j.v === '1.97') return;
+      if (!j || !j.v || j.v === '1.98') return;
       try { var k = 'ww27-updated-' + j.v; if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (x) { return; }
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () { });
@@ -3557,6 +3574,7 @@ var qrcode = function() {
     $('[data-sughead]', buy).textContent = money(CFG.suggested);
     $('[data-payhow]', buy).innerHTML = payHow();
     copyBtn(buy); paySync(buy); tilesSync(); nudgeSync();
+    if (CFG.goal) topThermo();   // the card at the top follows the donation typed here
   }
   // Tamer 2026-11-17: the price nudge (option A, no shake)
   function priceMissing() { return !((Number($('[name=amount]', buy).value) || 0) > 0); }
@@ -3620,43 +3638,71 @@ var qrcode = function() {
 
   // ---- DONATE ----
   var give = $('#give');
-  // Fundraising banner: a graduated thermometer (every 10 %, labels every 25 %), filled to what's given;
-  // the gold dashed part shows where the total will be once this gift is completed.
-  var gidN = 0;
-  function banner(raised, add, goal, givers, footer) {   // footer: an extra line inside the picture (the tickets page adds "Donate")
-    goal = goal || 1; var gid = 'fillg' + (++gidN);
-    var H = 230, top = 12, bot = 196, x = 38, w = 22, span = bot - top;
-    function y(v) { return bot - Math.min(1, Math.max(0, v / goal)) * span; }
-    function k(v) { return v >= 1000 ? '$' + (v / 1000).toFixed(v % 1000 ? 1 : 0) + 'k' : '$' + v; }
-    var ticks = '';
-    for (var i = 0; i <= 10; i++) {
-      var ty = bot - span * i / 10, major = i % 2.5 === 0 || i === 10 || i === 0 || i === 5;
-      ticks += '<line x1="' + (x + w) + '" x2="' + (x + w + (major ? 12 : 6)) + '" y1="' + ty + '" y2="' + ty + '" stroke="#F4EEDC" stroke-width="' + (major ? 2 : 1) + '" opacity=".9"/>';
-      if (i === 0 || i === 5 || i === 10 || i === 2.5 || i % 5 === 0) ticks += '<text x="' + (x + w + 16) + '" y="' + (ty + 4) + '" fill="#F4EEDC" font-family="Bebas Neue,Impact,sans-serif" font-size="13" letter-spacing="1">' + k(Math.round(goal * i / 10)) + '</text>';
-    }
-    [2.5, 7.5].forEach(function (q) { var ty = bot - span * q / 10; ticks += '<line x1="' + (x + w) + '" x2="' + (x + w + 12) + '" y1="' + ty + '" y2="' + ty + '" stroke="#F4EEDC" stroke-width="2"/><text x="' + (x + w + 16) + '" y="' + (ty + 4) + '" fill="#F4EEDC" font-family="Bebas Neue,Impact,sans-serif" font-size="13">' + k(Math.round(goal * q / 10)) + '</text>'; });
-    var yr = y(raised), yn = y(raised + add);
-    var you = add > 0 ? '<g><rect x="-118" y="' + (yn - 13) + '" width="142" height="26" rx="7" fill="#F6CB5C"/><path d="M24 ' + (yn - 7) + 'L34 ' + yn + 'L24 ' + (yn + 7) + 'z" fill="#F6CB5C"/>' +
-      '<text x="-47" y="' + (yn + 5) + '" text-anchor="middle" fill="#0B1530" font-family="Inter,Arial,sans-serif" font-weight="800" font-size="13">you · + ' + money(add) + '</text></g>' : '';
-    var svg = '<svg width="232" height="' + H + '" viewBox="-120 0 232 ' + H + '" role="img" aria-label="' + money(raised) + ' of ' + money(goal) + '">' +
-      '<defs><linearGradient id="' + gid + '" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#A12A22"/><stop offset="1" stop-color="#D63A2E"/></linearGradient></defs>' +
-      '<rect x="' + x + '" y="' + top + '" width="' + w + '" height="' + (span + 10) + '" rx="11" fill="rgba(255,255,255,.88)" stroke="#2A1030" stroke-width="2"/>' +
-      (add > 0 ? '<rect x="' + (x + 4) + '" y="' + yn + '" width="' + (w - 8) + '" height="' + Math.max(0, yr - yn) + '" fill="#F2C14E" stroke="#B8860B" stroke-dasharray="3 2"/>' : '') +
-      '<rect x="' + (x + 4) + '" y="' + yr + '" width="' + (w - 8) + '" height="' + (bot - yr + 12) + '" fill="url(#' + gid + ')"/>' +
-      '<circle cx="' + (x + w / 2) + '" cy="' + (bot + 18) + '" r="17" fill="url(#' + gid + ')" stroke="#2A1030" stroke-width="2"/>' +
-      '<circle cx="' + (x + w / 2 - 5) + '" cy="' + (bot + 13) + '" r="4" fill="rgba(255,255,255,.45)"/>' + ticks + you + '</svg>';
-    var pct = Math.min(100, Math.round(raised / goal * 100));
-    return '<div class="tbanner"><div class="bg"></div><div class="grade"></div><div class="fade"></div><div class="in">' + svg +
-      // goal first, then what's given so far underneath (Tamer 2026-09-24)
-      '<div><div class="lab" style="color:var(--gold)">OUR GOAL · TO COVER THE EXPENSES</div><div class="fig" style="color:var(--cream)">' + money(goal) + '</div>' +
-      '<div class="lab" style="color:var(--gold);margin-top:10px">GIVEN SO FAR · ' + pct + '%</div><div class="fig">' + money(raised) + '</div>' +
-      '<div class="lab" style="opacity:.85;margin-top:4px">' + (givers ? givers + (givers === 1 ? ' SUPPORTER' : ' SUPPORTERS') + ' · THANK YOU' : raised > 0 ? 'THANK YOU TO EVERYONE WHO HAS GIVEN' : 'BE THE FIRST TO GIVE') + '</div>' +
-      (add > 0 ? '<div class="after">This will be the total after you complete your donation: <b style="color:var(--gold)">' + money(raised + add) + '</b> of ' + money(goal) + '.</div>' : '') +
-      '</div></div>' + (footer || '') + '</div>';
+  // The donation card (Tamer 2026-11-18, picked on the tryout: "expense first"). It used to say "Our goal · to cover the
+  // expenses" / "Given so far" on the night picture (2026-09-24); people read $10,000 as a wish, not a bill, so it now
+  // says OUR EXPENSES / COVERED SO FAR on the header's red. The small gold tag is the next step (every $1,000), which
+  // feels closer than the whole amount; with a donation typed it says where that brings the total.
+  function kMark(v) { return v >= 1000 ? '$' + (v / 1000).toFixed(v % 1000 ? 1 : 0) + 'K' : '$' + v; }
+  function nextStep(raised, add, goal) {
+    var total = raised + add, next = Math.min(goal, Math.floor(total / 1000) * 1000 + 1000), go = next - total;
+    return add > 0 ? 'With yours: ' + money(total) : go > 0 ? money(go) + ' to reach ' + money(next) : 'Expenses covered';
   }
+  // footer: an extra piece inside the card (the tickets page adds "Donate"); top: the tickets page, where a typed donation
+  // shows as "With yours" in the tag - the Donate page keeps its own full sentence (Tamer 2026-09-24).
+  function banner(raised, add, goal, givers, footer, top) {
+    goal = goal || 1; raised = Number(raised) || 0; add = Number(add) || 0;
+    var p = Math.max(0, Math.min(100, raised / goal * 100)), y = add > 0 ? Math.min(100 - p, Math.max(2.5, add / goal * 100)) : 0, ticks = '';
+    [0, 25, 50, 75, 100].forEach(function (q) { ticks += '<span style="bottom:' + q + '%">' + kMark(Math.round(goal * q / 100)) + '</span>'; });
+    return '<div class="gc" data-f="' + p + '" data-v="' + raised + '" style="--f:' + p + '%;--y:' + y + '%"><div class="gc-in">' +
+      '<div class="tube" aria-hidden="true"><div class="glass"><i class="fill"></i><i class="you"></i></div><div class="bulb"></div><div class="ticks">' + ticks + '</div></div>' +
+      '<div class="txt">' +
+      '<div class="g"><div class="lab">Our expenses</div><div class="num">' + money(goal) + '</div></div>' +
+      '<div class="v"><div class="lab">Covered so far · ' + Math.round(p) + '%</div><div class="num" data-gcnum>' + money(raised) + '</div></div>' +
+      (add > 0 && !top ? '<div class="after">This will be the total after you complete your donation: <b>' + money(raised + add) + '</b> of ' + money(goal) + '.</div>'
+        : '<div class="next">' + nextStep(raised, top ? add : 0, goal) + '</div>') +
+      '<div class="lab sup">' + (givers ? givers + (givers === 1 ? ' supporter' : ' supporters') + ' · thank you' : raised > 0 ? 'Thank you to everyone who has given' : 'Be the first to give') + '</div>' +
+      '</div>' + (footer || '') + '</div></div>';
+  }
+  // The card comes alive the first time it is seen (Tamer 2026-11-18, "i like 1"): the red rises and the amount counts up.
+  // Once per place. A calm-motion phone gets the finished card. Seen = a plain look at where the card is on the screen,
+  // on scroll and twice a second while a card is still waiting (browsers hold back their own "in view" signal on a page
+  // that is not in front, and a thermometer left empty would be wrong).
+  var gcSeen = [], gcWait = [], gcTick = null;
+  var gcCalm = !!(window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches);
+  function gcRise(box) {
+    gcSeen.push(box);
+    var g = box.querySelector('.gc'); if (!g) return;
+    var f = g.querySelector('[data-gcnum]'), v = Number(g.getAttribute('data-v')) || 0, t0 = Date.now(), dur = 1500;
+    setTimeout(function () { g.style.setProperty('--f', g.getAttribute('data-f') + '%'); }, 40);
+    if (!f || !v) return;
+    var iv = setInterval(function () {
+      var k = Math.min(1, (Date.now() - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      if (!f.isConnected) { clearInterval(iv); return; }
+      f.textContent = money(k < 1 ? Math.round(v * e) : v);
+      if (k >= 1) clearInterval(iv);
+    }, 40);
+  }
+  function gcLook() {
+    var h = window.innerHeight || document.documentElement.clientHeight;
+    gcWait = gcWait.filter(function (box) {
+      var r = box.getBoundingClientRect();
+      if (!(r.height > 0 && r.top < h * 0.85 && r.bottom > h * 0.1)) return true;
+      gcRise(box); return false;
+    });
+    if (!gcWait.length && gcTick) { clearInterval(gcTick); gcTick = null; }
+  }
+  function gcWatch(box) {
+    var g = box && box.querySelector('.gc');
+    if (!g || gcCalm || gcSeen.indexOf(box) >= 0) return;
+    g.style.setProperty('--f', '0%');
+    if (gcWait.indexOf(box) < 0) gcWait.push(box);
+    if (!gcTick) gcTick = setInterval(gcLook, 500);
+    gcLook();
+  }
+  window.addEventListener('scroll', function () { if (gcWait.length) gcLook(); }, { passive: true });
   function thermo() {
     var a = Number($('[name=amount]', give).value) || 0, goal = CFG.goal || 1;
-    $('[data-banner]', give).innerHTML = banner(CFG.raised, a, goal, CFG.givers);
+    $('[data-banner]', give).innerHTML = banner(CFG.raised, a, goal, CFG.givers); gcWatch($('[data-banner]', give));
     var pv = $('[data-preview]', give);
     pv.classList.add('hide'); pv.innerHTML = '';
     $('[data-payhow]', give).innerHTML = payHow(); copyBtn(give); paySync(give);
@@ -3711,12 +3757,15 @@ var qrcode = function() {
     m.textContent = 'Please type an amount over ' + money(sponMost()) + '. For ' + CFG.tiers.map(money).join(', ').replace(/, ([^,]*)$/, ' or $1') + ', tap it above.';
     m.classList.remove('hide'); sponSync();
   });
-  // The donation goal across the top of Get tickets (Tamer 2026-11-17, picked from three on the real page): the Donate page's
-  // own thermometer, full width under the heading, with a Donate button; it replaced the small one under the sponsors.
+  // The donation card across the top of Get tickets (Tamer 2026-11-17, picked from three on the real page): the Donate page's
+  // own card, full width under the heading, with a Donate button. A donation typed in the ticket box shows in it as
+  // "With yours" (Tamer 2026-11-18).
   function topThermo() {
     var el = $('[data-topthermo]'); if (!el) return;
     buy.classList.toggle('has-top', !!CFG.goal);
-    el.innerHTML = CFG.goal ? '<a class="dspot top" href="#" data-todonate>' + banner(CFG.raised, 0, CFG.goal, CFG.givers, '<span class="dbtn">Donate &#8594;</span>') + '</a>' : '';
+    el.innerHTML = CFG.goal ? '<a class="dspot top" href="#" data-todonate>' + banner(CFG.raised, Number($('[name=amount]', buy).value) || 0, CFG.goal, CFG.givers, '<span class="gc-btn">Donate &#8594;</span>', true) + '</a>' : '';
+    var a = $('[data-todonate]', el); if (a) a.onclick = function (e) { e.preventDefault(); show('give'); };
+    gcWatch(el);
   }
   // Pictures of sponsors' websites (Tamer 2026-11-17): taken by hand once a sponsor is approved, saved in github-pages/sponsors/,
   // matched by the website's address. A sponsor not listed here shows the "Visit website" bar without a picture.
@@ -3869,9 +3918,26 @@ var qrcode = function() {
   function tourStart() { }   // Tamer 2026-09-25: no guide opening by itself; the steps are on the page and Help opens the guide
 
   payInit();
+  // Shown at once (Tamer 2026-11-18: "why ... the donation bar and the sponsor load after the rest"): the engine takes
+  // 3-4 seconds to answer, so the goal and the sponsors start from the newest copy at hand - the one built into this page
+  // at publish, or the one this phone saw last time - and the live numbers replace it the moment the engine answers.
+  // With no copy at all, the goal's place is held by a quiet box of the same size so nothing below it moves.
+  var QUICK_KEY = 'ww27-quick';
+  (function () {
+    var mine = null; try { mine = JSON.parse(localStorage.getItem(QUICK_KEY) || 'null'); } catch (x) { }
+    var best = [SNAP, mine].filter(function (q) { return q && q.t && q.goal > 0; }).sort(function (x, y) { return y.t - x.t; })[0];
+    if (best) {
+      CFG.goal = best.goal; CFG.raised = best.raised || 0; CFG.givers = best.givers || 0; CFG.sponsors = best.sponsors || [];
+      sponSpot(); thermo();
+    } else {
+      var el = $('[data-topthermo]'); if (el) { el.innerHTML = '<div class="tload" aria-hidden="true"></div>'; buy.classList.add('has-top'); }
+    }
+  })();
   var CFG_READY = api('config').then(function (c) {
     for (var k in c) CFG[k] = c[k];
+    try { localStorage.setItem(QUICK_KEY, JSON.stringify({ t: Date.now(), goal: CFG.goal, raised: CFG.raised, givers: CFG.givers, sponsors: CFG.sponsors })); } catch (x) { }
     if (c.orderMax) $$('[name=qty],[name=gift_qty]').forEach(function (i) { i.max = c.orderMax; });
+    $('#seats').style.visibility = '';
     $('#seats').textContent = CFG.open ? (CFG.seatsLeft > 0 ? CFG.seatsLeft + ' seats left' : 'Sold out: join the waitlist') : 'Ticket sales are closed.';
     if (CFG.paused) { $('#pick').outerHTML = '<section class="card"><h2>Back soon</h2><p>' + esc(CFG.paused) + '</p></section>'; forms.forEach(function (f) { $('#' + f).classList.add('hide'); }); return; }
     if (cur === 'buy' && (CFG.seatsLeft <= 0 || !CFG.open)) show('wait', true);
