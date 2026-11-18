@@ -240,12 +240,26 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 .hd-ttl .y{font:400 .74em/1 "Bebas Neue",Impact,"Arial Narrow",sans-serif;letter-spacing:.1em}
 .hd-when{display:flex;flex-direction:column;gap:calc(8*var(--zu));margin-top:calc(10*var(--zu));min-width:0}
 .hd-dt{display:flex;align-items:center;gap:calc(9*var(--zu));font-family:"Bebas Neue",Impact,"Arial Narrow",sans-serif;line-height:.95;text-align:left}
-.hd-dt>div:last-child{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:calc(9*var(--zu));min-width:0}
+.hd-dt>div:nth-child(2){display:flex;flex-wrap:wrap;align-items:baseline;column-gap:calc(9*var(--zu));min-width:0}
 .hd-dt .d{font-size:calc(64*var(--zu))}
 .hd-dt .m{font-size:calc(27*var(--zu));letter-spacing:.08em;flex:0 0 100%}
 .hd-dt .w{font-size:calc(23.5*var(--zu));letter-spacing:.1em}   /* "put Saturday beside from 3 to 8", in the same gold */
 .hd-dt .t{font-size:calc(23.5*var(--zu));letter-spacing:.07em}
 .hd-dt .f{display:none}   /* a phone leaves out "followed by Tasbeha" and the address ("remove all the white part and shrink that size") */
+/* "Add to calendar" beside the date on a phone (Tamer 2026-11-18: "pressing the part of the date would add it to apple or google
+   calender and how people will figure it out" -> three pictures -> "2 and deploy"): a solid gold button with the words, in the
+   empty space right of the date. It opens the panel .calsheet with the same two links the ticket e-mail has. */
+.hd-cal{display:flex;flex:none;margin-left:auto;align-items:center;gap:calc(6*var(--zu));border:0;border-radius:999px;padding:calc(7*var(--zu)) calc(12*var(--zu));background:linear-gradient(180deg,#FFE9A6,#F6CB5C 55%,#E9A64B);color:#3A0D10;font:400 calc(15.5*var(--zu))/1 "Bebas Neue",Impact,"Arial Narrow",sans-serif;letter-spacing:.06em;white-space:nowrap;box-shadow:0 2px 5px rgba(40,4,6,.4);cursor:pointer}
+.hd-cal svg{width:calc(17*var(--zu));height:calc(17*var(--zu));flex:none}
+.calsheet{position:fixed;inset:0;z-index:10000;background:rgba(11,21,48,.6);display:flex;align-items:flex-end;justify-content:center}
+.calsheet[hidden]{display:none}
+.calsheet .in{width:100%;max-width:480px;background:#fff;color:#0B1530;border-radius:20px 20px 0 0;padding:18px 18px calc(20px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.3);font-family:Inter,system-ui,sans-serif}
+.calsheet h3{margin:0 0 4px;font:800 20px/1.2 Inter,system-ui,sans-serif;color:#0B1530;text-transform:none;letter-spacing:0}
+.calsheet p{margin:0 0 4px;font:500 14.5px/1.4 Inter,system-ui,sans-serif;color:#5B6477}
+.calsheet a,.calsheet button{display:block;width:100%;box-sizing:border-box;border-radius:14px;padding:15px;margin-top:10px;text-align:center;font:800 17px/1 Inter,system-ui,sans-serif;text-decoration:none;cursor:pointer}
+.calsheet .ap{background:#1A2D57;color:#fff;border:2px solid #1A2D57}
+.calsheet .go{background:#fff;color:#0B1530;border:2px solid #1A2D57}
+.calsheet .no{background:none;border:0;color:#5B6477;font-size:15px;padding:12px}
 /* the theatre's name is the way to the map, and it looks like a button (Tamer 2026-11-18, picked from two pictures: "I like the name
    inside the button"): a rounded gold outline, the pin on the left, a small arrow on the right; the whole row opens Google Maps.
    (An underline under the name came first: "it helped the people to figure out that they can press on it, but it looks weird".) */
@@ -297,7 +311,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   .hd-ttl .y{display:block;font-size:.68em;letter-spacing:.14em;margin-top:calc(5*var(--zu))}
   .hd-when{flex:none;gap:clamp(calc(6*var(--zu)),0.7812vw,calc(9*var(--zu)));margin-top:0}
   .hd-dt{gap:calc(8*var(--zu));line-height:.92;--u:clamp(calc(.7*var(--zu)),0.0907vw,calc(1.04*var(--zu)))}
-  .hd-dt>div:last-child{display:block}
+  .hd-dt>div:nth-child(2){display:block}
   .hd-dt .d{font-size:calc(54*var(--u))}
   .hd-dt .m{font-size:calc(19*var(--u))}
   .hd-dt .w{font-size:calc(15*var(--u));letter-spacing:.16em}
@@ -305,6 +319,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   .hd-dt .f{display:block;font-size:max(9px,calc(10.5*var(--u)));letter-spacing:.14em}
   .hd-vn{display:block;border:0;border-radius:0;padding:0;background:none;--v:clamp(calc(.62*var(--zu)),0.0756vw,calc(.87*var(--zu)))}
   .hd-vn svg,.hd-vn::after{display:none}
+  .hd-cal{display:none}   /* a computer keeps the date as it is; the button is for phones and tablets */
   .hd-vn b{font-size:calc(25*var(--v))}
   .hd-vn span{display:block;font-size:max(11px,calc(15.5*var(--v)));letter-spacing:.1em}
   .hd-pg{grid-area:1/2;justify-self:end;align-self:center;min-width:0;grid-template-columns:max-content minmax(0,1fr);align-items:baseline;margin:0;padding:0 clamp(calc(14*var(--zu)),2.142vw,calc(24*var(--zu))) 0 clamp(calc(14*var(--zu)),2.52vw,calc(30*var(--zu)));background:none;column-gap:calc(14*var(--zu));row-gap:calc(6*var(--zu));--p:clamp(calc(.68*var(--zu)),0.0869vw,calc(1*var(--zu)))}
@@ -573,7 +588,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
     <div class="hd-main">
       <h1 class="hd-ttl">Nativity <span class="c">Celebration</span> <span class="y">2027</span></h1>
       <div class="hd-when">
-        <div class="hd-dt"><div class="d">30</div><div><div class="m">JANUARY 2027</div><div class="w">SATURDAY</div><div class="t">3:00 – 8:00 PM</div><div class="f">FOLLOWED BY TASBEHA</div></div></div>
+        <div class="hd-dt"><div class="d">30</div><div><div class="m">JANUARY 2027</div><div class="w">SATURDAY</div><div class="t">3:00 – 8:00 PM</div><div class="f">FOLLOWED BY TASBEHA</div></div><button type="button" class="hd-cal" data-cal aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3 10h18M12 13v5M9.5 15.5h5"/></svg>ADD TO CALENDAR</button></div>
         <a class="hd-vn" href="https://www.google.com/maps/search/?api=1&amp;query=Bert+Church+LIVE+Theatre%2C+1000+East+Lake+Blvd+NE%2C+Airdrie%2C+AB" target="_blank" rel="noopener" aria-label="Bert Church LIVE Theatre, 1000 East Lake Blvd NE, Airdrie, AB: open the map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6.5-5.6-6.5-10.5a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.3"/></svg><b>BERT CHURCH LIVE THEATRE</b><span>1000 EAST LAKE BLVD NE, AIRDRIE, AB</span></a>   <!-- the place opens the map (Tamer 2026-11-18); on a phone the address itself is not shown -->
       </div>
     </div>
@@ -581,6 +596,23 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
     <div class="hd-pic" role="img" aria-label="The stable on the night of the Nativity"></div>
   </div>
 </header>
+<!-- "Add to calendar" (Tamer 2026-11-18): the same two links as the ticket e-mail (Core.js calendarLink() and nativity-2027.ics, which
+     publish.sh writes from Core.js ics()). An iPhone or a Mac opens the Apple one straight into Calendar. -->
+<div class="calsheet" id="calsheet" hidden role="dialog" aria-modal="true" aria-labelledby="calh">
+  <div class="in"><h3 id="calh">Add to your calendar</h3><p>Nativity Celebration 2027 · Saturday, January 30, 2027 · 3:00 – 8:00 PM · Bert Church LIVE Theatre</p>
+    <a class="ap" href="https://thewonderworker.ca/nativity-2027.ics">Apple Calendar</a>
+    <a class="go" href="https://calendar.google.com/calendar/render?action=TEMPLATE&amp;text=Nativity%20Celebration%202027&amp;dates=20270130T220000Z/20270131T030000Z&amp;location=Bert%20Church%20LIVE%20Theatre%2C%201000%20East%20Lake%20Blvd%20NE%2C%20Airdrie%2C%20AB&amp;details=Wonder%20Worker%20Art%20Team%20%C2%B7%20St.%20Mina%20Coptic%20Orthodox%20Church" target="_blank" rel="noopener">Google Calendar</a>
+    <button type="button" class="no" data-calx>Cancel</button></div>
+</div>
+<script>(function () {
+  var s = document.getElementById('calsheet'); if (!s) return;
+  document.addEventListener('click', function (e) {
+    var t = e.target; if (!t.closest) return;
+    if (t.closest('[data-cal]')) { s.hidden = false; return; }
+    if (!s.hidden && (t === s || t.closest('[data-calx]') || t.closest('.calsheet a'))) s.hidden = true;   // outside, Cancel, or after a choice
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') s.hidden = true; });
+})();</script>
 
 <main>
   <nav id="pick" class="navbar" aria-label="Choose a page">
@@ -699,7 +731,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.102</span></footer>
+<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.103</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3391,7 +3423,7 @@ var qrcode = function() {
 <script>
 (function () {
   var CFG = { tiers: [300, 400, 500], sponsors: [], suggested: 20, etransfer: 'donations@stminacalgary.ca', seatsLeft: 999, open: true, goal: 10000, raised: 0, givers: 0, bookingMax: 6, minTable: '10,25,45,70', orderMax: 20, holdDays: 10, form: '' };
-  var SNAP = {"t":1795044756235,"goal":10000,"raised":2550,"givers":11,"sponsors":[{"business":"Pixel Architecture","logo":"https://drive.google.com/thumbnail?id=1Nv8ZpN0kba2UOvoOdhHpQzeRbqpvLwGP&sz=w600","website":"www.pixelarch.ca","ad":"Architecture firm for healthcare, commercial and residential projects. Proud to support this community. pixelarch.ca"},{"business":"Tarek Younan","logo":"https://drive.google.com/thumbnail?id=1M3Fu3nrCvaq9Xdb9VEksjVRoLZnIeJOq&sz=w600","website":"https://insurelinehamptons.com/","ad":""}]};   // the goal and sponsors as of the last publish (build.py, tools/snapshot.py; Tamer 2026-11-18)
+  var SNAP = {"t":1795045313717,"goal":10000,"raised":2550,"givers":11,"sponsors":[{"business":"Pixel Architecture","logo":"https://drive.google.com/thumbnail?id=1Nv8ZpN0kba2UOvoOdhHpQzeRbqpvLwGP&sz=w600","website":"www.pixelarch.ca","ad":"Architecture firm for healthcare, commercial and residential projects. Proud to support this community. pixelarch.ca"},{"business":"Tarek Younan","logo":"https://drive.google.com/thumbnail?id=1M3Fu3nrCvaq9Xdb9VEksjVRoLZnIeJOq&sz=w600","website":"https://insurelinehamptons.com/","ad":""}]};   // the goal and sponsors as of the last publish (build.py, tools/snapshot.py; Tamer 2026-11-18)
   var PERSON = '<h3>Your details</h3><div class="two"><label class="f">First name<input name="first" autocomplete="given-name"></label><label class="f">Last name<input name="last" autocomplete="family-name"></label></div>' +
     '<label class="f">Email (your tickets and receipt go here)<input name="email" type="email" inputmode="email" autocomplete="email"></label>' +
     '<label class="f">Mobile <span style="font-weight:400">(optional)</span><input name="phone" type="tel" inputmode="tel" autocomplete="tel"></label>' +
@@ -3432,7 +3464,7 @@ var qrcode = function() {
     try { if (/[?&]v=/.test(location.search)) { var u0 = new URL(location.href); u0.searchParams.delete('v'); history.replaceState(null, '', u0.pathname + u0.search + u0.hash); } } catch (x) { }
     if (window.WW_DEMO || !/(^|\.)thewonderworker\.ca$/.test(location.hostname)) return;
     fetch('/version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
-      if (!j || !j.v || j.v === '1.102') return;
+      if (!j || !j.v || j.v === '1.103') return;
       try { var k = 'ww27-updated-' + j.v; if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (x) { return; }
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () { });
