@@ -361,7 +361,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 /* Get tickets on a computer: the form, and a narrow column on the right with the sponsors and the gold box (Tamer 2026-09-25) */
 @media (min-width:900px){
   #buy{display:grid;grid-template-columns:minmax(0,1fr) 250px;column-gap:22px;align-items:start}
-  #buy>*{grid-column:1}#buy>.sechead,#buy>.lead{grid-column:1/-1}#buy>.leftcol{grid-column:2;grid-row:3/span 8;position:sticky;top:16px}
+  #buy>*{grid-column:1}#buy>.sechead,#buy>.lead,#buy>.topthermo{grid-column:1/-1}#buy>.leftcol{grid-column:2;grid-row:3/span 8;position:sticky;top:16px}#buy.has-top>.leftcol{grid-row:4/span 8}
   #buy>.leftcol .spcta,#buy>.leftcol .spbox{margin-top:0}#buy>.leftcol .spcta{padding:10px 12px}#buy>.leftcol .spcta b{font-size:17px}#buy>.leftcol .spcta span{font-size:12.5px;line-height:1.4;display:block}
   #buy>.leftcol .spbox{padding:11px}#buy>.leftcol .spbox h4{font-size:17px}#buy>.leftcol .spp{font-size:13px;padding:6px 9px}}
 #buy .fgrid{grid-template-columns:1fr}
@@ -420,16 +420,38 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 a.spp:hover{border-color:#C8843A;background:#FFF8EC}
 .spcta{display:block;width:100%;margin-top:16px;text-align:left;border:2px dashed #C8843A;background:linear-gradient(135deg,#FFF6E3,#FFFDF7);border-radius:14px;padding:12px 14px;cursor:pointer;color:#0B1530;font:inherit;animation:spglow 2.6s ease-in-out infinite}
 .spbox .spcta{margin-top:4px}
-/* the donation thermometer under the sponsors (Tamer 2026-10-04): the Donate page's own picture, side by side, in a narrow column */
-.dspot{display:block;text-decoration:none;color:inherit;margin-top:12px}
+/* Tamer 2026-11-17 (tryout, option A without the shake): buyers skipped the price and filled everything else; going on to the
+   details or pressing Submit without a donation brings them back up to the price, with a red line and a clear note */
+.pricenudge{margin:0 0 12px;border:1.5px solid #B3261E;background:#FDECEA;color:#B3261E;border-radius:12px;padding:10px 12px;font:700 15px/1.4 Inter,system-ui,sans-serif}
+#buy .b-tix.flag{border:2px solid #B3261E;box-shadow:0 0 0 4px rgba(179,38,30,.15)}
+/* the donation thermometer (Tamer 2026-10-04 the Donate page's own picture; 2026-11-17 moved across the top of Get tickets) */
+.dspot{display:block;text-decoration:none;color:inherit}
 .dspot .tbanner{margin:0}
-.dspot .tbanner svg{width:96px;height:auto}
-.dspot .tbanner .in{padding:12px 14px;gap:4px 10px}
-.dspot .tbanner .fig{font-size:27px}
-.dspot .tbanner .lab{font-size:12.5px;letter-spacing:1px}
-.dspot .godo{position:relative;display:block;margin:0 16px 13px;font:800 14px Inter,sans-serif;color:var(--gold)}
-.dspot:hover .godo{text-decoration:underline}
+/* the donation goal across the top (Tamer 2026-11-17) */
+.dbtn{position:relative;display:block;margin:4px 14px 14px;text-align:center;background:var(--gold);color:#0B1530;border-radius:10px;padding:10px;font:800 16px Inter,sans-serif}
+.dspot:hover .dbtn{filter:brightness(1.06)}
+.topthermo:empty{display:none}
+.dspot.top{margin:0 0 16px}
+.dspot.top .tbanner .in{padding:18px 24px;gap:8px 24px}
+.dspot.top .tbanner svg{width:170px}
+.dspot.top .tbanner .fig{font-size:48px}.dspot.top .tbanner .lab{font-size:18px}
+.dspot.top .dbtn{position:absolute;right:22px;bottom:22px;margin:0;padding:12px 22px;font-size:18px}
+@media (max-width:640px){.dspot.top .tbanner .in{grid-template-columns:auto 1fr;padding:12px 14px 8px;gap:4px 12px}.dspot.top .tbanner svg{width:96px;height:auto}.dspot.top .tbanner .fig{font-size:34px}.dspot.top .tbanner .lab{font-size:14px}.dspot.top .dbtn{position:relative;right:auto;bottom:auto;margin:0 14px 12px;padding:10px;font-size:17px}}   /* Tamer 2026-11-17: on a phone the goal stays short, so the ticket box is still near the top */
 .spcta b{display:block;font:400 21px/1 "Bebas Neue",Impact,sans-serif;letter-spacing:1.2px;color:#8E2226;margin-bottom:4px}.spcta span{font-size:13.5px;color:#5B6477}
+/* sponsor cards (Tamer 2026-11-17) */
+.spcard{border:2px solid #7F8FB0;border-radius:14px;background:#fff;box-shadow:0 3px 10px rgba(11,21,48,.12);padding:12px;display:grid;gap:9px;margin:0 0 10px}
+.spcard .splogo{width:100%;height:66px;object-fit:contain;background:#fff}
+.spname{font:800 15.5px/1.25 Inter,system-ui,sans-serif;text-align:center;color:#0B1530}
+.spshot{position:relative;display:block;border-radius:10px;overflow:hidden;border:1px solid #E3E8F0;text-decoration:none}
+.spshot img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;object-position:top}
+.spshot span,.spvisit{display:block;text-align:center;background:rgba(26,45,87,.94);color:#F6CB5C;font:800 13.5px/1.2 Inter,system-ui,sans-serif;padding:9px 10px}
+.spshot span{position:absolute;left:0;right:0;bottom:0}
+.spvisit{border-radius:10px;text-decoration:none;padding:11px 10px}
+.spshot:hover span,.spvisit:hover{background:#0B1530}
+.sppill{display:grid;gap:3px;justify-items:center;width:100%;border:1.5px dashed #C8843A;background:#FFF6E3;border-radius:16px;padding:10px 12px;cursor:pointer;color:#0B1530;font:700 12.5px/1.25 Inter,system-ui,sans-serif}
+.sppill b{font:800 17px/1.25 Inter,system-ui,sans-serif;color:#B06A1F}
+.sppill:hover b{text-decoration:underline}
+@media (max-width:899px){.spot-phone .spbox{max-width:420px;margin-left:auto;margin-right:auto}.spcard .splogo{height:80px}}
 @keyframes spglow{0%,100%{box-shadow:0 0 0 0 rgba(200,132,58,0)}50%{box-shadow:0 0 0 6px rgba(200,132,58,.18)}}
 @media (prefers-reduced-motion:reduce){.spcta{animation:none}}
 @media (min-width:900px){.spot-phone{display:none}}   /* computer: under the steps; phone: under the Submit button */
@@ -567,11 +589,13 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
     <div class="sechead"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M13 6v2M13 11v2M13 16v2"/></svg></span><div><h2 class="sugh">E-tickets: suggested donation <span class="hl" data-sughead>$20</span> per ticket</h2></div><span id="seats" class="seatpill"></span></div>
     <!-- Tamer 2026-09-25 (layout D): one line instead of the "4 easy steps" box; the e-Transfer steps open under their own pay button -->
     <p class="lead">Choose your number of tickets, add your details, then pay by card or Interac e-Transfer. Your e-tickets arrive by email.</p>
+    <div data-topthermo class="topthermo"></div>
     <div class="leftcol">
     <div data-sponspot></div>   <!-- the sponsors, and the gold "Your business here?" box -->
     </div>
     <div class="fgrid">
       <div class="panel2 b-tix">
+        <div class="pricenudge" data-pricenudge role="alert" hidden></div>
         <div class="row qrow"><span class="big">Tickets</span><div class="stepper"><button type="button" data-d="-1" aria-label="fewer">−</button><input name="qty" id="b-qty" type="number" min="1" max="20" value="1" inputmode="numeric" aria-label="Tickets"><button type="button" data-d="1" aria-label="more">+</button></div></div>
         <div class="row qrow don"><span class="big">Your donation</span><div class="money"><b>$</b><input name="amount" id="b-amount" type="text" inputmode="decimal" autocomplete="off" data-money aria-label="Donation amount"></div></div>
         <!-- quick amounts (Tamer 2026-09-29, chosen on the tryout page: option C, names set 2): three tiles, Suggested / Supporter /
@@ -669,7 +693,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.96</span></footer>
+<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.97</span></footer>
 
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3359,7 +3383,7 @@ var qrcode = function() {
     try { if (/[?&]v=/.test(location.search)) { var u0 = new URL(location.href); u0.searchParams.delete('v'); history.replaceState(null, '', u0.pathname + u0.search + u0.hash); } } catch (x) { }
     if (window.WW_DEMO || !/(^|\.)thewonderworker\.ca$/.test(location.hostname)) return;
     fetch('/version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
-      if (!j || !j.v || j.v === '1.96') return;
+      if (!j || !j.v || j.v === '1.97') return;
       try { var k = 'ww27-updated-' + j.v; if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (x) { return; }
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () { });
@@ -3532,8 +3556,22 @@ var qrcode = function() {
     $('[data-giftnote]', buy).textContent = money(CFG.suggested) + ' donation · optional';
     $('[data-sughead]', buy).textContent = money(CFG.suggested);
     $('[data-payhow]', buy).innerHTML = payHow();
-    copyBtn(buy); paySync(buy); tilesSync();
+    copyBtn(buy); paySync(buy); tilesSync(); nudgeSync();
   }
+  // Tamer 2026-11-17: the price nudge (option A, no shake)
+  function priceMissing() { return !((Number($('[name=amount]', buy).value) || 0) > 0); }
+  function nudgePrice() {
+    var n = $('[data-pricenudge]', buy), box = $('.b-tix', buy);
+    if (document.activeElement && buy.contains(document.activeElement)) document.activeElement.blur();
+    n.className = 'pricenudge'; n.textContent = 'Please choose your donation first. Tap one of the three boxes, or type your own amount.'; n.hidden = false;
+    box.classList.add('flag');
+    box.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+  }
+  function nudgeSync() {
+    var n = $('[data-pricenudge]', buy); if (!n || n.hidden || priceMissing()) return;
+    $('.b-tix', buy).classList.remove('flag'); n.hidden = true;   // Tamer 2026-11-17: no "thank you" line, it just goes away
+  }
+  $('.b-who', buy).addEventListener('focusin', function () { if (priceMissing()) nudgePrice(); });
   // Quick-amount tiles (Tamer 2026-09-29, option C / names set 2): Suggested = the suggested amount, Supporter $30, Patron $50 per
   // ticket; a gifted seat stays a $20 donation on top. The tile whose total equals the box is the selected one, so typing any
   // other amount simply un-selects — the box is the only truth, nothing new goes to the engine.
@@ -3566,7 +3604,7 @@ var qrcode = function() {
   buy.addEventListener('change', function (e) { if (e.target.name === 'method') buySync(); });
   submit(buy, 'order', function (p) {
     if (!(Number(p.qty) >= 1)) throw new Error('Please choose how many tickets you need.');
-    if (!(Number(p.amount) > 0)) throw new Error('Please enter your donation. We suggest ' + money(((Number(p.qty) || 0) + (Number(p.gift_qty) || 0)) * CFG.suggested) + ' or more.');
+    if (!(Number(p.amount) > 0)) { nudgePrice(); throw new Error('Please enter your donation. We suggest ' + money(((Number(p.qty) || 0) + (Number(p.gift_qty) || 0)) * CFG.suggested) + ' or more.'); }
     need(p, ['first', 'last', 'email']);
     payFields(p);
     p.proof = proofOf(buyProof, p.method); return p;
@@ -3673,23 +3711,39 @@ var qrcode = function() {
     m.textContent = 'Please type an amount over ' + money(sponMost()) + '. For ' + CFG.tiers.map(money).join(', ').replace(/, ([^,]*)$/, ' or $1') + ', tap it above.';
     m.classList.remove('hide'); sponSync();
   });
-  function donateSpot() {
-    if (!CFG.goal) return '';
-    return '<a class="dspot" href="#" data-todonate>' +
-      banner(CFG.raised, 0, CFG.goal, CFG.givers, '<span class="godo">Donate &#8594;</span>') + '</a>';
+  // The donation goal across the top of Get tickets (Tamer 2026-11-17, picked from three on the real page): the Donate page's
+  // own thermometer, full width under the heading, with a Donate button; it replaced the small one under the sponsors.
+  function topThermo() {
+    var el = $('[data-topthermo]'); if (!el) return;
+    buy.classList.toggle('has-top', !!CFG.goal);
+    el.innerHTML = CFG.goal ? '<a class="dspot top" href="#" data-todonate>' + banner(CFG.raised, 0, CFG.goal, CFG.givers, '<span class="dbtn">Donate &#8594;</span>') + '</a>' : '';
+  }
+  // Pictures of sponsors' websites (Tamer 2026-11-17): taken by hand once a sponsor is approved, saved in github-pages/sponsors/,
+  // matched by the website's address. A sponsor not listed here shows the "Visit website" bar without a picture.
+  var SPONSOR_SHOTS = { 'pixelarch.ca': 'pixelarch.jpg', 'insurelinehamptons.com': 'insurelinehamptons.jpg' };
+  function sponsorShot(url) {
+    var host = String(url).replace(/^https?:\/\//, '').replace(/^www\./, '').split(/[\/?#]/)[0].toLowerCase();
+    return SPONSOR_SHOTS[host] ? (window.WW_SHOTS || 'https://thewonderworker.ca/sponsors/') + SPONSOR_SHOTS[host] : '';
   }
   // Get tickets: approved sponsors (name, logo, link to their website) and the gold box; before any sponsor, only the gold box
   function sponSpot() {
     var list = CFG.sponsors || [];
     var cta = '<button type="button" class="spcta" data-tospon><b>★ For sponsors: your business here?</b><span>Your business name, logo and a link to your website will show on this page, and on the day of the celebration.</span></button>';
+    // Tamer 2026-11-17 (tryout): each sponsor in its own outlined card - logo, name, and a picture of their website with a
+    // blue "Visit website" bar; no picture yet → the same bar on its own. The gold box shrinks to two lines.
+    var pill = '<button type="button" class="sppill" data-tospon><span>★ Your business here?</span><b>Become a sponsor →</b></button>';
     var html = !list.length ? cta : '<div class="spbox"><h4>Thank you to our sponsors</h4>' + list.map(function (x) {
-      var img = x.logo ? '<img src="' + esc(x.logo) + '" alt="">' : '';
-      return x.website ? '<a class="spp" href="' + esc(/^https?:/.test(x.website) ? x.website : 'https://' + x.website) + '" target="_blank" rel="noopener">' + img + '<span>' + esc(x.business) + '</span><i>↗</i></a>'
-        : '<div class="spp">' + img + '<span>' + esc(x.business) + '</span></div>';
-    }).join('') + cta + '</div>';
+      var url = x.website ? (/^https?:/.test(x.website) ? x.website : 'https://' + x.website) : '';
+      var shot = url && sponsorShot(url);
+      var logo = x.logo ? '<img class="splogo" referrerpolicy="no-referrer" src="' + esc(x.logo) + '" alt="' + esc(x.business) + ' logo">' : '';
+      var go = !url ? '' : shot
+        ? '<a class="spshot" href="' + esc(url) + '" target="_blank" rel="noopener"><img src="' + esc(shot) + '" alt="' + esc(x.business) + ' website" loading="lazy"><span>Visit website ↗</span></a>'
+        : '<a class="spvisit" href="' + esc(url) + '" target="_blank" rel="noopener">Visit website ↗</a>';
+      return '<div class="spcard">' + logo + '<div class="spname">' + esc(x.business) + '</div>' + go + '</div>';
+    }).join('') + pill + '</div>';
     // Tamer 2026-10-04: "the donation banner in the front page below the sponsor ... the same pic" - the very same
     // thermometer the Donate tab draws, sized for this column, the whole thing a link to Donate.
-    html += donateSpot();
+    topThermo();
     // two places: under the steps on a computer, under the Submit button on a phone (Tamer 2026-09-25)
     $$('[data-sponspot]').forEach(function (el) { el.innerHTML = html; });
     $$('[data-tospon]').forEach(function (b) { b.onclick = function () { show('spon'); }; });

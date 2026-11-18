@@ -2514,6 +2514,9 @@ var Core = (function () {
     gift_seats: '',        // seats set aside for gifts (Tamer only; empty = none set aside)
     etransfer_email: 'donations@stminacalgary.ca', team_email: 'artteam@stminacalgary.ca',
     error_email: 'drtamerwagdy@yahoo.com',   // system errors go to Tamer personally; payment checks go to team_email
+    proof_days: 90,        // an e-Transfer screenshot is deleted this many days after its order (Tamer 2026-11-10: "do it after 90 days"); 0 = keep
+    details_wipe: 'Y',     // on 31 March the year before's records go to the treasurer by e-mail, THEN the buyers' details are removed here; 'N' = keep them
+    treasurer_email: '',   // who gets that e-mail; empty = the people the treasurer's sheet is shared with. Nobody to send to = nothing is removed
     sales_close: '2027-01-29T23:59:00-07:00', receipt_ticket_value: 0, sponsor_ad_value: 50, void_numbers: '',   // sponsor_ad_value: CRA split receipt for named sponsors (Tamer 2026-09-25)
     owner_key: '', from_name: 'St. Mina Coptic Orthodox Church · Wonder Worker Art Team',
     paused: ''            // any text here pauses the public page and shows that text (dashboard → Settings)
@@ -2963,6 +2966,8 @@ var Core = (function () {
     // paid card orders whose buyer never came back and whose Square notice was lost settle here, at most once every 3 minutes,
     // whenever anyone opens the page (Apps Script returns 200 to Square even on a failure, so Square never retries) (2026-09-26)
     try { if (env.throttle && env.throttle('card-sweep', 180)) sweepCards(env); } catch (x) { env.log('card sweep: ' + (x.stack || x)); }
+    // keeping less: old screenshots and last year's details go, at most once every 6 hours, whenever anyone opens the page (2026-11-10)
+    try { if (env.throttle && env.throttle('tidy', 21600)) tidy(env, s); } catch (x) { env.log('tidy: ' + (x.stack || x)); }
     return { suggested: num(s.suggested), etransfer: s.etransfer_email, seatsLeft: Math.max(0, seatsLeft(env, s)), open: salesOpen(env, s), event: EVENT, form: formToken(env),
       bookingMax: num(s.booking_max), minTable: String(s.min_table), orderMax: num(s.order_max), holdDays: num(s.hold_days),
       tiers: String(s.sponsor_tiers).split(/[\s,]+/).map(Number).filter(Boolean), sponsors: sponsorsShown(env),
@@ -3343,6 +3348,72 @@ var Core = (function () {
     return { ok: true };
   }
   // ask Square about every card payment still waiting (last 3 days; at most 6 per run so a page load stays quick)
+  // ---------- keeping less (Tamer 2026-11-10: "do it with the short wording") ----------
+  // The privacy page says a screenshot "is used only to confirm your payment", and that details are deleted once the year's
+  // receipts are issued. These three rules make that true without anyone having to remember:
+  //   1. an e-Transfer screenshot is deleted proof_days (90) after its order: by then the treasurer has matched it in the bank;
+  //   2. a screenshot that could not be read is deleted the moment the team has checked the order by eye (ownerClear);
+  //   3. on 31 March the records of the year before are e-mailed to the treasurer as one file, and only after that e-mail
+  //      has gone are the buyers' details removed here (Tamer 2026-11-10: "on march 31, send all data as an email to the
+  //      treasurer and delete from our record"). The amount, the ticket numbers, the order code and the reference stay,
+  //      so the totals and the "same receipt twice" guard still work. No treasurer address, or the e-mail fails: nothing is removed.
+  // A file is only ever taken from the screenshots folder (env.deleteProof checks), and it goes to the Drive bin, not at once.
+  function dropProof(env, e) {
+    if (!e.proof) return false;
+    try { if (env.deleteProof) env.deleteProof(e.proof); } catch (x) { env.log('screenshot not deleted (' + e.order_code + '): ' + x); return false; }
+    env.update('entries', e.id, { proof: '' });
+    return true;
+  }
+  var UNREAD = /could not be read|Nothing could be read/i;
+  // The treasurer's copy before the yearly removal: one e-mail, one file, every record that is about to lose its details.
+  // True once it has gone (now or on an earlier run); false = do not remove anything yet.
+  var TREASURER_FILE = ['created', 'kind', 'status', 'first', 'last', 'email', 'phone', 'address', 'city', 'postal', 'business', 'tickets', 'gift_numbers', 'qty', 'gift_qty',
+    'amount', 'card_fee', 'method', 'order_code', 'interac_ref', 'card_ref', 'receipt', 'note', 'flags', 'recorded_by'];
+  function csvCell(v) { v = String(v == null ? '' : v); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+  function treasurerCopy(env, s, due, before) {
+    var mark = 'treasurer-copy-' + new Date(before).toISOString().slice(0, 10);
+    if (env.marked && env.marked(mark)) return true;
+    if (!env.marked || !env.once || !env.textBlob) return false;
+    var to = str(s.treasurer_email).trim();
+    if (!to) { try { to = ((env.treasurerViewers && env.treasurerViewers()) || []).join(','); } catch (x) { to = ''; } }
+    if (!to) { env.log('yearly records: no treasurer address (Settings: treasurer_email), so nothing was removed'); return false; }
+    var year = new Date(before - 864e5).getUTCFullYear();
+    var csv = '\ufeff' + [TREASURER_FILE.join(',')].concat(due.map(function (e) { return TREASURER_FILE.map(function (c) { return csvCell(e[c]); }).join(','); })).join('\r\n') + '\r\n';
+    try {
+      env.mail({ to: to, subject: 'Wonder Worker Art Team · ' + year + ' ticket, donation and sponsor records (' + due.length + ')',
+        html: shell('<p>Attached are the ' + due.length + ' ticket, donation and sponsorship records up to the end of ' + year + ', for the church\'s receipt records.</p>' +
+          '<p>The names, e-mails, phone numbers and addresses in them are now being removed from the Art Team\'s own records, so this file is the only full copy. Please keep it with the church\'s records.</p>'),
+        attachments: [env.textBlob('wonder-worker-records-' + year + '.csv', 'text/csv', csv)], name: s.from_name });
+    } catch (x) { env.log('yearly records: the e-mail to the treasurer failed, so nothing was removed: ' + x); return false; }
+    env.once(mark);
+    return true;
+  }
+  function tidy(env, s) {
+    var now = env.now(), days = num(s.proof_days), done = { proofs: 0, details: 0 };
+    return env.lock(function () {
+      var rows = env.list('entries').slice();
+      if (days > 0) {
+        var old = now.getTime() - days * 864e5;
+        rows.filter(function (e) { return e.proof && e.method === 'e-Transfer' && Date.parse(e.created) < old; }).slice(0, 20)
+          .forEach(function (e) { if (dropProof(env, e)) done.proofs++; });
+      }
+      if (String(s.details_wipe).toUpperCase() !== 'N') {
+        // Calgary's date: on or after 31 March, everything from before this year; before it, everything from before last year
+        var cal = new Date(now.getTime() - 7 * 3600e3), y = cal.getUTCFullYear(), past = cal.getUTCMonth() > 2 || (cal.getUTCMonth() === 2 && cal.getUTCDate() >= 31);
+        var before = Date.UTC(past ? y : y - 1, 0, 1) + 7 * 3600e3;
+        var due = rows.filter(function (e) { return Date.parse(e.created) < before && e.email !== '-'; });
+        if (due.length && !treasurerCopy(env, s, due, before)) due = [];
+        due.slice(0, 60)
+          .forEach(function (e) {
+            if (e.proof) try { if (env.deleteProof) env.deleteProof(e.proof); } catch (x) { env.log('file not deleted (' + e.order_code + '): ' + x); }
+            env.update('entries', e.id, { first: '-', last: '-', email: '-', phone: '', address: '', city: '', postal: '', proof: '', token: '' });
+            done.details++;
+          });
+      }
+      return done;
+    });
+  }
+
   function sweepCards(env) {
     var since = env.now().getTime() - 3 * 864e5, n = 0;
     env.list('entries').filter(function (x) { return x.status === 'awaiting_card' && Date.parse(x.created) > since; }).slice(0, 6)
@@ -3573,7 +3644,11 @@ var Core = (function () {
   function ownerClear(env, p) {
     requireOwner(env, p.key);
     var e = env.list('entries').filter(function (x) { return x.id === p.id; })[0]; if (!e) throw err('Not found.');
-    env.update('entries', e.id, { status: 'ok', flags: '', note: str(e.note + (e.flags ? ' | checked OK: ' + e.flags : '')) }); return { ok: true };
+    var was = str(e.flags);
+    env.update('entries', e.id, { status: 'ok', flags: '', note: str(e.note + (was ? ' | checked OK: ' + was : '')) });
+    // checked by eye, so an unreadable screenshot has done its work: it is the one kind that could still show something private
+    if (e.proof && UNREAD.test(was)) dropProof(env, e);
+    return { ok: true };
   }
   // Tamer 2026-09-29 ("clear all the test and just show actual buys"): removes a row for good. Only rows that
   // never counted — voided tests and card starts nobody finished. Paid, flagged and refunded rows can never be
