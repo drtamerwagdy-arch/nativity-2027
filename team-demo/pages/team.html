@@ -168,6 +168,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 .help-fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:900;display:flex;align-items:center;gap:8px;border:0;border-radius:999px;background:var(--tab-gold);color:#fff;font:700 15px/1 Inter,system-ui,sans-serif;padding:11px 16px 11px 11px;box-shadow:0 6px 18px rgba(0,0,0,.25);cursor:pointer}
 .help-fab span{width:24px;height:24px;border-radius:50%;background:#fff;color:var(--tab-gold);display:grid;place-items:center;font-weight:800}
 .help-fab.hide{display:none}
+.help-fab.away{opacity:0;pointer-events:none}   /* put away while a box is being typed in on a phone (tour.js, 2026-11-18) */
 @media (prefers-reduced-motion:reduce){.tour-tip.on{transition:none}}
 
 /* team page counter (Tamer 2026-09-24): sold, printed, e-tickets, gifted (not in total), seats left; warning when low */
@@ -240,7 +241,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   </section>
   <section class="card hide" id="bad"><h2>Link not valid</h2><p>This link is no longer valid. Please ask Tamer for a new one.</p></section>
 </main>
-<footer><span>Wonder Worker Art Team · team page</span><span class="ver">v1.99</span></footer>
+<footer><span>Wonder Worker Art Team · team page</span><span class="ver">v1.100</span></footer>
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
    Online demo (window.WW_DEMO): the engine runs in the page around this one; ask it by message. */
@@ -307,6 +308,48 @@ function HelpButton(onClick) {
   b.type = 'button'; b.className = 'help-fab'; b.setAttribute('aria-label', 'Help: quick guide');
   b.innerHTML = '<span aria-hidden="true">?</span> Help'; b.onclick = onClick;
   document.body.appendChild(b);
+  // iPhone (Tamer 2026-11-18, a picture from his phone: "Help button on the phone is not sticking to the bottom"): after the keyboard
+  // closes, iOS leaves a button that is fixed to the bottom where the keyboard's top was, until the page is scrolled. So, on touch
+  // screens only: while a box is being typed in the button is put away; when the keyboard has gone the page is moved by one pixel and
+  // back (two frames), which makes the phone place the button again; and if it still sits too high it is moved down by the difference.
+  // The first real scroll takes that correction off, because scrolling is what puts the phone right.
+  if (window.matchMedia && window.matchMedia('(pointer:coarse)').matches) {
+    var timer = 0, armed = false, mine = 0, moved = 0;   // mine: until then a scroll is the page's own one-pixel move; moved: his last own scroll
+    var typing = function () {
+      var a = document.activeElement;
+      return !!a && (a.tagName === 'TEXTAREA' || a.isContentEditable || a.tagName === 'INPUT' && !/^(checkbox|radio|button|submit|reset|file|range|color|image|hidden)$/i.test(a.type || ''));
+    };
+    var to = function (y) { try { window.scrollTo({ top: y, left: window.pageXOffset, behavior: 'instant' }); } catch (e) { window.scrollTo(window.pageXOffset, y); } };
+    var nudge = function () {
+      var y = window.pageYOffset, max = document.documentElement.scrollHeight - window.innerHeight;
+      if (max <= 0 || Date.now() - moved < 400) return;   // he is scrolling himself: that already puts the phone right, and his scroll must not be stopped
+      mine = Date.now() + 200;
+      to(y + (y < max ? 1 : -1));
+      setTimeout(function () { to(y); }, 40);
+    };
+    var place = function () {
+      b.style.transform = '';
+      if (b.classList.contains('hide')) return;
+      var vv = window.visualViewport, h = Math.max(window.innerHeight || 0, vv ? Math.round(vv.height * (vv.scale || 1)) : 0);
+      var down = h - (parseFloat(getComputedStyle(b).bottom) || 16) - b.getBoundingClientRect().bottom;
+      if (down > 24) b.style.transform = 'translateY(' + Math.round(down) + 'px)';
+    };
+    var settle = function () {
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        if (typing()) return;
+        nudge();
+        timer = setTimeout(function () {
+          b.classList.remove('away'); place(); armed = false;
+          timer = setTimeout(function () { if (!typing()) { nudge(); setTimeout(place, 120); } }, 500);   // once more, for a slow keyboard
+        }, 120);
+      }, 350);
+    };
+    document.addEventListener('focusin', function () { if (typing()) { clearTimeout(timer); armed = true; b.classList.add('away'); } });
+    document.addEventListener('focusout', settle);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', function () { if (armed && !typing()) settle(); });
+    window.addEventListener('scroll', function () { if (Date.now() > mine) { moved = Date.now(); if (b.style.transform) b.style.transform = ''; } }, { passive: true });
+  }
   return b;
 }
 function QuickGuide(steps, o) {
