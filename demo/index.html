@@ -2514,7 +2514,7 @@ var Core = (function () {
     proof_days: 90,        // an e-Transfer screenshot is deleted this many days after its order (Tamer 2026-11-10: "do it after 90 days"); 0 = keep
     details_wipe: 'Y',     // on 31 March the year before's records go to the treasurer by e-mail, THEN the buyers' details are removed here; 'N' = keep them
     treasurer_email: '',   // who gets that e-mail; empty = the people the treasurer's sheet is shared with. Nobody to send to = nothing is removed
-    sales_close: '2027-01-29T23:59:00-07:00', receipt_ticket_value: 0, sponsor_ad_value: 50, void_numbers: '',   // sponsor_ad_value: CRA split receipt for named sponsors (Tamer 2026-09-25)
+    sales_close: '2027-01-29T23:59:00-06:00', receipt_ticket_value: 0, sponsor_ad_value: 50, void_numbers: '',   // sponsor_ad_value: CRA split receipt for named sponsors (Tamer 2026-09-25)
     owner_key: '', from_name: 'St. Mina Coptic Orthodox Church · Wonder Worker Art Team',
     paused: ''            // any text here pauses the public page and shows that text (dashboard → Settings)
   };
@@ -2524,7 +2524,7 @@ var Core = (function () {
     when: 'Saturday, January 30, 2027 · 3:00 – 8:00 PM, followed by Tasbeha',
     where: 'Bert Church LIVE Theatre, 1000 East Lake Blvd NE, Airdrie, AB',
     map: 'https://maps.apple.com/?q=Bert+Church+LIVE+Theatre',   // the final-tickets-email.html link (Tamer 2026-09-29); opens a web map everywhere
-    start: '20270130T220000Z', end: '20270131T030000Z'
+    start: '20270130T210000Z', end: '20270131T020000Z'   // 3:00 - 8:00 PM in Calgary. Alberta's clock is UTC-6 ALL YEAR since 1 Nov 2026; these were an hour late (22:00Z, the old winter time) and calendars showed 4 - 9 PM (Tamer 2026-11-18, a picture from his iPhone)
   };
 
   var ENTRY_COLS = ['id', 'created', 'kind', 'status', 'first', 'last', 'email', 'phone', 'tickets', 'gift_numbers', 'qty', 'gift_qty',
@@ -2765,12 +2765,13 @@ var Core = (function () {
   function ics() {
     // Alberta times spelled out (Tamer 2026-09-26): the plain UTC form (EVENT.start/end, the same instant) made
     // Gmail's event card read 4:00 PM; with VTIMEZONE every reader shows 3:00–8:00 PM.
+    // 2026-11-18: that 4:00 PM was the real fault showing. Alberta stopped changing its clock on 1 Nov 2026 and stays at UTC-6, so the
+    // rule below (which said -7 in winter) made an iPhone file the event at 4 - 9 PM. The rule now says what the clock does: -6, always.
     return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Wonder Worker Art Team//Nativity 2027//EN',
       'BEGIN:VTIMEZONE', 'TZID:America/Edmonton',
-      'BEGIN:STANDARD', 'DTSTART:19701101T020000', 'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU', 'TZOFFSETFROM:-0600', 'TZOFFSETTO:-0700', 'TZNAME:MST', 'END:STANDARD',
-      'BEGIN:DAYLIGHT', 'DTSTART:19700308T020000', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU', 'TZOFFSETFROM:-0700', 'TZOFFSETTO:-0600', 'TZNAME:MDT', 'END:DAYLIGHT', 'END:VTIMEZONE',
+      'BEGIN:STANDARD', 'DTSTART:20261101T020000', 'TZOFFSETFROM:-0600', 'TZOFFSETTO:-0600', 'TZNAME:CST', 'END:STANDARD', 'END:VTIMEZONE',
       'BEGIN:VEVENT',
-      'UID:nativity-2027@stminacalgary.ca', 'DTSTAMP:20260924T000000Z',
+      'UID:nativity-2027@stminacalgary.ca', 'DTSTAMP:20261118T000000Z', 'SEQUENCE:1',
       'DTSTART;TZID=America/Edmonton:20270130T150000', 'DTEND;TZID=America/Edmonton:20270130T200000',
       'SUMMARY:' + EVENT.title, 'LOCATION:' + EVENT.where.replace(/,/g, '\\,'),
       'DESCRIPTION:Followed by Tasbeha. Bring your tickets (phone or printed).', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
@@ -2908,7 +2909,7 @@ var Core = (function () {
     var pass = { formatVersion: 1, passTypeIdentifier: str(s.wallet_pass_type), teamIdentifier: str(s.wallet_team), serialNumber: 'WW27-T' + n,
       organizationName: 'St. Mina Coptic Orthodox Church', description: 'Nativity Celebration 2027 · ticket No. ' + n, logoText: 'Nativity 2027',
       foregroundColor: 'rgb(255, 243, 214)', backgroundColor: 'rgb(142, 34, 38)', labelColor: 'rgb(246, 203, 92)',   // red like the ticket (Tamer 2026-09-29)
-      relevantDate: '2027-01-30T15:00:00-07:00', expirationDate: '2027-01-31T06:00:00-07:00',
+      relevantDate: '2027-01-30T15:00:00-06:00', expirationDate: '2027-01-31T06:00:00-06:00',
       barcodes: [{ format: 'PKBarcodeFormatQR', message: 'WW27-T' + n, messageEncoding: 'iso-8859-1', altText: 'No. ' + n }],
       eventTicket: {
         primaryFields: [{ key: 'event', label: 'SATURDAY, JANUARY 30, 2027', value: 'Nativity Celebration' }],
