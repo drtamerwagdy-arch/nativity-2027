@@ -207,7 +207,7 @@ input.s{font:15px Arial,sans-serif;padding:7px 10px;border:1px solid var(--line)
   <section id="t-settings" class="hide"></section>
   <section class="card hide" id="bad"><h2>Link not valid</h2></section>
 </main>
-<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.112</span></footer>
+<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.113</span></footer>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -351,7 +351,7 @@ function copyBtn(root) {
           var id = m.id + '|' + i;
           return '<tr><td>Servants' + (v.name ? ' · <b>' + esc(v.name) + '</b>' + (v.entries ? '' : ' <span class="hint">(nothing recorded yet)</span>') : ' <span class="hint">(no servant yet)</span>') + (m.active ? '' : ' <span class="pill void">link off</span>') + '</td><td>' + money(v.cash) + '</td><td>' +
             (v.name ? '<input class="s" type="number" placeholder="$" data-ho="' + id + '" style="width:90px"> <button class="link" data-hob="' + id + '" data-seller="' + esc(v.name) + '">Record</button>' +
-              ' · ' + (v.blocked ? '<span class="pill void">rejected</span> <button class="link" data-blk="0" data-seller="' + esc(v.name) + '">Allow again</button>' : '<button class="link" data-blk="1" data-seller="' + esc(v.name) + '">Reject this name</button>') : '') + '</td></tr>';
+              ' · ' + (v.blocked ? '<span class="pill void">inactive</span> <button class="link" data-blk="0" data-seller="' + esc(v.name) + '">Make active again</button>' : '<button class="link" data-blk="1" data-seller="' + esc(v.name) + '">Make inactive</button>') : '') + '</td></tr>';
         }).join('');
         return '<tr><td>' + esc(m.name) + (m.active ? '' : ' <span class="pill void">link off</span>') + '</td><td>' + money(m.cash) + '</td><td><input class="s" type="number" placeholder="$" data-ho="' + m.id + '" style="width:90px"> <button class="link" data-hob="' + m.id + '">Record</button></td></tr>';
       }).join('') +
@@ -365,7 +365,7 @@ function copyBtn(root) {
     $$('[data-anoff]').forEach(function (b) { b.onclick = function () { act(b, 'owner_announce_off', { id: b.getAttribute('data-anoff') }, { ask: 'Take this announcement down?', done: 'Announcement taken down.' }); }; });
     // reject a servant's name on the servants' link, or allow it again (Tamer 2026-11-21)
     $$('[data-blk]').forEach(function (b) { b.onclick = function () { var on = b.getAttribute('data-blk') === '1', who = b.getAttribute('data-seller');
-      act(b, 'owner_seller_block', { seller: who, on: on }, { ask: on ? 'Reject the name "' + who + '"?\n\nIt will not be able to record sales on the servants\' link. What it sold before stays as it is.' : 'Allow "' + who + '" to record sales again?', done: on ? 'Name rejected.' : 'Name allowed again.' }); }; });
+      act(b, 'owner_seller_block', { seller: who, on: on }, { ask: on ? 'Make "' + who + '" inactive?\n\nThey will not be able to record anything new on the servants\' link. Everything they recorded before stays as it is.' : 'Make "' + who + '" active again?', done: on ? 'Servant is now inactive.' : 'Servant is active again.' }); }; });
     $$('[data-hob]').forEach(function (b) { b.onclick = function () { var id = b.getAttribute('data-hob'), a = $('[data-ho="' + id + '"]').value, who = b.getAttribute('data-seller') || ''; act(b, 'owner_handover', { member_id: id.split('|')[0], amount: a, seller: who }, { ask: 'Record ' + money(a) + ' handed over to you by ' + (who || 'this team member') + '?', done: 'Hand-over recorded.' }); }; });
     var cgId = newId();
     $('#cg-go').onclick = function () {
@@ -482,15 +482,15 @@ function copyBtn(root) {
           '<td style="white-space:nowrap"><button class="link" data-re="' + m.id + '">New link</button>' + (m.active ? ' · <button class="link" data-off="' + m.id + '">Turn off</button>' : '') + '</td></tr>' +
           // every servant who has typed their name on the servants' link, also before a first sale (Tamer 2026-11-21)
           (m.sellers ? (m.sellers.length ? m.sellers.map(function (v) {
-            return '<tr><td style="padding-left:26px">↳ <b>' + esc(v.name) + '</b>' + (v.blocked ? ' <span class="pill void">rejected</span>' : '') + '</td><td>' + money(v.cash) + '</td><td class="hint">' + (v.entries ? v.entries + (v.entries > 1 ? ' entries' : ' entry') : 'no entry yet') + ' · uses the servants\' link</td>' +
-              '<td style="white-space:nowrap">' + (v.blocked ? '<button class="link" data-blk="0" data-seller="' + esc(v.name) + '">Allow again</button>' : '<button class="link" data-blk="1" data-seller="' + esc(v.name) + '">Reject this name</button>') +
+            return '<tr><td style="padding-left:26px">↳ <b>' + esc(v.name) + '</b>' + (v.blocked ? ' <span class="pill void">inactive</span>' : '') + '</td><td>' + money(v.cash) + '</td><td class="hint">' + (v.entries ? v.entries + (v.entries > 1 ? ' entries' : ' entry') : 'no entry yet') + ' · uses the servants\' link</td>' +
+              '<td style="white-space:nowrap">' + (v.blocked ? '<button class="link" data-blk="0" data-seller="' + esc(v.name) + '">Make active again</button>' : '<button class="link" data-blk="1" data-seller="' + esc(v.name) + '">Make inactive</button>') +
                 (v.entries ? '' : ' · <button class="link" data-rmv="' + esc(v.name) + '">Remove from the list</button>') + '</td></tr>';
           }).join('') : '<tr><td style="padding-left:26px" class="hint" colspan="4">↳ No servant has typed their name on this link yet.</td></tr>') : '');
       }).join('') + '</table></div>';
     // a name that has recorded nothing can be taken off the list (a try, a misspelling); the servant can type it again
     $$('#t-team [data-rmv]').forEach(function (b) { b.onclick = function () { var who = b.getAttribute('data-rmv'); act(b, 'owner_seller_remove', { seller: who }, { ask: 'Take "' + who + '" off the list? They can type their name again later.', done: 'Name removed from the list.' }); }; });
     $$('#t-team [data-blk]').forEach(function (b) { b.onclick = function () { var on = b.getAttribute('data-blk') === '1', who = b.getAttribute('data-seller');
-      act(b, 'owner_seller_block', { seller: who, on: on }, { ask: on ? 'Reject the name "' + who + '"? It will not be able to record sales on the servants\' link. What it recorded before stays as it is.' : 'Allow "' + who + '" to record sales again?', done: on ? 'Name rejected.' : 'Name allowed again.' }); }; });
+      act(b, 'owner_seller_block', { seller: who, on: on }, { ask: on ? 'Make "' + who + '" inactive? They will not be able to record anything new on the servants\' link. Everything they recorded before stays as it is.' : 'Make "' + who + '" active again?', done: on ? 'Servant is now inactive.' : 'Servant is active again.' }); }; });
     copyBtn($('#t-team'));
     $('[data-add]').onclick = function () { run('owner_member_add', { name: $('[data-name]').value }).then(function (r) { reload().then(function () { $('[data-newlink]').innerHTML = '<div class="okbox">Link created. Copy it from the list and send it to them by message.</div>'; }); }, function (x) { alert(x.message); }); };
     if ($('[data-rejadd]')) $('[data-rejadd]').onclick = function () { var b = this, who = $('[data-rejname]').value.trim(); if (!who) return; act(b, 'owner_seller_block', { seller: who, on: true }, { ask: 'Reject the name "' + who + '"? It will not be able to record sales on the servants\' link.', done: 'Name rejected.' }); };

@@ -491,7 +491,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   </section>
   <section class="card hide" id="bad"><h2>Link not valid</h2><p>This link is no longer valid. Please ask Tamer for a new one.</p></section>
 </main>
-<footer><span>Wonder Worker Art Team · servant page</span><span class="ver">v1.112</span></footer>
+<footer><span>Wonder Worker Art Team · servant page</span><span class="ver">v1.113</span></footer>
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
    Online demo (window.WW_DEMO): the engine runs in the page around this one; ask it by message. */
@@ -3210,7 +3210,7 @@ var qrcode = function() {
     $('#held').innerHTML = '<small>CASH YOU HOLD</small>' + money(me.cash);
     // a name Tamer has rejected cannot record sales (2026-11-21)
     var no = $('#rejected'); if (!no) { no = document.createElement('div'); no.id = 'rejected'; no.className = 'badbox'; no.style.marginTop = '10px'; $('#who').appendChild(no); }
-    no.classList.toggle('hide', !me.blocked); no.innerHTML = '<b>This name cannot record sales.</b> Please speak to Tamer.';
+    no.classList.toggle('hide', !me.blocked); no.innerHTML = '<b>This name is not active, so it cannot record anything.</b> Please speak to Tamer.';
     BLOCKED = !!me.blocked;
     // printed tickets: greyed for now ("we might never print tickets"); the door check: hidden ("drop at the door, scan the tickets")
     var pp = $('[data-printedpill]', sale), pin = $('input', pp);
