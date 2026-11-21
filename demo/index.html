@@ -3565,6 +3565,52 @@ var Core = (function () {
       list.push(name); env.setSetting('servant_names', list.join('|'));
     });
   }
+  // ---------- one servant, one name (Tamer 2026-11-21: "build merge, page ask too") ----------
+  // Capitals and spaces never made a second person; a different spelling did ("Mena" / "Mina", a missing letter, the two names the
+  // other way round). Two guards: when a name is saved that is very close to one already known, the page asks "Are you …?" before
+  // adding it; and the dashboard can merge two names, which moves every entry and hand-over under the one that is kept.
+  function lettersOnly(v) { return sellerKey(v).replace(/[^a-z؀-ۿ ]/g, '').replace(/\s+/g, ' ').trim(); }
+  function editDistance(a, b) {
+    var prev = [], i, j; for (j = 0; j <= b.length; j++) prev[j] = j;
+    for (i = 1; i <= a.length; i++) {
+      var cur = [i];
+      for (j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1));
+      prev = cur;
+    }
+    return prev[b.length];
+  }
+  function similarName(env, m, name) {   // a known servant whose name is very close to this one ('' when there is none)
+    var k = sellerKey(name), lk = lettersOnly(name), turned = lk.split(' ').sort().join(' '), near = lk.length >= 8 ? 2 : 1, hit = '';
+    sellersOf(env, m).some(function (v) {
+      var ln = lettersOnly(v.name); if (!ln || sellerKey(v.name) === k) return false;
+      if (ln === lk || ln.split(' ').sort().join(' ') === turned || editDistance(ln, lk) <= near) { hit = v.name; return true; }
+      return false;
+    });
+    return hit;
+  }
+  function ownerSellerMerge(env, p) {
+    requireOwner(env, p.key);
+    var fk = sellerKey(p.from), tk = sellerKey(p.to);
+    if (fk.length < 2 || tk.length < 2) throw err('Choose the two names.');
+    if (fk === tk) throw err('These two are already the same name.');
+    return env.lock(function () {
+      var s = settings(env), shared = env.list('members').filter(function (m) { return m.name === SHARED_LINK; }), ids = shared.map(function (m) { return m.id; }), all = {};
+      shared.forEach(function (m) { sellersOf(env, m).forEach(function (v) { all[sellerKey(v.name)] = v.name; }); });
+      if (!all[fk]) throw err('"' + sellerName(p.from) + '" is not on the list.');
+      if (!all[tk]) throw err('"' + sellerName(p.to) + '" is not on the list.');
+      var keep = all[tk], n = 0, h = 0;
+      env.list('entries').forEach(function (e) {
+        if (ids.indexOf(e.member_id) < 0 || sellerKey(e.recorded_by) !== fk) return;
+        env.update('entries', e.id, { recorded_by: keep, note: str(str(e.note) + ' · first recorded as ' + sellerName(e.recorded_by)) }); n++;
+      });
+      env.list('handovers').forEach(function (x) { if (ids.indexOf(x.member_id) > -1 && sellerKey(x.name) === fk) { env.update('handovers', x.id, { name: keep }); h++; } });
+      var list = servantList(s).filter(function (nm) { return sellerKey(nm) !== fk; });
+      if (!list.some(function (nm) { return sellerKey(nm) === tk; })) list.push(keep);
+      env.setSetting('servant_names', list.join('|'));
+      env.setSetting('blocked_sellers', blockedSellers(s).filter(function (x) { return x !== fk; }).join('|'));   // the old spelling is gone, and its mark with it
+      return { ok: true, into: keep, entries: n, handovers: h };
+    });
+  }
   // Tamer's dashboard key (or Claude's): take a name off the list, e.g. a try or a misspelling. Only a name that has recorded
   // nothing: once a servant has a sale, a donation or a hand-over, their name stays with those rows. They can type it again later.
   function ownerSellerRemove(env, p) {
@@ -3606,9 +3652,13 @@ var Core = (function () {
     // (Tamer took it off) is told so, and its page closes until the name is saved again (his try, 21 Nov: "i removed my name from
     // the list and it gone but when i reloaded the servant page still showing my name and the whole page").
     var known = !shared || !seller || servantKnown(s, seller) || mine.length > 0, barred = shared && !!seller && sellerBlocked(s, seller);
-    if (!known && !barred && p.save === true) { try { servantAdd(env, seller); known = servantKnown(settings(env), seller); } catch (x) { env.log('servant not added to the list: ' + x.message); } }
+    var near = '', typed = seller;
+    if (!known && !barred && p.save === true) {
+      near = p.sure === true ? '' : similarName(env, m, seller);   // "Are you …?": asked once, before a new name is added
+      if (!near) { try { servantAdd(env, seller); known = servantKnown(settings(env), seller); } catch (x) { env.log('servant not added to the list: ' + x.message); } }
+    }
     if (!known && !barred) { seller = ''; mine = []; }
-    return { name: m.name, seller: seller, unknown: !known && !barred, blocked: barred, cash: shared ? (seller ? cashHeld(env, m, seller) : 0) : cashHeld(env, m), seatsLeft: Math.max(0, seatsLeft(env, s)), suggested: num(s.suggested), capacity: num(s.capacity), sold: soldFor(env, s), sms: smsOn(env, s),
+    return { name: m.name, seller: seller, unknown: !known && !barred, similar: near, typed: near ? typed : '', blocked: barred, cash: shared ? (seller ? cashHeld(env, m, seller) : 0) : cashHeld(env, m), seatsLeft: Math.max(0, seatsLeft(env, s)), suggested: num(s.suggested), capacity: num(s.capacity), sold: soldFor(env, s), sms: smsOn(env, s),
       shared: m.name === SHARED_LINK, printed: String(s.printed_on).toUpperCase() === 'Y', door: String(s.door_on).toUpperCase() === 'Y',
       tiers: String(s.sponsor_tiers).split(/[\s,]+/).map(Number).filter(Boolean),   // the sponsor amounts, for the servant page's Sponsor form
       sales: mine.slice(0, 50).map(function (e) { return { id: e.id, created: e.created, name: e.first + ' ' + e.last, email: e.email, tickets: e.tickets, kind: e.kind, business: e.business, amount: num(e.amount), method: e.method, status: e.status,
@@ -4176,7 +4226,7 @@ var Core = (function () {
     announcements: announcements, owner_announce: ownerAnnounce, owner_announce_off: ownerAnnounceOff,
     owner_void: ownerVoid, owner_clear: ownerClear, owner_delete: ownerDelete, owner_sponsor_show: ownerSponsorShow, owner_handover: ownerHandover, owner_setting: ownerSetting, owner_resend: ownerResend, owner_test_email: ownerTestEmail,
     owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); }, owner_sheet_key: ownerSheetKey, sheet_rows: sheetRows, sheet_backup: sheetBackup, owner_test_pdf: ownerTestPdf, owner_test_pass: ownerTestPass,
-    card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck, owner_free_tickets: ownerFreeTickets, owner_cash_gift: ownerCashGift, ticket_picture: ticketPicture, tickets_list: ticketsList, ticket_pass: ticketPass, tickets_passes: ticketsPasses, owner_test_text: ownerTestText, owner_seller_block: ownerSellerBlock, owner_seller_remove: ownerSellerRemove, claude_join: claudeJoin, owner_claude_allow: ownerClaudeAllow, owner_claude_off: ownerClaudeOff, owner_set_tickets: ownerSetTickets, owner_refunded: ownerRefunded };
+    card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck, owner_free_tickets: ownerFreeTickets, owner_cash_gift: ownerCashGift, ticket_picture: ticketPicture, tickets_list: ticketsList, ticket_pass: ticketPass, tickets_passes: ticketsPasses, owner_test_text: ownerTestText, owner_seller_block: ownerSellerBlock, owner_seller_remove: ownerSellerRemove, owner_seller_merge: ownerSellerMerge, claude_join: claudeJoin, owner_claude_allow: ownerClaudeAllow, owner_claude_off: ownerClaudeOff, owner_set_tickets: ownerSetTickets, owner_refunded: ownerRefunded };
 
   // ---------- Claude's own key for the dashboard (Tamer 2026-11-21: "need you to have control when need it") ----------
   // The same idea as the book store's (14 Nov 2026). The key is made on Tamer's Mac and lives only in its Keychain: never in a file,

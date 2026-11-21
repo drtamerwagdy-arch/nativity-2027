@@ -461,7 +461,9 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   <!-- the servants' link: each servant types their own name once (Tamer 2026-11-21); it goes on every sale, and the dashboard shows who holds what -->
   <section class="card hide" id="who"><h3 style="margin:0 0 10px">Your own name <span style="font-weight:400;text-transform:none;letter-spacing:0">(the servant. Type it once: this phone remembers it)</span></h3>
     <div class="two"><label class="f" style="margin:0">First name<input id="seller1" autocomplete="given-name"></label><label class="f" style="margin:0">Last name<input id="seller2" autocomplete="family-name"></label></div>
-    <button type="button" class="btn" id="sellergo" style="margin-top:12px;min-height:46px;padding:11px 18px">Save my name</button></section>
+    <button type="button" class="btn" id="sellergo" style="margin-top:12px;min-height:46px;padding:11px 18px">Save my name</button>
+    <!-- a name very close to one already on the list: ask before making a second person (Tamer 2026-11-21: "page ask too") -->
+    <div class="warn hide" id="areyou" style="margin:12px 0 0"></div></section>
   <div class="tabs3 hide" id="kinds"><button type="button" data-kind="sale" class="on">Tickets</button><button type="button" data-kind="gift">Donation</button><button type="button" data-kind="spon">Sponsor</button></div>
   <form class="card hide" id="sale" novalidate>
     <h2>New sale</h2>
@@ -476,7 +478,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
     <div class="money"><b>$</b><input name="amount" type="text" inputmode="decimal" autocomplete="off" data-money><span class="hint" data-suggest></span></div>
     <div class="pills"><label><input type="radio" name="method" value="Cash" checked> Cash</label><label><input type="radio" name="method" value="Cheque"> Cheque</label><label><input type="radio" name="method" value="e-Transfer"> e-Transfer</label></div>
     <!-- e-Transfer shown to the servant (Tamer 2026-11-21): the buyer sends it from their own bank, the servant adds the screenshot -->
-    <div class="hide" data-etbox><p class="hint" style="margin:4px 0 10px">The buyer sends the e-Transfer to <b>donations@stminacalgary.ca</b> with <b>Wonder Worker</b> in the message. Then add the screenshot of the confirmation here (a photo of the buyer's screen works too).</p><div data-proof></div></div>
+    <div class="hide" data-etbox><p class="hint" style="margin:4px 0 10px">The buyer sends the e-Transfer to <b>donations@stminacalgary.ca</b> with <b>Wonder Worker</b> in the message. Then <b>upload the screenshot</b> of the confirmation, or <b>open the camera</b> and take a photo of their screen.</p><div data-proof></div></div>
     <div class="err" data-err></div>
     <button class="btn wide" type="submit">Submit purchase</button>
     <div data-result></div>
@@ -529,7 +531,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   </section>
   <section class="card hide" id="bad"><h2>Link not valid</h2><p>This link is no longer valid. Please ask Tamer for a new one.</p></section>
 </main>
-<footer><span>Wonder Worker Art Team · servant page</span><span class="ver">v1.115</span></footer>
+<footer><span>Wonder Worker Art Team · servant page</span><span class="ver">v1.116</span></footer>
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
    Online demo (window.WW_DEMO): the engine runs in the page around this one; ask it by message. */
@@ -852,8 +854,13 @@ function ProofBox(root, opts) {
       (opts.example ? '<figure class="shotex"><figcaption class="cap">Like this</figcaption><img src="' + opts.example + '" alt="Example: an Interac e-Transfer confirmation showing who was paid, the amount, the date and the message"></figure>' : '') +
       '<div><span class="cap">Yours</span><label class="upsq" data-upload>' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>' +
-        '<b>Upload your screenshot</b><small>Tap here to choose it from your photos</small>' +
+        (opts.camera ? '<b>Upload a screenshot</b><small>Tap here to choose it from the photos</small>' : '<b>Upload your screenshot</b><small>Tap here to choose it from your photos</small>') +
         '<input type="file" accept="image/*" class="hide" data-file><canvas class="hide" data-shot></canvas><span class="chg hide" data-chg>Screenshot added · tap to change</span></label></div>' +
+      // the servant page (Tamer 2026-11-21): a second square that opens the camera, to take a photo of the other person's screen
+      (opts.camera ? '<div><label class="upsq" data-camsq>' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.5-2.5h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.6"/></svg>' +
+        '<b>Open the camera</b><small>Take a photo of their screen</small>' +
+        '<input type="file" accept="image/*" capture="environment" class="hide" data-camfile></label></div>' : '') +
     '</div>' +
     '<p class="privnote">It only needs who you paid (<b>donations@stminacalgary.ca</b>), the amount and "Wonder Worker". Anything private, such as account or card numbers or your balance, is blacked out automatically before it is sent. ' +
       'Once submitted, ' + (opts.done || 'you will get your tickets by email.') + '</p>' +
@@ -913,6 +920,7 @@ function ProofBox(root, opts) {
     });
   }
   file.onchange = function () { if (file.files[0]) load(file.files[0]); file.value = ''; };
+  var cam = $('[data-camfile]', root); if (cam) cam.onchange = function () { if (cam.files[0]) load(cam.files[0]); cam.value = ''; };
 
   self.value = function () { return state.dataUrl ? { dataUrl: state.dataUrl, text: state.text, scrambled: state.scrambled } : null; };
   self.busy = function () { return busy; };
@@ -3236,7 +3244,7 @@ var qrcode = function() {
     if (!touched) $('[name=amount]', sale).value = c ? c * SUG : '';
     $('[data-etbox]', sale).classList.toggle('hide', d.method !== 'e-Transfer');
   }
-  var proof = new ProofBox($('[data-proof]', sale), { expected: function () { return $('[name=amount]', sale).value; }, done: 'the buyer gets the tickets.' });
+  var proof = new ProofBox($('[data-proof]', sale), { expected: function () { return $('[name=amount]', sale).value; }, done: 'the buyer gets the tickets.', camera: true });
   // once the member types an amount, stop suggesting one
   sale.addEventListener('input', function (e) { if (e.target.name === 'amount') touched = true; else sync(); });
   sale.addEventListener('change', function (e) { if (e.target.name !== 'amount') sync(); });
@@ -3244,7 +3252,19 @@ var qrcode = function() {
     // the servants' shared link has no name on it (Tamer 2026-11-21: "no name on that link")
     SHARED = !!me.shared;
     // the name this phone remembers is no longer on the list (Tamer took it off): forget it here, and the page closes until it is saved again
-    if (me.unknown) { SELLER = ''; FIRST = ''; LAST = ''; try { ['ww27-seller', 'ww27-seller-first', 'ww27-seller-last'].forEach(function (k) { localStorage.removeItem(k); }); } catch (e) { } }
+    // "Are you …?": the typed name is very close to a servant already on the list
+    var ask = $('#areyou');
+    if (me.similar) {
+      var typed = me.typed || SELLER;
+      ask.innerHTML = '<p style="margin:0 0 10px">A servant named <b>' + esc(me.similar) + '</b> is already on the list. Is that you?</p>' +
+        '<button type="button" class="btn" data-yes style="min-height:46px;padding:11px 16px;margin:0 8px 8px 0">Yes, I am ' + esc(me.similar) + '</button>' +
+        '<button type="button" class="btn ghost" data-no style="min-height:46px;padding:11px 16px;margin:0 0 8px">No, I am ' + esc(typed) + '</button>';
+      ask.classList.remove('hide');
+      $('[data-yes]', ask).onclick = function () { var w = me.similar.split(' '); $('#seller1').value = w[0]; $('#seller2').value = w.slice(1).join(' '); ask.classList.add('hide'); saveName(); };
+      $('[data-no]', ask).onclick = function () { ask.classList.add('hide'); saveName(true); };
+    } else ask.classList.add('hide');
+    if (me.unknown && me.similar) { SELLER = ''; try { ['ww27-seller', 'ww27-seller-first', 'ww27-seller-last'].forEach(function (k) { localStorage.removeItem(k); }); } catch (e) { } }   // not saved yet: the boxes keep what was typed
+    else if (me.unknown) { SELLER = ''; FIRST = ''; LAST = ''; try { ['ww27-seller', 'ww27-seller-first', 'ww27-seller-last'].forEach(function (k) { localStorage.removeItem(k); }); } catch (e) { } }
     $('#hi').textContent = 'Hi ' + (SHARED ? (SELLER || 'there') : me.name);
     // once the name is saved its boxes go away (his word, 21 Nov: "once submit their name that part of the page disapper");
     // "Change my name" under the greeting opens them again; a name that is not active keeps its red note in view
@@ -3347,7 +3367,7 @@ var qrcode = function() {
         })();
       }, function () { box.innerHTML = '<div class="warn">The camera could not open here. Use your phone\'s camera app on the code, or type the code.</div>'; });
   };
-  function load(save) { return api('member_me', { key: KEY, seller: SELLER, save: save === true }).then(render, function () { $('#bad').classList.remove('hide'); $('#hi').textContent = 'Team'; }); }
+  function load(save, sure) { return api('member_me', { key: KEY, seller: SELLER, save: save === true, sure: sure === true }).then(render, function () { $('#bad').classList.remove('hide'); $('#hi').textContent = 'Team'; }); }
   if (!KEY) { $('#hi').textContent = 'Wonder Worker'; $(REF ? '#notteam' : '#bad').classList.remove('hide'); return; }
   if (REF) { $('[data-code]', col).value = (decodeURIComponent(REF).match(/WW27-\d{4}/i) || [''])[0]; find(REF); }
   // ---- Tickets · Donation · Sponsor (Tamer 2026-11-21): one form at a time, the same three ways to take the money on each ----
@@ -3356,8 +3376,8 @@ var qrcode = function() {
   function dataOf(f) { var o = {}; $$('input', f).forEach(function (i) { if (!i.name) return; if (i.type === 'radio') { if (i.checked) o[i.name] = i.value; } else if (i.type === 'checkbox') o[i.name] = i.checked; else o[i.name] = i.value.trim(); }); return o; }
   function payPart(form, who, amountOf, done) {
     $('[data-pay]', form).innerHTML = '<div class="pills"><label><input type="radio" name="method" value="Cash" checked> Cash</label><label><input type="radio" name="method" value="Cheque"> Cheque</label><label><input type="radio" name="method" value="e-Transfer"> e-Transfer</label></div>' +
-      '<div class="hide" data-etbox><p class="hint" style="margin:4px 0 10px">' + who + ' sends the e-Transfer to <b>donations@stminacalgary.ca</b> with <b>Wonder Worker</b> in the message. Then add the screenshot of the confirmation here (a photo of their screen works too).</p><div data-proof></div></div>';
-    var pb = new ProofBox($('[data-proof]', form), { expected: amountOf, done: done });
+      '<div class="hide" data-etbox><p class="hint" style="margin:4px 0 10px">' + who + ' sends the e-Transfer to <b>donations@stminacalgary.ca</b> with <b>Wonder Worker</b> in the message. Then <b>upload the screenshot</b> of the confirmation, or <b>open the camera</b> and take a photo of their screen.</p><div data-proof></div></div>';
+    var pb = new ProofBox($('[data-proof]', form), { expected: amountOf, done: done, camera: true });
     form.addEventListener('change', function () { $('[data-etbox]', form).classList.toggle('hide', ($('[name=method]:checked', form) || {}).value !== 'e-Transfer'); });
     return pb;
   }
@@ -3467,15 +3487,15 @@ var qrcode = function() {
   };
 
   // the servant's own name: kept on this phone; the cash and the sales shown follow it
-  function saveName() {
+  function saveName(sure) {
     var a = $('#seller1').value.replace(/\s+/g, ' ').trim(), b = $('#seller2').value.replace(/\s+/g, ' ').trim();
     if (!a || !b) { if (!a) $('#seller1').focus(); else $('#seller2').focus(); return; }   // both are needed: the page stays closed until then
     FIRST = a; LAST = b; SELLER = a + ' ' + b; $('#seller1').value = a; $('#seller2').value = b;
     try { localStorage.setItem('ww27-seller', SELLER); localStorage.setItem('ww27-seller-first', a); localStorage.setItem('ww27-seller-last', b); } catch (e) { }
     EDITNAME = false;
-    load(true);   // saving the name is what puts the servant on the list
+    load(true, sure === true);   // saving the name is what puts the servant on the list; sure = "No, I am …" was pressed
   }
-  $('#sellergo').onclick = saveName;
+  $('#sellergo').onclick = function () { saveName(); };
   $('#rename').onclick = function () { EDITNAME = true; $('#who').classList.remove('hide'); this.classList.add('hide'); $('#seller1').focus(); };
   $('#seller2').onchange = function () { if ($('#seller1').value.trim() && this.value.trim()) saveName(); };
   $('#seller1').onchange = function () { if (this.value.trim() && $('#seller2').value.trim()) saveName(); };

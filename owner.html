@@ -207,7 +207,7 @@ input.s{font:15px Arial,sans-serif;padding:7px 10px;border:1px solid var(--line)
   <section id="t-settings" class="hide"></section>
   <section class="card hide" id="bad"><h2>Link not valid</h2></section>
 </main>
-<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.115</span></footer>
+<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.116</span></footer>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -476,6 +476,9 @@ function copyBtn(root) {
       // names he rejects on that link, also before they sell anything
       (function () { var sv = D.members.filter(function (m) { return m.sellers; })[0]; if (!sv) return '';
         return '<div class="row"><input class="s" data-rejname placeholder="A servant\'s name to reject"><button class="btn ghost" data-rejadd style="min-height:0;padding:8px 14px">Reject this name</button></div>' +
+          // two rows for one person (a different spelling on another device): move everything under one name (Tamer 2026-11-21)
+          (sv.sellers.length > 1 ? '<div class="row"><span class="hint">Two rows for one person? Merge</span> <select class="s" data-mfrom><option value="">this name…</option>' + sv.sellers.map(function (v) { return '<option>' + esc(v.name) + '</option>'; }).join('') + '</select> <span class="hint">into</span> <select class="s" data-mto><option value="">the name to keep…</option>' +
+            sv.sellers.map(function (v) { return '<option>' + esc(v.name) + '</option>'; }).join('') + '</select> <button class="btn ghost" data-merge style="min-height:0;padding:8px 14px">Merge</button></div>' : '') +
           (sv.rejected && sv.rejected.length ? '<p class="hint">Rejected names (they cannot record sales): ' + sv.rejected.map(function (n) { return '<b>' + esc(n) + '</b> <button class="link" data-rejoff="' + esc(n) + '">Allow again</button>'; }).join(' · ') + '</p>' : ''); })() +
       '<table class="t"><tr><th>Member</th><th>Cash held</th><th>Link</th><th></th></tr>' + D.members.map(function (m) {
         return '<tr><td>' + esc(m.name) + '</td><td>' + money(m.cash) + '</td><td>' + (m.active ? '<div class="copy" style="margin:0"><span style="font-size:12px">' + esc(m.link) + '</span><button type="button">Copy</button></div>' : '<span class="pill void">off</span>') + '</td>' +
@@ -493,6 +496,11 @@ function copyBtn(root) {
       act(b, 'owner_seller_block', { seller: who, on: on }, { ask: on ? 'Make "' + who + '" inactive? They will not be able to record anything new on the servants\' link. Everything they recorded before stays as it is.' : 'Make "' + who + '" active again?', done: on ? 'Servant is now inactive.' : 'Servant is active again.' }); }; });
     copyBtn($('#t-team'));
     $('[data-add]').onclick = function () { run('owner_member_add', { name: $('[data-name]').value }).then(function (r) { reload().then(function () { $('[data-newlink]').innerHTML = '<div class="okbox">Link created. Copy it from the list and send it to them by message.</div>'; }); }, function (x) { alert(x.message); }); };
+    if ($('[data-merge]')) $('[data-merge]').onclick = function () {
+      var b = this, from = $('[data-mfrom]').value, to = $('[data-mto]').value;
+      if (!from || !to || from === to) { $('[data-newlink]').innerHTML = '<div class="warn">Choose two different names: the one to merge, and the one to keep.</div>'; return; }
+      act(b, 'owner_seller_merge', { from: from, to: to }, { ask: 'Merge "' + from + '" into "' + to + '"?\n\nEverything recorded as "' + from + '" (entries, cash, hand-overs) moves under "' + to + '", and "' + from + '" leaves the list. This cannot be undone.', done: 'Merged into ' + to + '.' });
+    };
     if ($('[data-rejadd]')) $('[data-rejadd]').onclick = function () { var b = this, who = $('[data-rejname]').value.trim(); if (!who) return; act(b, 'owner_seller_block', { seller: who, on: true }, { ask: 'Reject the name "' + who + '"? It will not be able to record sales on the servants\' link.', done: 'Name rejected.' }); };
     $$('[data-rejoff]').forEach(function (b) { b.onclick = function () { var who = b.getAttribute('data-rejoff'); act(b, 'owner_seller_block', { seller: who, on: false }, { ask: 'Allow "' + who + '" to record sales again?', done: 'Name allowed again.' }); }; });
     $('[data-addshared]').onclick = function () {
