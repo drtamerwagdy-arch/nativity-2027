@@ -207,7 +207,7 @@ input.s{font:15px Arial,sans-serif;padding:7px 10px;border:1px solid var(--line)
   <section id="t-settings" class="hide"></section>
   <section class="card hide" id="bad"><h2>Link not valid</h2></section>
 </main>
-<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.108</span></footer>
+<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.109</span></footer>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -345,7 +345,16 @@ function copyBtn(root) {
         return '<tr><td style="white-space:nowrap">' + esc(when(a.created)) + '</td><td><b>' + esc(a.title) + '</b>' + (a.body ? '<br>' + esc(a.body) : '') + (a.link ? '<br><a href="' + esc(a.link) + '" target="_blank" rel="noopener">' + esc(a.link) + '</a>' : '') + '</td><td><button class="link" data-anoff="' + a.id + '">Take down</button></td></tr>';
       }).join('') + '</table>' : '<p class="hint" style="margin-top:8px">Nothing posted right now.</p>') + '</div>' +
       '<div class="card" style="margin-top:12px"><h2>Cash held by each member</h2><table class="t"><tr><th>Member</th><th>Holds</th><th>Record hand-over to Hany</th></tr>' +
-      D.members.map(function (m) { return '<tr><td>' + esc(m.name) + (m.active ? '' : ' <span class="pill void">link off</span>') + '</td><td>' + money(m.cash) + '</td><td><input class="s" type="number" placeholder="$" data-ho="' + m.id + '" style="width:90px"> <button class="link" data-hob="' + m.id + '">Record</button></td></tr>'; }).join('') +
+      D.members.map(function (m) {
+        // the servants' link: one row for each servant, by the name they typed on their phone (Tamer 2026-11-21)
+        if (m.sellers) return (m.sellers.length ? m.sellers : [{ name: '', cash: 0 }]).map(function (v, i) {
+          var id = m.id + '|' + i;
+          return '<tr><td>Servants' + (v.name ? ' · <b>' + esc(v.name) + '</b>' : ' <span class="hint">(no sales yet)</span>') + (m.active ? '' : ' <span class="pill void">link off</span>') + '</td><td>' + money(v.cash) + '</td><td>' +
+            (v.name ? '<input class="s" type="number" placeholder="$" data-ho="' + id + '" style="width:90px"> <button class="link" data-hob="' + id + '" data-seller="' + esc(v.name) + '">Record</button>' +
+              ' · ' + (v.blocked ? '<span class="pill void">rejected</span> <button class="link" data-blk="0" data-seller="' + esc(v.name) + '">Allow again</button>' : '<button class="link" data-blk="1" data-seller="' + esc(v.name) + '">Reject this name</button>') : '') + '</td></tr>';
+        }).join('');
+        return '<tr><td>' + esc(m.name) + (m.active ? '' : ' <span class="pill void">link off</span>') + '</td><td>' + money(m.cash) + '</td><td><input class="s" type="number" placeholder="$" data-ho="' + m.id + '" style="width:90px"> <button class="link" data-hob="' + m.id + '">Record</button></td></tr>';
+      }).join('') +
       '</table></div>';
     $('#an-go').onclick = function () {
       var b = this, out = $('#an-out'); if (BUSY || b.disabled) return;
@@ -354,7 +363,10 @@ function copyBtn(root) {
       run('owner_announce', { title: $('#an-title').value.trim(), body: $('#an-body').value.trim(), link: $('#an-link').value.trim() }).then(function () { b.disabled = false; reload(); }, function (x) { out.textContent = x.message; b.disabled = false; });
     };
     $$('[data-anoff]').forEach(function (b) { b.onclick = function () { act(b, 'owner_announce_off', { id: b.getAttribute('data-anoff') }, { ask: 'Take this announcement down?', done: 'Announcement taken down.' }); }; });
-    $$('[data-hob]').forEach(function (b) { b.onclick = function () { var id = b.getAttribute('data-hob'), a = $('[data-ho="' + id + '"]').value; act(b, 'owner_handover', { member_id: id, amount: a }, { ask: 'Record ' + money(a) + ' handed over to you by this team member?', done: 'Hand-over recorded.' }); }; });
+    // reject a servant's name on the servants' link, or allow it again (Tamer 2026-11-21)
+    $$('[data-blk]').forEach(function (b) { b.onclick = function () { var on = b.getAttribute('data-blk') === '1', who = b.getAttribute('data-seller');
+      act(b, 'owner_seller_block', { seller: who, on: on }, { ask: on ? 'Reject the name "' + who + '"?\n\nIt will not be able to record sales on the servants\' link. What it sold before stays as it is.' : 'Allow "' + who + '" to record sales again?', done: on ? 'Name rejected.' : 'Name allowed again.' }); }; });
+    $$('[data-hob]').forEach(function (b) { b.onclick = function () { var id = b.getAttribute('data-hob'), a = $('[data-ho="' + id + '"]').value, who = b.getAttribute('data-seller') || ''; act(b, 'owner_handover', { member_id: id.split('|')[0], amount: a, seller: who }, { ask: 'Record ' + money(a) + ' handed over to you by ' + (who || 'this team member') + '?', done: 'Hand-over recorded.' }); }; });
     var cgId = newId();
     $('#cg-go').onclick = function () {
       var b = this, out = $('#cg-out'), nm = $('#cg-name').value.trim().split(/\s+/); if (BUSY || b.disabled) return;
@@ -458,13 +470,25 @@ function copyBtn(root) {
 
   function team() {
     $('#t-team').innerHTML = '<div class="card"><h2>Team links</h2><p class="hint">Each member gets their own private link. Send it by message. Lost or new phone: press "New link" and the old one stops working at once.</p>' +
-      '<div class="row"><input class="s" data-name placeholder="Member name"><button class="btn" data-add style="min-height:0;padding:8px 14px">Add member</button></div><div data-newlink></div>' +
+      '<div class="row"><input class="s" data-name placeholder="Member name"><button class="btn" data-add style="min-height:0;padding:8px 14px">Add member</button></div>' +
+      // Tamer 2026-11-21: one link for the servants who sell in person, with no name on it
+      '<div class="row"><button class="btn ghost" data-addshared style="min-height:0;padding:8px 14px">Add the servants\' link (no name)</button><span class="hint">One link for the servants who sell in person. It shows in the list as "Servants". Each servant types their own name once, so Overview shows who holds what. Anyone who has the link can record a sale, so send it only to servants.</span></div><div data-newlink></div>' +
+      // names he rejects on that link, also before they sell anything
+      (function () { var sv = D.members.filter(function (m) { return m.sellers; })[0]; if (!sv) return '';
+        return '<div class="row"><input class="s" data-rejname placeholder="A servant\'s name to reject"><button class="btn ghost" data-rejadd style="min-height:0;padding:8px 14px">Reject this name</button></div>' +
+          (sv.rejected && sv.rejected.length ? '<p class="hint">Rejected names (they cannot record sales): ' + sv.rejected.map(function (n) { return '<b>' + esc(n) + '</b> <button class="link" data-rejoff="' + esc(n) + '">Allow again</button>'; }).join(' · ') + '</p>' : ''); })() +
       '<table class="t"><tr><th>Member</th><th>Cash held</th><th>Link</th><th></th></tr>' + D.members.map(function (m) {
         return '<tr><td>' + esc(m.name) + '</td><td>' + money(m.cash) + '</td><td>' + (m.active ? '<div class="copy" style="margin:0"><span style="font-size:12px">' + esc(m.link) + '</span><button type="button">Copy</button></div>' : '<span class="pill void">off</span>') + '</td>' +
           '<td style="white-space:nowrap"><button class="link" data-re="' + m.id + '">New link</button>' + (m.active ? ' · <button class="link" data-off="' + m.id + '">Turn off</button>' : '') + '</td></tr>';
       }).join('') + '</table></div>';
     copyBtn($('#t-team'));
     $('[data-add]').onclick = function () { run('owner_member_add', { name: $('[data-name]').value }).then(function (r) { reload().then(function () { $('[data-newlink]').innerHTML = '<div class="okbox">Link created. Copy it from the list and send it to them by message.</div>'; }); }, function (x) { alert(x.message); }); };
+    if ($('[data-rejadd]')) $('[data-rejadd]').onclick = function () { var b = this, who = $('[data-rejname]').value.trim(); if (!who) return; act(b, 'owner_seller_block', { seller: who, on: true }, { ask: 'Reject the name "' + who + '"? It will not be able to record sales on the servants\' link.', done: 'Name rejected.' }); };
+    $$('[data-rejoff]').forEach(function (b) { b.onclick = function () { var who = b.getAttribute('data-rejoff'); act(b, 'owner_seller_block', { seller: who, on: false }, { ask: 'Allow "' + who + '" to record sales again?', done: 'Name allowed again.' }); }; });
+    $('[data-addshared]').onclick = function () {
+      if (D.members.some(function (m) { return m.name === 'Servants' && m.active; })) { $('[data-newlink]').innerHTML = '<div class="warn">The servants\' link is already in the list below, named "Servants". Copy it from there, or press "New link" to replace it.</div>'; return; }
+      run('owner_member_add', { name: 'Servants' }).then(function () { reload().then(function () { $('[data-newlink]').innerHTML = '<div class="okbox">The servants\' link is made. Copy it from the row "Servants" and send it to the servants.</div>'; }); }, function (x) { alert(x.message); });
+    };
     $$('[data-re]').forEach(function (b) { b.onclick = function () { act(b, 'owner_member_reissue', { id: b.getAttribute('data-re') }, { ask: 'Make a new link? The old link stops working immediately.', done: 'New link made.' }); }; });
     $$('[data-off]').forEach(function (b) { b.onclick = function () { act(b, 'owner_member_revoke', { id: b.getAttribute('data-off') }, { ask: 'Turn this link off?', done: 'Link turned off.' }); }; });
   }

@@ -2501,6 +2501,8 @@ var Core = (function () {
     square_on: 'N', square_env: 'sandbox', square_location_id: '', square_fee_pct: 2.8, square_fee_fixed: 0.30, site_url: 'https://thewonderworker.ca/',   // card payments (Square), off until connected
     payments_email: 'artteam+payments@stminacalgary.ca',   // one email per payment (Tamer 2026-09-25); 'off' = none
     tickets_pdf: 'N',   // the tickets PDF in the tickets email: off (Tamer 2026-09-25: with it, the email went to Yahoo's spam); 'Y' once DKIM/DMARC are set
+    blocked_sellers: '',   // names Tamer has rejected on the servants' link (2026-11-21: "give me option to reject certain name for servant if needed"), kept in small letters, one after the other with | between
+    printed_on: 'N', door_on: 'N',   // the servant page (Tamer 2026-11-21): printed tickets greyed "for now as we might never print tickets"; the door check hidden ("drop at the door, scan the tickets"). 'Y' brings either back
     sms_pictures: 'N',   // the ticket pictures as a second, picture message after the text with the link (Tamer 2026-11-21: "yes build it"); the link text always goes first, so a picture message that fails loses nothing
     sms_on: 'N', sms_from: '',   // tickets by text to the buyer's mobile, from the team page (Tamer 2026-11-21): 'Y' once Twilio's send-only key is in (tools/sms_setup.py); sms_from = the number that sends, like +18254509095
     wallet_on: 'N', wallet_pass_type: '', wallet_team: '',   // Apple Wallet passes (Tamer 2026-09-25): 'Y' once the church's Apple certificate is in
@@ -3529,37 +3531,77 @@ var Core = (function () {
   }
 
   // ---------- team page (personal link) ----------
-  function cashHeld(env, m) {
-    var took = live(env).filter(function (e) { return e.member_id === m.id; }).reduce(function (t, e) { return t + num(e.amount); }, 0);
-    var gave = env.list('handovers').filter(function (h) { return h.member_id === m.id; }).reduce(function (t, h) { return t + num(h.amount); }, 0);
+  // The servants' shared link (Tamer 2026-11-21: "a link ... to sell in person for servants ... no name on that link"): a member
+  // with this exact name. Its page greets no one, and its sales are recorded as "Servants".
+  var SHARED_LINK = 'Servants';
+  // On that link each servant types their own name once (Tamer 2026-11-21: "yes, add it and make sure it links to the admin
+  // dashboard"): it is kept on every sale (recorded_by) and on every hand-over (name), so the dashboard shows who holds what.
+  function sellerName(v) { return str(v).replace(/\s+/g, ' ').slice(0, 60); }
+  function sellerKey(v) { return sellerName(v).toLowerCase(); }   // "mina girgis" and "Mina  Girgis" are one servant
+  function blockedSellers(s) { return str(s.blocked_sellers).split('|').map(sellerKey).filter(Boolean); }
+  function sellerBlocked(s, name) { return blockedSellers(s).indexOf(sellerKey(name)) > -1; }
+  // Tamer's dashboard key only: reject a name on the servants' link, or allow it again. A rejected name cannot record a sale;
+  // what it sold before stays as it is (he can void those from Orders).
+  function ownerSellerBlock(env, p) {
+    var s = requireOwner(env, p.key), k = sellerKey(p.seller), list = blockedSellers(s).filter(function (x) { return x !== k; });
+    if (k.length < 2) throw err('Type the name to reject.');
+    if (p.on !== false && p.on !== 'N') list.push(k);
+    env.setSetting('blocked_sellers', list.join('|'));
+    return { ok: true, blocked: list };
+  }
+  function sellersOf(env, m) {
+    var seen = {}, out = [], s = settings(env);
+    live(env).filter(function (e) { return e.member_id === m.id; }).forEach(function (e) {
+      var k = sellerKey(e.recorded_by); if (!k || seen[k]) return; seen[k] = 1;
+      out.push({ name: sellerName(e.recorded_by), cash: cashHeld(env, m, e.recorded_by), blocked: sellerBlocked(s, e.recorded_by) });
+    });
+    return out;
+  }
+  function cashHeld(env, m, seller) {   // cash and cheques in a servant's hands; an e-Transfer went straight to the church, so it is never counted here
+    var k = seller ? sellerKey(seller) : '';   // on the servants' link: one servant's own cash
+    var took = live(env).filter(function (e) { return e.member_id === m.id && e.method !== 'e-Transfer' && (!k || sellerKey(e.recorded_by) === k); }).reduce(function (t, e) { return t + num(e.amount); }, 0);
+    var gave = env.list('handovers').filter(function (h) { return h.member_id === m.id && (!k || sellerKey(h.name) === k); }).reduce(function (t, h) { return t + num(h.amount); }, 0);
     return Math.round((took - gave) * 100) / 100;
   }
   function memberMe(env, p) {
     var m = memberByKey(env, p.key); if (!m) throw err('This link is no longer valid. Please ask Tamer for a new one.');
-    var s = settings(env), mine = env.list('entries').filter(function (e) { return e.member_id === m.id; }).reverse();
-    return { name: m.name, cash: cashHeld(env, m), seatsLeft: Math.max(0, seatsLeft(env, s)), suggested: num(s.suggested), capacity: num(s.capacity), sold: soldFor(env, s), sms: smsOn(env, s),
-      sales: mine.slice(0, 50).map(function (e) { return { id: e.id, created: e.created, name: e.first + ' ' + e.last, email: e.email, tickets: e.tickets, amount: num(e.amount), method: e.method, status: e.status,
+    var shared = m.name === SHARED_LINK, seller = shared ? sellerName(p.seller) : '';   // the servants' link: only this servant's own sales and cash
+    var s = settings(env), mine = env.list('entries').filter(function (e) { return e.member_id === m.id && (!shared || (!!seller && sellerKey(e.recorded_by) === sellerKey(seller))); }).reverse();
+    return { name: m.name, seller: seller, blocked: shared && !!seller && sellerBlocked(s, seller), cash: shared ? (seller ? cashHeld(env, m, seller) : 0) : cashHeld(env, m), seatsLeft: Math.max(0, seatsLeft(env, s)), suggested: num(s.suggested), capacity: num(s.capacity), sold: soldFor(env, s), sms: smsOn(env, s),
+      shared: m.name === SHARED_LINK, printed: String(s.printed_on).toUpperCase() === 'Y', door: String(s.door_on).toUpperCase() === 'Y',
+      tiers: String(s.sponsor_tiers).split(/[\s,]+/).map(Number).filter(Boolean),   // the sponsor amounts, for the servant page's Sponsor form
+      sales: mine.slice(0, 50).map(function (e) { return { id: e.id, created: e.created, name: e.first + ' ' + e.last, email: e.email, tickets: e.tickets, kind: e.kind, business: e.business, amount: num(e.amount), method: e.method, status: e.status,
         undo: e.status !== 'void' && env.now().getTime() - new Date(e.created).getTime() < 15 * 60e3 }; }) };
   }
   function cashSale(env, p) {
     var m = memberByKey(env, p.key); if (!m) throw err('This link is no longer valid. Please ask Tamer for a new one.');
-    var prev = findBySubmit(env, p.submit_id); if (prev) return outcome(prev, null, { cash: cashHeld(env, m) });
+    var shared = m.name === SHARED_LINK, seller = shared ? sellerName(p.seller) : '', held = function () { return shared ? cashHeld(env, m, seller) : cashHeld(env, m); };
+    var prev = findBySubmit(env, p.submit_id); if (prev) return outcome(prev, null, { cash: held() });
+    if (shared && seller.length < 2) throw err('Type your own name at the top of the page first.');
     var s = settings(env), email = str(p.email).toLowerCase();
+    if (shared && sellerBlocked(s, seller)) throw err('This name cannot record sales. Please speak to Tamer.');
     var who = { first: str(p.first), last: str(p.last), email: email, phone: str(p.phone), receipt: p.no_receipt ? 'N' : 'Y', address: '', city: '', postal: '' };
     if (!who.first || !who.last) throw err('Enter the buyer\'s first and last name.');
     if (email && !validEmail(email)) throw err('Check the email address (or leave it empty).');
-    var amount = num(p.amount), method = /cheque/i.test(p.method) ? 'Cheque' : 'Cash';
+    var et = /transfer/i.test(p.method), amount = num(p.amount), method = et ? 'e-Transfer' : /cheque/i.test(p.method) ? 'Cheque' : 'Cash';
     if (!(amount > 0)) throw err('Enter the amount received.');
+    // An e-Transfer shown to a servant (Tamer 2026-11-21: "add option beside cash, cheque, add upload e-transfer screen shot"): the
+    // same rules as an online order: the screenshot is a must, private lines are blacked out on the phone, one e-Transfer is one sale.
+    if (et && !(p.proof && p.proof.dataUrl)) throw err('Add the screenshot of the e-Transfer. Every e-Transfer sale needs one.');
     var printed = p.mode === 'printed', texted = p.mode === 'text', cell = texted ? mobile(p.phone) : '';
     // Tickets by text (Tamer 2026-11-21: "would be helpful for elder to have it on their phone"): a servant helps someone who has
     // no email. The mobile is a must; an email, if given, gets the tickets too.
     if (texted && !smsOn(env, s)) throw err('Tickets by text are not switched on. Please use the email or printed tickets.');
     if (texted && !cell) throw err('Enter the buyer\'s mobile number with the area code. The tickets are sent there by text.');
     if (texted) who.phone = cell;
-    if (!printed && !texted && !email) throw err('No email? Then hand over printed tickets and choose "Printed tickets".');
+    if (!printed && !texted && !email) throw err(String(s.printed_on).toUpperCase() === 'Y' ? 'No email? Then hand over printed tickets and choose "Printed tickets".'
+      : smsOn(env, s) ? 'Enter the buyer\'s email, or choose "Text e-tickets to the mobile".' : 'Enter the buyer\'s email. The tickets are sent there.');   // printed tickets are greyed for now (2026-11-21)
+    if (et) p.proofText = readProofText(env, p);   // the slow reading of the screenshot, before the lock
     return env.lock(function () {
       s = settings(env);   // fresh inside the lock (2026-09-26)
-      var again = seenBefore(env, p, function (a) { return outcome(a, null, { cash: cashHeld(env, m) }); }); if (again) return again;   // same request sent twice
+      var again = seenBefore(env, p, function (a) { return outcome(a, null, { cash: held() }); }); if (again) return again;   // same request sent twice
+      var checked = null;   // before any number is taken: a screenshot used twice stops here
+      if (et) { p.nameForFile = 'Servant sale - ' + who.last + ' - ' + money(amount); checked = checkProof(env, p, amount); }
       var nums;
       if (printed) {
         nums = parseNumbers(p.numbers);
@@ -3574,16 +3616,102 @@ var Core = (function () {
         if (!fits(env, s, q, 0)) throw err('Only ' + Math.max(0, seatsLeft(env, s)) + ' seats left.');
         nums = take(env, s, q);
       }
-      var e = mk(env, who, { kind: 'cash', qty: nums.length, amount: amount, method: method, tickets: nums.join(', '), recorded_by: m.name, member_id: m.id,
-        proof_status: 'none', submit_id: str(p.submit_id), note: (printed ? 'printed tickets handed over' : texted ? 'e-tickets by text' : 'e-tickets') + (p.sheet !== undefined ? ' · from a paper sales sheet' : ''),
+      var e = mk(env, who, { kind: 'cash', qty: nums.length, amount: amount, method: method, tickets: nums.join(', '), recorded_by: shared ? seller : m.name, member_id: m.id,
+        proof_status: 'none', submit_id: str(p.submit_id), note: (shared ? 'servants\' link · ' : '') + (printed ? 'printed tickets handed over' : texted ? 'e-tickets by text' : 'e-tickets') + (p.sheet !== undefined ? ' · from a paper sales sheet' : ''),
         proof: /^https:\/\/drive\.google\.com\//.test(str(p.sheet)) ? str(p.sheet) : '' });
+      if (checked) { e.interac_ref = checked.facts.ref || ''; e.proof = checked.url; e.proof_hash = checked.hash; e.proof_status = checked.status; e.note += ' · e-Transfer shown to a servant'; }
       env.append('entries', e);
       var textFail = [];   // a text that does not go out never stops the sale: the row is marked and the team is told
       if (texted) { try { env.sms(cell, ticketsText(env, s, e), mobile(s.sms_from)); } catch (x) { textFail.push('the tickets text did not go out to ' + cell + ' (' + x.message + '): send the tickets another way'); } }
       var pics = false;   // the pictures follow the link text; if they fail the buyer still has the link, so the sale is not marked
       if (texted && !textFail.length && picturesOn(env, s)) { try { ticketsPictures(env, s, cell, nums, false); pics = true; } catch (x) { env.log('ticket pictures text to ' + cell + ': ' + x.message); } }
-      finishSale(env, s, e, 'Thank you for your donation of <b>' + money(amount) + '</b>, received by ' + esc(m.name) + '. ' + (printed ? 'Here is a copy of your printed ticket' + (nums.length > 1 ? 's' : '') + '.' : 'Your tickets are below.'), textFail, 'cash sale');
-      return outcome(e, null, { cash: cashHeld(env, m), texted: texted && !textFail.length ? cell : '', text_failed: texted && textFail.length > 0, pictures: pics });
+      finishSale(env, s, e, 'Thank you for your donation of <b>' + money(amount) + '</b>' + (et ? ' by e-Transfer' : ', received by ' + esc(shared ? seller : m.name)) + '. ' + (printed ? 'Here is a copy of your printed ticket' + (nums.length > 1 ? 's' : '') + '.' : 'Your tickets are below.'), textFail.concat(checked ? checked.reasons : []), et ? 'e-Transfer sale by a servant' : 'cash sale');
+      return outcome(e, null, { cash: held(), texted: texted && !textFail.length ? cell : '', text_failed: texted && textFail.length > 0, pictures: pics, method: method });
+    });
+  }
+  // ---------- the servant page: a donation or a sponsorship taken in person ----------
+  // Tamer 2026-11-21: "add option to add donation for others too and to add sponsor too, each one gets the required info, same ways
+  // for taking money". The same three ways as a ticket sale in person: cash and cheque (counted in the cash the servant holds) or an
+  // e-Transfer with its screenshot (never counted as cash). Rows are ordinary donation / sponsor rows, so the thermometer, the
+  // thank-you emails, the receipts and the dashboard treat them like the ones from the public page.
+  function servant(env, p) {   // who is recording: the member behind the link and, on the servants' link, the name they typed
+    var m = memberByKey(env, p.key); if (!m) throw err('This link is no longer valid. Please ask Tamer for a new one.');
+    var shared = m.name === SHARED_LINK, seller = shared ? sellerName(p.seller) : '';
+    return { m: m, shared: shared, by: shared ? seller : m.name,
+      held: function () { return shared ? cashHeld(env, m, seller) : cashHeld(env, m); },
+      check: function (s) {
+        if (shared && seller.length < 2) throw err('Type your own name at the top of the page first.');
+        if (shared && sellerBlocked(s, seller)) throw err('This name cannot record sales. Please speak to Tamer.');
+      } };
+  }
+  function paidHow(env, p) {   // Cash, Cheque or e-Transfer; an e-Transfer must come with its screenshot
+    var et = /transfer/i.test(p.method);
+    if (et && !(p.proof && p.proof.dataUrl)) throw err('Add the screenshot of the e-Transfer. Every e-Transfer needs one.');
+    if (et) p.proofText = readProofText(env, p);   // the slow reading, before the lock
+    return { et: et, method: et ? 'e-Transfer' : /cheque/i.test(p.method) ? 'Cheque' : 'Cash' };
+  }
+  function proofCols(checked) {
+    return checked ? { interac_ref: checked.facts.ref || '', proof: checked.url, proof_hash: checked.hash, proof_status: checked.status, flags: checked.reasons.join(' | ') } : { proof_status: 'none' };
+  }
+  function memberGift(env, p) {
+    var v = servant(env, p), m = v.m;
+    var prev = findBySubmit(env, p.submit_id); if (prev) return outcome(prev, null, { cash: v.held(), raised: raised(env), kind: 'donation', method: prev.method });
+    var s = settings(env); v.check(s);
+    var amount = num(p.amount), email = str(p.email).toLowerCase();
+    if (!str(p.first) || !str(p.last)) throw err('Enter the giver\'s first and last name.');
+    if (email && !validEmail(email)) throw err('Check the email address (or leave it empty).');
+    if (!(amount > 0)) throw err('Enter the amount given.');
+    if (amount > 100000) throw err('That looks too large - please check the amount.');
+    var how = paidHow(env, p);
+    return env.lock(function () {
+      s = settings(env);
+      var again = seenBefore(env, p, function (a) { return outcome(a, null, { cash: v.held(), raised: raised(env), kind: 'donation', method: a.method }); }); if (again) return again;
+      var code = orderCode(env, s), checked = null;
+      if (how.et) { p.nameForFile = code + ' - ' + str(p.last) + ' - ' + money(amount) + ' - donation (servant)'; checked = checkProof(env, p, amount); }
+      // no email: no thank-you to send and no receipt line, as with a gift recorded on the dashboard; Hany still sees the amount
+      var who = { first: str(p.first), last: str(p.last), email: email, phone: str(p.phone), address: '', city: '', postal: '', receipt: email ? 'Y' : 'N' };
+      var cols = proofCols(checked), o = { kind: 'donation', amount: amount, method: how.method, order_code: code, submit_id: str(p.submit_id), recorded_by: v.by, member_id: m.id,
+        note: (v.shared ? 'servants\' link · ' : '') + 'donation taken by a servant' + (how.et ? ' · e-Transfer shown to a servant' : '') };
+      for (var k in cols) o[k] = cols[k];
+      var e = mk(env, who, o);
+      if (checked && checked.status !== 'ok') e.status = 'flagged';
+      env.append('entries', e);
+      if (email) { try { donationThanks(env, s, e); } catch (x) { env.log('servant donation thank-you failed: ' + x.message); } }
+      else { try { paymentNote(env, s, e); } catch (x) { env.log('servant donation payment note failed: ' + x.message); } }
+      if (checked && checked.reasons.length) { try { teamAlert(env, s, e, checked.reasons, 'donation ' + code + ' taken by a servant'); } catch (x) { env.log('team alert failed: ' + x.message); } }
+      return outcome(e, null, { cash: v.held(), raised: raised(env), goal: num(s.goal), kind: 'donation', method: how.method });
+    });
+  }
+  function memberSponsor(env, p) {
+    var v = servant(env, p), m = v.m;
+    var prev = findBySubmit(env, p.submit_id); if (prev) return outcome(prev, null, { cash: v.held(), business: prev.business, silent: prev.silent === 'Y', kind: 'sponsor', method: prev.method });
+    var s = settings(env); v.check(s);
+    if (!str(p.first) || !str(p.last)) throw err('Enter the sponsor\'s first and last name.');
+    if (!validEmail(str(p.email).toLowerCase())) throw err('Enter the sponsor\'s email. The thank-you and the receipt go there.');
+    var who = person(p), business = str(p.business), tier = Math.round(num(p.tier) * 100) / 100;
+    var silent = p.silent === true || p.silent === 'true' || p.silent === 'Y';
+    var tiers = String(s.sponsor_tiers).split(/[\s,]+/).map(Number).filter(Boolean), most = Math.max.apply(null, tiers);
+    if (tiers.indexOf(tier) < 0 && !(tier > most)) throw err('Choose ' + tiers.map(money).join(', ') + ', or an amount over ' + money(most) + '.');
+    if (tier > 100000) throw err('Please check the amount of the sponsorship.');
+    if (!silent && !business) throw err('Enter the business name.');
+    if (!silent && !p.logo) throw err('Add the logo.');
+    var showAs = silent ? '' : str(p.show_as).slice(0, 120), label = business || (str(p.first) + ' ' + str(p.last)).trim();
+    var how = paidHow(env, p);
+    return env.lock(function () {
+      s = settings(env);
+      var again = seenBefore(env, p, function (a) { return outcome(a, null, { cash: v.held(), business: a.business, silent: a.silent === 'Y', kind: 'sponsor', method: a.method }); }); if (again) return again;
+      var code = orderCode(env, s), checked = null;
+      if (how.et) { p.nameForFile = code + ' - ' + label + ' - ' + money(tier) + ' - sponsor (servant)' + (silent ? ' (silent)' : ''); checked = checkProof(env, p, tier); }
+      var logo = silent ? '' : env.saveLogo(p.logo, code + ' - ' + business);
+      var cols = proofCols(checked), o = { kind: 'sponsor', amount: tier, method: how.method, order_code: code, submit_id: str(p.submit_id), business: business,
+        website: silent ? '' : str(p.site), logo: logo, shown: 'N', ad_text: silent ? '' : str(p.ad_text).slice(0, 120), show_as: showAs, silent: silent ? 'Y' : '',
+        recorded_by: v.by, member_id: m.id, note: (v.shared ? 'servants\' link · ' : '') + 'sponsorship taken by a servant' + (how.et ? ' · e-Transfer shown to a servant' : '') };
+      for (var k in cols) o[k] = cols[k];
+      var e = mk(env, who, o);
+      if (checked && checked.status !== 'ok') e.status = 'flagged';
+      env.append('entries', e);
+      sponsorThanks(env, s, e, checked ? checked.reasons : []);
+      return outcome(e, null, { cash: v.held(), business: label, silent: silent, kind: 'sponsor', method: how.method });
     });
   }
   // Free tickets, the owner only (Tamer 2026-09-25: "myself only can issue those tickets"). Someone who can't give right now emails
@@ -3687,7 +3815,11 @@ var Core = (function () {
   // ---------- owner dashboard ----------
   function ownerData(env, p) {
     var s = requireOwner(env, p.key);
-    var members = env.list('members').map(function (m) { return { id: m.id, name: m.name, active: String(m.active) !== 'false', cash: cashHeld(env, m), link: env.pageUrl('team', m.key) }; });
+    var members = env.list('members').map(function (m) {
+      var o = { id: m.id, name: m.name, active: String(m.active) !== 'false', cash: cashHeld(env, m), link: env.pageUrl('team', m.key) };
+      if (m.name === SHARED_LINK) { o.sellers = sellersOf(env, m); o.rejected = blockedSellers(settings(env)); }   // each servant who sold on the shared link, with their own cash; and the names he rejected
+      return o;
+    });
     var entries = env.list('entries').slice().reverse();
     var sc = seatCount(env, s);
     var t = { seatsUsed: Object.keys(usedNumbers(env)).length, seatsLeft: sc.left, printed: sc.printed, eticket: sc.eticket, gifts: { given: sc.gift, numbers: sc.giftNumbers, held: sc.heldGift, pool: sc.pool, poolLeft: sc.poolLeft }, capacity: num(s.capacity), reserved: num(s.reserved), goal: num(s.goal), total: 0, byMethod: {}, byKind: {} };
@@ -3789,12 +3921,14 @@ var Core = (function () {
     requireOwner(env, p.key);
     var m = env.list('members').filter(function (x) { return x.id === p.member_id; })[0]; if (!m) throw err('Member not found.');
     var a = num(p.amount); if (!(a > 0)) throw err('Enter the amount handed over.');
-    env.append('handovers', { id: uid(env), created: env.now().toISOString(), member_id: m.id, name: m.name, amount: a, note: str(p.note) });
+    var who = m.name;   // on the servants' link the hand-over belongs to one servant, by the name they typed
+    if (m.name === SHARED_LINK) { who = sellerName(p.seller); if (!who) throw err('Choose which servant handed it over.'); }
+    env.append('handovers', { id: uid(env), created: env.now().toISOString(), member_id: m.id, name: who, amount: a, note: str(p.note) });
     return { ok: true };
   }
   function ownerSetting(env, p) {
     requireOwner(env, p.key);
-    var allowed = ['capacity', 'reserved', 'suggested', 'goal', 'given_before', 'demo_open_until', 'payments_email', 'square_on', 'square_env', 'square_location_id', 'square_fee_pct', 'square_fee_fixed', 'site_url', 'tickets_pdf', 'wallet_on', 'wallet_pass_type', 'wallet_team', 'sms_on', 'sms_from', 'sms_pictures', 'sales_close', 'receipt_ticket_value', 'sponsor_ad_value', 'void_numbers', 'paused', 'booking_max', 'min_table', 'order_max', 'hold_days', 'sponsor_tiers', 'gift_seats', 'team_page_url', 'owner_page_url', 'low_seats'];
+    var allowed = ['capacity', 'reserved', 'suggested', 'goal', 'given_before', 'demo_open_until', 'payments_email', 'square_on', 'square_env', 'square_location_id', 'square_fee_pct', 'square_fee_fixed', 'site_url', 'tickets_pdf', 'wallet_on', 'wallet_pass_type', 'wallet_team', 'sms_on', 'sms_from', 'sms_pictures', 'printed_on', 'door_on', 'sales_close', 'receipt_ticket_value', 'sponsor_ad_value', 'void_numbers', 'paused', 'booking_max', 'min_table', 'order_max', 'hold_days', 'sponsor_tiers', 'gift_seats', 'team_page_url', 'owner_page_url', 'low_seats'];
     if (allowed.indexOf(p.name) < 0) throw err('That setting cannot be changed here.');
     env.setSetting(p.name, str(p.value)); return { ok: true };
   }
@@ -3996,12 +4130,12 @@ var Core = (function () {
   }
 
   var ACTIONS = { config: config, order: order, donate: donate, sponsor: sponsor, waitlist: waitlist, ticket_status: ticketStatus,
-    member_me: memberMe, cash_sale: cashSale, demo_order: demoOrder, member_sheet_read: memberSheetRead, member_undo: memberUndo, member_booking: memberBooking, member_paid: memberPaid,
+    member_me: memberMe, cash_sale: cashSale, member_gift: memberGift, member_sponsor: memberSponsor, demo_order: demoOrder, member_sheet_read: memberSheetRead, member_undo: memberUndo, member_booking: memberBooking, member_paid: memberPaid,
     owner_data: ownerData, owner_member_add: ownerMemberAdd, owner_member_reissue: ownerMemberReissue, owner_member_revoke: ownerMemberRevoke,
     announcements: announcements, owner_announce: ownerAnnounce, owner_announce_off: ownerAnnounceOff,
     owner_void: ownerVoid, owner_clear: ownerClear, owner_delete: ownerDelete, owner_sponsor_show: ownerSponsorShow, owner_handover: ownerHandover, owner_setting: ownerSetting, owner_resend: ownerResend, owner_test_email: ownerTestEmail,
     owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); }, owner_sheet_key: ownerSheetKey, sheet_rows: sheetRows, sheet_backup: sheetBackup, owner_test_pdf: ownerTestPdf, owner_test_pass: ownerTestPass,
-    card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck, owner_free_tickets: ownerFreeTickets, owner_cash_gift: ownerCashGift, ticket_picture: ticketPicture, tickets_list: ticketsList, ticket_pass: ticketPass, tickets_passes: ticketsPasses, owner_test_text: ownerTestText, owner_set_tickets: ownerSetTickets, owner_refunded: ownerRefunded };
+    card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck, owner_free_tickets: ownerFreeTickets, owner_cash_gift: ownerCashGift, ticket_picture: ticketPicture, tickets_list: ticketsList, ticket_pass: ticketPass, tickets_passes: ticketsPasses, owner_test_text: ownerTestText, owner_seller_block: ownerSellerBlock, owner_set_tickets: ownerSetTickets, owner_refunded: ownerRefunded };
 
   var PUBLIC_WRITES = { order: 1, donate: 1, sponsor: 1, waitlist: 1 };
   // Google's Sheets service fails now and then for a single call ("Service Spreadsheets failed while accessing document …":
