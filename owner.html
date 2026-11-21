@@ -207,7 +207,7 @@ input.s{font:15px Arial,sans-serif;padding:7px 10px;border:1px solid var(--line)
   <section id="t-settings" class="hide"></section>
   <section class="card hide" id="bad"><h2>Link not valid</h2></section>
 </main>
-<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.111</span></footer>
+<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.112</span></footer>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -483,9 +483,12 @@ function copyBtn(root) {
           // every servant who has typed their name on the servants' link, also before a first sale (Tamer 2026-11-21)
           (m.sellers ? (m.sellers.length ? m.sellers.map(function (v) {
             return '<tr><td style="padding-left:26px">↳ <b>' + esc(v.name) + '</b>' + (v.blocked ? ' <span class="pill void">rejected</span>' : '') + '</td><td>' + money(v.cash) + '</td><td class="hint">' + (v.entries ? v.entries + (v.entries > 1 ? ' entries' : ' entry') : 'no entry yet') + ' · uses the servants\' link</td>' +
-              '<td style="white-space:nowrap">' + (v.blocked ? '<button class="link" data-blk="0" data-seller="' + esc(v.name) + '">Allow again</button>' : '<button class="link" data-blk="1" data-seller="' + esc(v.name) + '">Reject this name</button>') + '</td></tr>';
+              '<td style="white-space:nowrap">' + (v.blocked ? '<button class="link" data-blk="0" data-seller="' + esc(v.name) + '">Allow again</button>' : '<button class="link" data-blk="1" data-seller="' + esc(v.name) + '">Reject this name</button>') +
+                (v.entries ? '' : ' · <button class="link" data-rmv="' + esc(v.name) + '">Remove from the list</button>') + '</td></tr>';
           }).join('') : '<tr><td style="padding-left:26px" class="hint" colspan="4">↳ No servant has typed their name on this link yet.</td></tr>') : '');
       }).join('') + '</table></div>';
+    // a name that has recorded nothing can be taken off the list (a try, a misspelling); the servant can type it again
+    $$('#t-team [data-rmv]').forEach(function (b) { b.onclick = function () { var who = b.getAttribute('data-rmv'); act(b, 'owner_seller_remove', { seller: who }, { ask: 'Take "' + who + '" off the list? They can type their name again later.', done: 'Name removed from the list.' }); }; });
     $$('#t-team [data-blk]').forEach(function (b) { b.onclick = function () { var on = b.getAttribute('data-blk') === '1', who = b.getAttribute('data-seller');
       act(b, 'owner_seller_block', { seller: who, on: on }, { ask: on ? 'Reject the name "' + who + '"? It will not be able to record sales on the servants\' link. What it recorded before stays as it is.' : 'Allow "' + who + '" to record sales again?', done: on ? 'Name rejected.' : 'Name allowed again.' }); }; });
     copyBtn($('#t-team'));

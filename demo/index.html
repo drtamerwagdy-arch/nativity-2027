@@ -3565,6 +3565,20 @@ var Core = (function () {
       list.push(name); env.setSetting('servant_names', list.join('|'));
     });
   }
+  // Tamer's dashboard key (or Claude's): take a name off the list, e.g. a try or a misspelling. Only a name that has recorded
+  // nothing: once a servant has a sale, a donation or a hand-over, their name stays with those rows. They can type it again later.
+  function ownerSellerRemove(env, p) {
+    requireOwner(env, p.key);
+    var k = sellerKey(p.seller); if (k.length < 2) throw err('Which name?');
+    return env.lock(function () {
+      var s = settings(env), list = servantList(s), used = env.list('entries').some(function (e) { return sellerKey(e.recorded_by) === k && env.list('members').some(function (m) { return m.id === e.member_id && m.name === SHARED_LINK; }); }) ||
+        env.list('handovers').some(function (h) { return sellerKey(h.name) === k; });
+      if (used) throw err('This servant has recorded something, so the name stays with those rows. You can reject the name instead.');
+      if (!list.some(function (n) { return sellerKey(n) === k; })) throw err('That name is not on the list.');
+      env.setSetting('servant_names', list.filter(function (n) { return sellerKey(n) !== k; }).join('|'));
+      return { ok: true, servants: servantList(settings(env)) };
+    });
+  }
   function sellersOf(env, m) {
     var seen = {}, out = [], s = settings(env), mine = live(env).filter(function (e) { return e.member_id === m.id; });
     var count = function (name) { var k = sellerKey(name); return mine.filter(function (e) { return sellerKey(e.recorded_by) === k; }).length; };
@@ -4157,7 +4171,7 @@ var Core = (function () {
     announcements: announcements, owner_announce: ownerAnnounce, owner_announce_off: ownerAnnounceOff,
     owner_void: ownerVoid, owner_clear: ownerClear, owner_delete: ownerDelete, owner_sponsor_show: ownerSponsorShow, owner_handover: ownerHandover, owner_setting: ownerSetting, owner_resend: ownerResend, owner_test_email: ownerTestEmail,
     owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); }, owner_sheet_key: ownerSheetKey, sheet_rows: sheetRows, sheet_backup: sheetBackup, owner_test_pdf: ownerTestPdf, owner_test_pass: ownerTestPass,
-    card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck, owner_free_tickets: ownerFreeTickets, owner_cash_gift: ownerCashGift, ticket_picture: ticketPicture, tickets_list: ticketsList, ticket_pass: ticketPass, tickets_passes: ticketsPasses, owner_test_text: ownerTestText, owner_seller_block: ownerSellerBlock, claude_join: claudeJoin, owner_claude_allow: ownerClaudeAllow, owner_claude_off: ownerClaudeOff, owner_set_tickets: ownerSetTickets, owner_refunded: ownerRefunded };
+    card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck, owner_free_tickets: ownerFreeTickets, owner_cash_gift: ownerCashGift, ticket_picture: ticketPicture, tickets_list: ticketsList, ticket_pass: ticketPass, tickets_passes: ticketsPasses, owner_test_text: ownerTestText, owner_seller_block: ownerSellerBlock, owner_seller_remove: ownerSellerRemove, claude_join: claudeJoin, owner_claude_allow: ownerClaudeAllow, owner_claude_off: ownerClaudeOff, owner_set_tickets: ownerSetTickets, owner_refunded: ownerRefunded };
 
   // ---------- Claude's own key for the dashboard (Tamer 2026-11-21: "need you to have control when need it") ----------
   // The same idea as the book store's (14 Nov 2026). The key is made on Tamer's Mac and lives only in its Keychain: never in a file,
