@@ -2954,11 +2954,15 @@ var Core = (function () {
   function ticketsLink(env, s, e) { return siteUrl(s) + 'ticket/?e=' + encodeURIComponent(e.id) + '&k=' + entryKey(env, e.id); }
   function ticketsText(env, s, e) { return textBody(s, list(e.tickets).length, ticketsLink(env, s, e)); }
   function textBody(s, n, link) {
-    return 'St. Mina Calgary, Wonder Worker Art Team: here ' + (n > 1 ? 'are your ' + n + ' tickets' : 'is your ticket') + ' for the Nativity Celebration, Saturday, January 30, 2027, 3:00 PM.\n\n' +
-      'Press the link to open your ticket' + (n > 1 ? 's' : '') + ' and add ' + (n > 1 ? 'them' : 'it') + ' to Apple Wallet (for iPhones): ' + link + '\n\n' +   // his words, 21 Nov: "just write press link to open and add to apple wallet for iphones"
-      'Location: Bert Church LIVE Theatre, Airdrie ' + siteUrl(s) + 'map\n\n' +
-      'Add to calendar: ' + siteUrl(s) + 'calendar\n\n' +
-      'Please do not reply to this number. For help, send us an email at artteam@stminacalgary.ca';
+    // one fact a line and every link on a line of its own (Tamer 2026-11-21, on his first real text: "can you align the 1st
+    // message better"): on a phone the long addresses used to break in the middle of a sentence
+    return 'St. Mina Calgary, Wonder Worker Art Team\n' +
+      'Your ' + (n > 1 ? n + ' tickets' : 'ticket') + ' for the Nativity Celebration\n' +
+      'Saturday, January 30, 2027, 3:00 PM\n\n' +
+      'Press the link to open your ticket' + (n > 1 ? 's' : '') + ' and add ' + (n > 1 ? 'them' : 'it') + ' to Apple Wallet (for iPhones):\n' + link + '\n\n' +   // his words, 21 Nov
+      'Location: Bert Church LIVE Theatre, Airdrie\n' + siteUrl(s) + 'map\n\n' +
+      'Add to calendar:\n' + siteUrl(s) + 'calendar\n\n' +
+      'Please do not reply to this number.\nFor help, send us an email at artteam@stminacalgary.ca';
   }
   // The page behind the text's link: which tickets this sale holds (each with its own signed key, as in the tickets email)
   function ticketsList(env, p) {
@@ -3004,7 +3008,7 @@ var Core = (function () {
     if (!from) throw err('Set sms_from first (the number that sends, like +18254509095).');
     if (!to) throw err('Enter a mobile number with the area code.');
     if (q < 1 || q > 10) throw err('Test tickets: 1 to 10.');
-    try { env.sms(to, 'TEST, NOT REAL TICKETS. ' + textBody(s, q, siteUrl(s) + 'ticket/?t=' + q + '&k=' + env.sign('test-' + q)), from); }
+    try { env.sms(to, 'TEST, NOT REAL TICKETS.\n' + textBody(s, q, siteUrl(s) + 'ticket/?t=' + q + '&k=' + env.sign('test-' + q)), from); }
     catch (x) { return { ok: false, error: 'The test text did not go out: ' + String(x && x.message || x).slice(0, 500) }; }
     var pics = 'off';
     if (picturesOn(env, s)) {
