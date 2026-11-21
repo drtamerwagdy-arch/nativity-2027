@@ -210,10 +210,10 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   <form class="card hide" id="sale" novalidate>
     <h2>New sale</h2>
     <div class="two"><label class="f">First name<input name="first" autocomplete="off"></label><label class="f">Last name<input name="last" autocomplete="off"></label></div>
-    <label class="f">Email <span style="font-weight:400">(tickets are emailed here; leave empty only if you hand over printed tickets)</span><input name="email" type="email" inputmode="email" autocomplete="off"></label>
-    <label class="f">Mobile <span style="font-weight:400">(optional)</span><input name="phone" type="tel" inputmode="tel" autocomplete="off"></label>
+    <label class="f">Email <span style="font-weight:400" data-emailhint>(tickets are emailed here; leave empty only if you hand over printed tickets)</span><input name="email" type="email" inputmode="email" autocomplete="off"></label>
+    <label class="f">Mobile <span style="font-weight:400" data-mobilehint>(optional)</span><input name="phone" type="tel" inputmode="tel" autocomplete="off"></label>
     <h3>Tickets</h3>
-    <div class="pills"><label><input type="radio" name="mode" value="eticket" checked> Email e-tickets</label><label><input type="radio" name="mode" value="printed"> Printed tickets handed over</label></div>
+    <div class="pills"><label><input type="radio" name="mode" value="eticket" checked> Email e-tickets</label><label class="hide" data-textpill><input type="radio" name="mode" value="text"> Text e-tickets to the mobile</label><label><input type="radio" name="mode" value="printed"> Printed tickets handed over</label></div>
     <div data-printed class="hide"><label class="f">Printed ticket numbers you handed over<input name="numbers" placeholder="e.g. 42-45 or 42, 43" inputmode="text" autocomplete="off"></label><p class="hint" data-upto></p></div>
     <div data-eticket class="row"><span>How many</span><div class="stepper"><button type="button" data-d="-1">−</button><input name="qty" type="number" min="1" max="20" value="1"><button type="button" data-d="1">+</button></div></div>
     <h3>Received</h3>
@@ -241,7 +241,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   </section>
   <section class="card hide" id="bad"><h2>Link not valid</h2><p>This link is no longer valid. Please ask Tamer for a new one.</p></section>
 </main>
-<footer><span>Wonder Worker Art Team · team page</span><span class="ver">v1.105</span></footer>
+<footer><span>Wonder Worker Art Team · team page</span><span class="ver">v1.106</span></footer>
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
    Online demo (window.WW_DEMO): the engine runs in the page around this one; ask it by message. */
@@ -557,11 +557,11 @@ var SheetReader = (function () {
   try { if (KEY) localStorage.setItem('ww27-team-key', KEY); else KEY = localStorage.getItem('ww27-team-key') || ''; } catch (e) { }
   var REF = param('b');
   function data() { var o = {}; $$('input', sale).forEach(function (i) { if (!i.name) return; if (i.type === 'radio') { if (i.checked) o[i.name] = i.value; } else if (i.type === 'checkbox') o[i.name] = i.checked; else o[i.name] = i.value.trim(); }); return o; }
-  function count() { var d = data(); if (d.mode === 'eticket') return Number(d.qty) || 0; var n = 0; String(d.numbers).split(/[\s,;]+/).forEach(function (p) { var m = p.match(/^(\d+)(?:-(\d+))?$/); if (m) n += m[2] ? Math.max(0, m[2] - m[1] + 1) : 1; }); return n; }
+  function count() { var d = data(); if (d.mode !== 'printed') return Number(d.qty) || 0; var n = 0; String(d.numbers).split(/[\s,;]+/).forEach(function (p) { var m = p.match(/^(\d+)(?:-(\d+))?$/); if (m) n += m[2] ? Math.max(0, m[2] - m[1] + 1) : 1; }); return n; }
   function sync() {
     var d = data(), c = count();
     $('[data-printed]', sale).classList.toggle('hide', d.mode !== 'printed');
-    $('[data-eticket]', sale).classList.toggle('hide', d.mode !== 'eticket');
+    $('[data-eticket]', sale).classList.toggle('hide', d.mode === 'printed');
     $('[data-suggest]', sale).textContent = c ? 'suggested ' + money(c * SUG) + ' for ' + c : '';
     if (!touched) $('[name=amount]', sale).value = c ? c * SUG : '';
   }
@@ -572,6 +572,9 @@ var SheetReader = (function () {
     $('#hi').textContent = 'Hi ' + me.name;
     $('#held').innerHTML = '<small>CASH YOU HOLD</small>' + money(me.cash);
     SUG = me.suggested || 20;
+    // tickets by text (Tamer 2026-11-21): the choice shows only once the team's number is connected and switched on
+    $('[data-textpill]', sale).classList.toggle('hide', !me.sms);
+    if (me.sms) { $('[data-emailhint]', sale).textContent = '(tickets are emailed here; leave empty only if you hand over printed tickets or send them by text)'; $('[data-mobilehint]', sale).textContent = '(optional; needed if you send the tickets by text)'; }
     // one number series: online sales count down from the top, so printed tickets must stay at or below this
     $('[data-upto]', sale).textContent = 'Printed tickets are No. 1 to No. ' + (me.capacity || 377) + '. E-tickets get their own numbers (1001 and up) by themselves.';
     var so = me.sold;
@@ -657,7 +660,7 @@ var SheetReader = (function () {
     if (!d.first || !d.last) { err.textContent = 'Enter the buyer\'s first and last name.'; return; }
     btn.disabled = true; btn.textContent = 'Sending…';
     api('cash_sale', d).then(function (r) {
-      $('[data-result]', sale).innerHTML = '<div class="okbox"><b>Done.</b> Tickets ' + esc(r.tickets.join(', ')) + (r.email ? ' emailed to ' + esc(r.email) : ' recorded (printed, no email)') + '. You now hold ' + money(r.cash) + '.</div>';
+      $('[data-result]', sale).innerHTML = '<div class="okbox"><b>Done.</b> Tickets ' + esc(r.tickets.join(', ')) + (r.texted ? ' sent by text to ' + esc(r.texted) + (r.email ? ' and emailed to ' + esc(r.email) : '') : r.text_failed ? ' recorded, but the text did not go out. The team has been told' + (r.email ? '; the email went to ' + esc(r.email) : '') : r.email ? ' emailed to ' + esc(r.email) : ' recorded (printed, no email)') + '. You now hold ' + money(r.cash) + '.</div>';
       $$('input[name=first],input[name=last],input[name=email],input[name=phone],input[name=numbers],input[name=amount]', sale).forEach(function (i) { i.value = ''; });
       touched = false; sid = newId(); load();
     }, function (x) { err.textContent = x.message; }).then(function () { btn.disabled = false; btn.textContent = 'Submit purchase'; });

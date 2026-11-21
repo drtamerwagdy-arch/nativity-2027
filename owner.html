@@ -207,7 +207,7 @@ input.s{font:15px Arial,sans-serif;padding:7px 10px;border:1px solid var(--line)
   <section id="t-settings" class="hide"></section>
   <section class="card hide" id="bad"><h2>Link not valid</h2></section>
 </main>
-<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.105</span></footer>
+<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.106</span></footer>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -317,6 +317,15 @@ function copyBtn(root) {
       '<div class="card" style="margin-top:12px"><h2>Free tickets (asked for by email)</h2><p class="hint">For someone who wrote to artteam@ asking for tickets they can\'t give for. No name needed: it shows as "Guest". The e-tickets go to the email you type here.</p>' +
       '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><input class="s" id="ft-email" type="email" placeholder="Their email" style="min-width:240px"> <input class="s" id="ft-qty" type="number" min="1" max="20" value="1" style="width:70px" aria-label="Tickets"> tickets ' +
       '<input class="s" id="ft-name" placeholder="Name (optional)"> <button class="btn" id="ft-go" style="padding:9px 16px;min-height:0">Send the free tickets</button></div><p id="ft-out" class="hint"></p></div>' +
+      // Tamer 2026-11-21: "make a test ticket ... clearly saying test and not counted": the real text, TEST in front, TEST tickets behind the link
+      '<div class="card" style="margin-top:12px"><h2>Test: tickets by text</h2><p class="hint">Sends the same text a buyer gets, marked TEST, to the mobile you type. The tickets behind its link say TEST and are not real: no seat and no number is used.</p>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><input class="s" id="tt-to" type="tel" inputmode="tel" placeholder="Mobile, with area code" style="min-width:220px"> <input class="s" id="tt-qty" type="number" min="1" max="10" value="2" style="width:70px" aria-label="Test tickets"> test tickets ' +
+      '<button class="btn" id="tt-go" style="padding:9px 16px;min-height:0">Send the test text</button></div><p id="tt-out" class="hint"></p>' +
+      // the one-time set-up, here so Tamer needs no Terminal: the send-only key goes from this page straight to the engine and is not kept here
+      '<details style="margin-top:8px"><summary style="cursor:pointer;font-weight:700">Set up the number (once)</summary><p class="hint">Paste the values from Twilio. Use a send-only key. The secret is hidden; it goes straight to the engine and is not kept on this page.</p>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><input class="s" id="tw-acct" autocomplete="off" placeholder="Account SID (AC…)" style="min-width:220px"> <input class="s" id="tw-ksid" autocomplete="off" placeholder="Key SID (SK…)" style="min-width:220px"> ' +
+      '<input class="s" id="tw-ksec" type="password" autocomplete="new-password" placeholder="Key secret" style="min-width:220px"> <input class="s" id="tw-from" type="tel" value="+18254509095" aria-label="The number that sends" style="width:160px"> ' +
+      '<button class="btn" id="tw-connect" style="padding:9px 16px;min-height:0">Connect</button> <button class="btn ghost" id="tw-on" style="padding:8px 14px;min-height:0">Switch on</button> <button class="btn ghost" id="tw-off" style="padding:8px 14px;min-height:0">Switch off</button></div><p id="tw-out" class="hint"></p></details></div>' +
       // Cash or a cheque handed over in person (Tamer 2026-10-04): it goes in as a real donation, so the thermometer on the
       // tickets page moves at once, it counts as a supporter, and Hany sees it on his sheet with the tax-receipt line.
       '<div class="card" style="margin-top:12px"><h2>Money given in person (cash or cheque)</h2><p class="hint">For a gift handed to you outside the website. It is added to the thermometer on the tickets page straight away and appears on Hany\'s sheet. An email address is optional: give one and they get the thank-you and their receipt line; leave it out and it is recorded as a gift with no receipt.</p>' +
@@ -358,6 +367,24 @@ function copyBtn(root) {
         reload();
       }, function (x) { out.textContent = x.message; b.disabled = false; });
     };
+    $('#tt-go').onclick = function () {
+      var b = this, out = $('#tt-out'); if (BUSY || b.disabled) return;
+      b.disabled = true; out.textContent = 'Sending…';
+      run('owner_test_text', { to: $('#tt-to').value.trim(), qty: $('#tt-qty').value }).then(function (r) {
+        out.innerHTML = '<b>Sent</b> to ' + esc(r.to) + ': ' + esc(r.qty) + ' TEST ticket' + (r.qty > 1 ? 's' : '') + '. Nothing was recorded.'; b.disabled = false;
+      }, function (x) { out.textContent = x.message; b.disabled = false; });
+    };
+    $('#tw-connect').onclick = function () {
+      var b = this, out = $('#tw-out'), a = $('#tw-acct').value.trim(), k = $('#tw-ksid').value.trim(), sec = $('#tw-ksec').value.trim(), f = $('#tw-from').value.trim(); if (b.disabled) return;
+      if (!/^AC/.test(a) || !/^SK/.test(k) || !sec || !f) { out.textContent = 'Fill in the four boxes. The Account SID starts with AC and the key SID starts with SK.'; return; }
+      b.disabled = true; out.textContent = 'Connecting…';
+      run('owner_sms_setup', { account: a, key_sid: k, key_secret: sec }).then(function () { return run('owner_setting', { name: 'sms_from', value: f }); }).then(function () {
+        $('#tw-ksec').value = ''; out.innerHTML = '<b>Connected.</b> Send yourself a test text above. When it looks right, press Switch on.'; b.disabled = false;
+      }, function (x) { out.textContent = x.message; b.disabled = false; });
+    };
+    [['#tw-on', 'Y', 'Tickets by text are ON: the team page now shows the choice.'], ['#tw-off', 'N', 'Tickets by text are OFF: the choice is gone from the team page.']].forEach(function (x) {
+      $(x[0]).onclick = function () { var out = $('#tw-out'); out.textContent = 'Working…'; run('owner_setting', { name: 'sms_on', value: x[1] }).then(function () { out.textContent = x[2]; }, function (e) { out.textContent = e.message; }); };
+    });
     var ftId = newId();
     $('#ft-go').onclick = function () {
       var b = this, out = $('#ft-out'), nm = $('#ft-name').value.trim().split(/\s+/); if (BUSY || b.disabled) return;

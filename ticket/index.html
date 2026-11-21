@@ -188,15 +188,25 @@ body{background:linear-gradient(180deg,#0B1530,#1A2D57);min-height:100vh}
 .tw .how b{color:#FFF3D6}
 .tw .msg{background:#fff;color:#1B2233;border-radius:12px;padding:14px;text-align:left;font-size:15px}
 .tw .home{color:#F6CB5C;font-size:14px}
+/* every ticket of one sale, Apple Wallet, the calendar and the map (Tamer 2026-11-21: tickets by text) */
+.tw .one{display:grid;gap:10px;margin:0 0 18px}
+.tw .btn.wal{background:#000;color:#fff;font-size:17px;min-height:56px;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.tw .more{display:grid;gap:10px}
+.tw a.btn{text-align:center;box-sizing:border-box;line-height:1.2}
+.tw .btn.line{background:transparent;color:#FFF3D6;border:1.5px solid #FFF3D6;box-shadow:none}
+.tw .testbar{margin:0;background:#B3261E;color:#fff;font-weight:800;letter-spacing:.04em;border-radius:10px;padding:10px}
 </style>
 </head>
 <body>
 <main class="tw">
   <h1>Nativity Celebration 2027</h1>
   <p class="when">Saturday, January 30, 2027 · 3:00 – 8:00 PM · Bert Church LIVE Theatre, Airdrie</p>
+  <p class="testbar hide" id="test">TEST · these are not real tickets</p>
   <div class="tk" id="tk"><p class="how">Getting your ticket…</p></div>
   <button class="btn wide save hide" id="save" type="button">Save ticket</button>
+  <button class="btn wide wal hide" id="wal" type="button">Add to Apple Wallet</button>
   <p class="how hide" id="how"></p>
+  <div class="more hide" id="more"><a class="btn wide line" href="/calendar/">Add to calendar</a><a class="btn wide line" href="/map/">Open the map</a></div>
   <a class="home" href="/">thewonderworker.ca</a>
 </main>
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
@@ -256,21 +266,59 @@ function copyBtn(root) {
 <script>
 (function () {
   var IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
-  var pic = '', name = 'Nativity-2027-ticket.jpg', file = null;
-  function download() { var a = document.createElement('a'); a.href = pic; a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
-  api('ticket_picture', { n: param('n'), k: param('k') }).then(function (r) {
-    pic = r.image; name = r.name;
-    $('#tk').innerHTML = '<img src="' + r.image + '" alt="Your ticket ' + esc(r.n) + '">';
-    $('#save').classList.remove('hide'); $('#how').classList.remove('hide');
-    $('#how').innerHTML = IOS ? 'Tap <b>Save ticket</b>, then <b>Save Image</b>: it goes to your Photos. You can also press and hold the ticket.'
-      : 'Your ticket is downloading. If it doesn\'t, tap <b>Save ticket</b>, or press and hold the ticket and choose <b>Save image</b>.';
-    fetch(pic).then(function (x) { return x.blob(); }).then(function (b) { try { file = new File([b], name, { type: 'image/jpeg' }); } catch (x) { } });
-    if (!IOS) download();   // Android and computers: straight to Downloads
-  }, function (x) { $('#tk').innerHTML = '<div class="msg">' + esc(x.message) + '</div>'; });
-  $('#save').onclick = function () {
-    if (IOS && file && navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file] }).catch(function () { }); return; }
-    download();
-  };
+  var tk = $('#tk'), how = $('#how');
+  function note(h) { how.classList.remove('hide'); how.innerHTML = h; }
+  function fail(x) { tk.innerHTML = '<div class="msg">' + esc(x.message) + '</div>'; }
+  function fileOf(t) { fetch(t.pic).then(function (x) { return x.blob(); }).then(function (b) { try { t.file = new File([b], t.name, { type: 'image/jpeg' }); } catch (x) { } }); }
+  function download(t) { var a = document.createElement('a'); a.href = t.pic; a.download = t.name; document.body.appendChild(a); a.click(); a.remove(); }
+  function save(t) {
+    if (IOS && t.file && navigator.canShare && navigator.canShare({ files: [t.file] })) { navigator.share({ files: [t.file] }).catch(function () { }); return; }
+    download(t);
+  }
+  // Apple Wallet (Tamer 2026-11-21): the pass is the same one the tickets email attaches; the iPhone opens its own "Add" sheet
+  function wallet(t, b) {
+    var old = b.textContent; b.disabled = true; b.textContent = 'Getting your pass…';
+    api('ticket_pass', { n: t.n, k: t.k }).then(function (r) { return fetch(r.pass); }).then(function (x) { return x.blob(); }).then(function (blob) {
+      location.href = URL.createObjectURL(new Blob([blob], { type: 'application/vnd.apple.pkpass' }));
+    }).catch(function (x) { note(esc((x && x.message) || 'The pass could not be opened. Your ticket picture works at the door.')); })
+      .then(function () { b.disabled = false; b.textContent = old; });
+  }
+  var E = param('e'), T = param('t');
+  if (!E && !T) {   // one ticket: the "Save ticket" link in the tickets email (2026-09-25)
+    var one = { n: param('n'), k: param('k') };
+    api('ticket_picture', one).then(function (r) {
+      one.pic = r.image; one.name = r.name;
+      tk.innerHTML = '<img src="' + r.image + '" alt="Your ticket ' + esc(r.n) + '">';
+      $('#save').classList.remove('hide');
+      if (r.wallet && IOS) $('#wal').classList.remove('hide');
+      note(IOS ? 'Tap <b>Save ticket</b>, then <b>Save Image</b>: it goes to your Photos. You can also press and hold the ticket.'
+        : 'Your ticket is downloading. If it doesn\'t, tap <b>Save ticket</b>, or press and hold the ticket and choose <b>Save image</b>.');
+      fileOf(one);
+      if (!IOS) download(one);   // Android and computers: straight to Downloads
+    }, fail);
+    $('#save').onclick = function () { save(one); };
+    $('#wal').onclick = function () { wallet(one, this); };
+    return;
+  }
+  // every ticket of one sale: the link in the tickets text (Tamer 2026-11-21); ?t= is Tamer's test, with TEST tickets
+  api('tickets_list', E ? { e: E, k: param('k') } : { t: T, k: param('k') }).then(function (r) {
+    if (r.test) $('#test').classList.remove('hide');
+    tk.innerHTML = ''; $('#more').classList.remove('hide');
+    note(IOS ? 'Tap <b>Save ticket</b>, then <b>Save Image</b>: it goes to your Photos. You can also press and hold a ticket.'
+      : 'Tap <b>Save ticket</b> to keep it on your phone, or press and hold a ticket and choose <b>Save image</b>.');
+    r.tickets.forEach(function (t, i) {
+      var label = r.test ? 'TEST ' + (i + 1) : 'No. ' + t.n, box = document.createElement('div');
+      box.className = 'one'; box.innerHTML = '<p class="how">Getting ticket ' + esc(label) + '…</p>'; tk.appendChild(box);
+      api('ticket_picture', { n: t.n, k: t.k }).then(function (p) {
+        t.pic = p.image; t.name = p.name; fileOf(t);
+        box.innerHTML = '<img src="' + p.image + '" alt="Ticket ' + esc(label) + '">' +
+          '<button class="btn wide save" type="button" data-save>Save ticket ' + esc(label) + '</button>' +
+          (r.wallet && IOS ? '<button class="btn wide wal" type="button" data-wal>Add to Apple Wallet</button>' : '');
+        $('[data-save]', box).onclick = function () { save(t); };
+        if ($('[data-wal]', box)) $('[data-wal]', box).onclick = function () { wallet(t, this); };
+      }, function (x) { box.innerHTML = '<div class="msg">' + esc(x.message) + '</div>'; });
+    });
+  }, fail);
 })();
 </script>
 </body>
