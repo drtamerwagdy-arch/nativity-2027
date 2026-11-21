@@ -435,7 +435,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') s.hidden = true; });
 })();</script>
-<div class="svbar"><div class="in"><div><div class="bebas kick" style="font-size:14px;letter-spacing:3px">SERVANT PAGE</div><div class="bebas" style="font-size:26px;letter-spacing:1.5px" id="hi">Loading…</div></div>
+<div class="svbar"><div class="in"><div><div class="bebas kick" style="font-size:14px;letter-spacing:3px">SERVANT PAGE</div><div class="bebas" style="font-size:26px;letter-spacing:1.5px" id="hi">Loading…</div><button type="button" class="link hide" id="rename" style="font-size:13px">Change my name</button></div>
   <div class="held" id="held"></div></div></div>
 <main class="teamgrid">
   <!-- the public page's own code and link, FIRST on the page (Tamer 2026-11-21: "add to the page the barcode for the actual page ...
@@ -529,7 +529,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   </section>
   <section class="card hide" id="bad"><h2>Link not valid</h2><p>This link is no longer valid. Please ask Tamer for a new one.</p></section>
 </main>
-<footer><span>Wonder Worker Art Team · servant page</span><span class="ver">v1.114</span></footer>
+<footer><span>Wonder Worker Art Team · servant page</span><span class="ver">v1.115</span></footer>
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
    Online demo (window.WW_DEMO): the engine runs in the page around this one; ask it by message. */
@@ -3220,7 +3220,7 @@ var qrcode = function() {
 <script>
 (function () {
   // the personal key comes with the member's link once, then this phone remembers it (so a buyer's QR link opens straight here)
-  var KEY = param('k'), sale = $('#sale'), touched = false, SUG = 20, sid = newId(), DOOR = false, SHARED = false, SELLER = '', BLOCKED = false, KIND = 'sale';
+  var KEY = param('k'), sale = $('#sale'), touched = false, SUG = 20, sid = newId(), DOOR = false, SHARED = false, SELLER = '', BLOCKED = false, KIND = 'sale', EDITNAME = false;
   var FIRST = '', LAST = '';   // the servant's own first and last name (two boxes, Tamer 2026-11-21); the engine gets them as one name
   try { SELLER = localStorage.getItem('ww27-seller') || ''; FIRST = localStorage.getItem('ww27-seller-first') || SELLER.split(' ')[0] || ''; LAST = localStorage.getItem('ww27-seller-last') || SELLER.split(' ').slice(1).join(' '); } catch (e) { }
   if (!FIRST || !LAST) SELLER = '';
@@ -3246,7 +3246,11 @@ var qrcode = function() {
     // the name this phone remembers is no longer on the list (Tamer took it off): forget it here, and the page closes until it is saved again
     if (me.unknown) { SELLER = ''; FIRST = ''; LAST = ''; try { ['ww27-seller', 'ww27-seller-first', 'ww27-seller-last'].forEach(function (k) { localStorage.removeItem(k); }); } catch (e) { } }
     $('#hi').textContent = 'Hi ' + (SHARED ? (SELLER || 'there') : me.name);
-    $('#who').classList.toggle('hide', !SHARED); if (SHARED && document.activeElement !== $('#seller1') && document.activeElement !== $('#seller2')) { $('#seller1').value = FIRST; $('#seller2').value = LAST; }
+    // once the name is saved its boxes go away (his word, 21 Nov: "once submit their name that part of the page disapper");
+    // "Change my name" under the greeting opens them again; a name that is not active keeps its red note in view
+    var named = SHARED && SELLER.length >= 2 && !me.blocked;
+    $('#who').classList.toggle('hide', !SHARED || (named && !EDITNAME)); $('#rename').classList.toggle('hide', !named || EDITNAME);
+    if (SHARED && document.activeElement !== $('#seller1') && document.activeElement !== $('#seller2')) { $('#seller1').value = FIRST; $('#seller2').value = LAST; }
     $('#held').innerHTML = '<small>CASH YOU HOLD</small>' + money(me.cash);
     // a name Tamer has rejected cannot record sales (2026-11-21)
     var no = $('#rejected'); if (!no) { no = document.createElement('div'); no.id = 'rejected'; no.className = 'badbox'; no.style.marginTop = '10px'; $('#who').appendChild(no); }
@@ -3282,7 +3286,7 @@ var qrcode = function() {
     var tb = $('[data-tiers]', spon), most = Math.max.apply(null, me.tiers || [0]);
     if (!tb.innerHTML) tb.innerHTML = (me.tiers || []).map(function (v, i) { return '<label><input type="radio" name="tier" value="' + v + '"' + (i ? '' : ' checked') + '> ' + money(v) + '</label>'; }).join('');
     $('[data-over]', spon).textContent = 'or type more than ' + money(most);
-    $('#howto').classList.remove('hide'); $('[data-namefirst]').classList.toggle('hide', !SHARED); $('#share').classList.remove('hide'); showKind(); goal();
+    $('#howto').classList.remove('hide'); $('[data-namefirst]').classList.toggle('hide', !SHARED || (SELLER.length >= 2 && !me.blocked)); $('#share').classList.remove('hide'); showKind(); goal();
     $('#mine').classList.remove('hide'); $('#collect').classList.toggle('hide', !DOOR); sync();
   }
 
@@ -3468,9 +3472,11 @@ var qrcode = function() {
     if (!a || !b) { if (!a) $('#seller1').focus(); else $('#seller2').focus(); return; }   // both are needed: the page stays closed until then
     FIRST = a; LAST = b; SELLER = a + ' ' + b; $('#seller1').value = a; $('#seller2').value = b;
     try { localStorage.setItem('ww27-seller', SELLER); localStorage.setItem('ww27-seller-first', a); localStorage.setItem('ww27-seller-last', b); } catch (e) { }
+    EDITNAME = false;
     load(true);   // saving the name is what puts the servant on the list
   }
   $('#sellergo').onclick = saveName;
+  $('#rename').onclick = function () { EDITNAME = true; $('#who').classList.remove('hide'); this.classList.add('hide'); $('#seller1').focus(); };
   $('#seller2').onchange = function () { if ($('#seller1').value.trim() && this.value.trim()) saveName(); };
   $('#seller1').onchange = function () { if (this.value.trim() && $('#seller2').value.trim()) saveName(); };
   sale.onsubmit = function (ev) {
