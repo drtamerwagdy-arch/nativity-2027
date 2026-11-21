@@ -468,7 +468,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   <form class="card hide" id="sale" novalidate>
     <h2>New sale</h2>
     <div class="two"><label class="f">First name<input name="first" autocomplete="off"></label><label class="f">Last name<input name="last" autocomplete="off"></label></div>
-    <label class="f">Email <span style="font-weight:400" data-emailhint>(tickets are emailed here; leave empty only if you hand over printed tickets)</span><input name="email" type="email" inputmode="email" autocomplete="off"></label>
+    <label class="f">Email <span style="font-weight:400" data-emailhint>(a must: the tickets are emailed here)</span><input name="email" type="email" inputmode="email" autocomplete="off"></label>
     <label class="f">Mobile <span style="font-weight:400" data-mobilehint>(optional)</span><input name="phone" type="tel" inputmode="tel" autocomplete="off"></label>
     <h3>Tickets</h3>
     <div class="pills"><label><input type="radio" name="mode" value="eticket" checked> Email e-tickets</label><label class="hide" data-textpill><input type="radio" name="mode" value="text"> Text e-tickets to the mobile</label><label data-printedpill><input type="radio" name="mode" value="printed"> <span>Printed tickets handed over<span class="hide" data-printednote style="font-weight:400"> (not in use for now)</span></span></label></div>
@@ -531,7 +531,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   </section>
   <section class="card hide" id="bad"><h2>Link not valid</h2><p>This link is no longer valid. Please ask Tamer for a new one.</p></section>
 </main>
-<footer><span>Wonder Worker Art Team · servant page</span><span class="ver">v1.117</span></footer>
+<footer><span>Wonder Worker Art Team · servant page</span><span class="ver">v1.118</span></footer>
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
    Online demo (window.WW_DEMO): the engine runs in the page around this one; ask it by message. */
@@ -3282,7 +3282,8 @@ var qrcode = function() {
     if (!me.printed && pin.checked) { $('[name=mode][value=eticket]', sale).checked = true; }
     DOOR = !!me.door;
     // what the email line says follows what is in use: printed tickets, tickets by text, both or neither
-    $('[data-emailhint]', sale).textContent = '(tickets are emailed here' + (me.printed && me.sms ? '; leave empty only if you hand over printed tickets or send them by text' : me.printed ? '; leave empty only if you hand over printed tickets' : me.sms ? '; leave empty only if you send them by text' : '') + ')';
+    // the email is a must for every ticket (Tamer 2026-11-21); a text goes to the mobile as well, never instead
+    $('[data-emailhint]', sale).textContent = '(a must: the tickets are emailed here' + (me.sms ? ', also when you text them' : '') + ')';
     SUG = me.suggested || 20;
     // tickets by text (Tamer 2026-11-21): the choice shows only once the team's number is connected and switched on
     $('[data-textpill]', sale).classList.toggle('hide', !me.sms);
@@ -3506,6 +3507,7 @@ var qrcode = function() {
     if (SHARED && SELLER.length < 2) { err.textContent = 'Type your own name at the top of the page first.'; $('#seller1').focus(); return; }
     if (SHARED) d.seller = SELLER;
     if (!d.first || !d.last) { err.textContent = 'Enter the buyer\'s first and last name.'; return; }
+    if (!d.email) { err.textContent = 'Enter the buyer\'s email. Every ticket needs one: the tickets are sent there.'; $('[name=email]', sale).focus(); return; }
     if (d.method === 'e-Transfer') {
       if (proof.busy()) { err.textContent = 'One moment: still checking the screenshot.'; return; }
       d.proof = proof.value();
@@ -3527,8 +3529,8 @@ var qrcode = function() {
     { el: '#share', t: 'The tickets page', d: 'Someone prefers to do it on their own phone? Let them scan this code, or send them the link from your phone.' },
     { el: '#held', t: 'Cash you hold', d: 'Adds up the cash and cheques you collect. Give them to Hany; Tamer records the hand-over. An e-Transfer is not counted here: it goes straight to the church.' },
     { el: '#soldbar', t: 'Tickets sold', d: 'Tickets sold so far, gifted seats (not in the total) and seats left. A warning shows when seats run low.' },
-    { el: '#sale .two', t: 'Selling in person', d: 'Under <b>New sale</b>, type the buyer\'s name, then the email or the mobile.' },
-    { el: function () { var r = $('#sale [name=mode]'); return r && r.closest('.pills'); }, t: 'How the tickets go', d: '<b>Email e-tickets</b>: choose how many; they arrive by email. No email? Send them <b>by text to the mobile</b> when that choice shows.' },
+    { el: '#sale .two', t: 'Selling in person', d: 'Under <b>New sale</b>, type the buyer\'s name and email. The email is a must for every ticket.' },
+    { el: function () { var r = $('#sale [name=mode]'); return r && r.closest('.pills'); }, t: 'How the tickets go', d: '<b>Email e-tickets</b>: choose how many; they arrive by email. <b>Text e-tickets to the mobile</b> (when that choice shows): they go by text as well as by email.' },
     { el: '#sale .money', t: 'Amount and payment', d: 'Enter the amount received, choose <b>Cash</b>, <b>Cheque</b> or <b>e-Transfer</b>, then tap <b>Submit purchase</b>. For an e-Transfer, add the screenshot of the buyer\'s confirmation first.' },
     { el: '#mine', t: 'My sales', d: 'The sales made with this link show here. Made a mistake? <b>Undo</b> within 15 minutes.' }
   ];

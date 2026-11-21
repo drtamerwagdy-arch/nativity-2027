@@ -3673,20 +3673,21 @@ var Core = (function () {
     if (shared && sellerBlocked(s, seller)) throw err('This name cannot record sales. Please speak to Tamer.');
     var who = { first: str(p.first), last: str(p.last), email: email, phone: str(p.phone), receipt: p.no_receipt ? 'N' : 'Y', address: '', city: '', postal: '' };
     if (!who.first || !who.last) throw err('Enter the buyer\'s first and last name.');
-    if (email && !validEmail(email)) throw err('Check the email address (or leave it empty).');
+    // The email is a must for every ticket, however it is delivered (Tamer 2026-11-21: "make sure the email is mandatory for any
+    // tickets through servant or regular purchase"). Before, a text or a printed ticket could go out with no email.
+    if (!email) throw err('Enter the buyer\'s email. Every ticket needs one: the tickets are sent there.');
+    if (!validEmail(email)) throw err('Check the email address.');
     var et = /transfer/i.test(p.method), amount = num(p.amount), method = et ? 'e-Transfer' : /cheque/i.test(p.method) ? 'Cheque' : 'Cash';
     if (!(amount > 0)) throw err('Enter the amount received.');
     // An e-Transfer shown to a servant (Tamer 2026-11-21: "add option beside cash, cheque, add upload e-transfer screen shot"): the
     // same rules as an online order: the screenshot is a must, private lines are blacked out on the phone, one e-Transfer is one sale.
     if (et && !(p.proof && p.proof.dataUrl)) throw err('Add the screenshot of the e-Transfer. Every e-Transfer sale needs one.');
     var printed = p.mode === 'printed', texted = p.mode === 'text', cell = texted ? mobile(p.phone) : '';
-    // Tickets by text (Tamer 2026-11-21: "would be helpful for elder to have it on their phone"): a servant helps someone who has
-    // no email. The mobile is a must; an email, if given, gets the tickets too.
+    // Tickets by text (Tamer 2026-11-21: "would be helpful for elder to have it on their phone"): the tickets go to the mobile as
+    // well as to the email. The mobile is a must for it, and so is the email (above).
     if (texted && !smsOn(env, s)) throw err('Tickets by text are not switched on. Please use the email or printed tickets.');
     if (texted && !cell) throw err('Enter the buyer\'s mobile number with the area code. The tickets are sent there by text.');
     if (texted) who.phone = cell;
-    if (!printed && !texted && !email) throw err(String(s.printed_on).toUpperCase() === 'Y' ? 'No email? Then hand over printed tickets and choose "Printed tickets".'
-      : smsOn(env, s) ? 'Enter the buyer\'s email, or choose "Text e-tickets to the mobile".' : 'Enter the buyer\'s email. The tickets are sent there.');   // printed tickets are greyed for now (2026-11-21)
     if (et) p.proofText = readProofText(env, p);   // the slow reading of the screenshot, before the lock
     return env.lock(function () {
       s = settings(env);   // fresh inside the lock (2026-09-26)
