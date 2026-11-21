@@ -207,7 +207,7 @@ input.s{font:15px Arial,sans-serif;padding:7px 10px;border:1px solid var(--line)
   <section id="t-settings" class="hide"></section>
   <section class="card hide" id="bad"><h2>Link not valid</h2></section>
 </main>
-<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.110</span></footer>
+<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.111</span></footer>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -528,7 +528,14 @@ function copyBtn(root) {
       ['booking_max', 'Pay-in-cash booking: most tickets (gifted seats not counted)'], ['hold_days', 'Pay-in-cash booking: days held'],
       ['sales_close', 'Ticket sales close (date and time)'], ['tickets_pdf', 'Attach the tickets as a PDF to the email (Y or N; off: PDFs sent the email to spam)'],
       ['site_url', 'Website address (for links in emails and the card return)'], ['void_numbers', 'Cancelled printed ticket numbers (never reused)'], ['paused', 'Pause message (empty = the site is open)']];
-    $('#t-settings').innerHTML = '<div class="card"><h2>Settings</h2>' + F.map(function (f) { return '<label class="f">' + f[1] + '<input data-set="' + f[0] + '" value="' + esc(s[f[0]]) + '"></label>'; }).join('') + '<p class="hint">Each field saves when you leave it.</p></div>';
+    $('#t-settings').innerHTML = '<div class="card"><h2>Settings</h2>' + F.map(function (f) { return '<label class="f">' + f[1] + '<input data-set="' + f[0] + '" value="' + esc(s[f[0]]) + '"></label>'; }).join('') + '<p class="hint">Each field saves when you leave it.</p></div>' +
+      // Claude's own key (Tamer 2026-11-21: "need you to have control when need it"): made on his Mac, kept in its Keychain; he allows it here and turns it off here
+      (function () { var c = D.claude || {};
+        return '<div class="card" style="margin-top:12px"><h2>Claude\'s key</h2><p class="hint">Claude on your Mac can have its own key to this dashboard, so it can do a job for you here when you ask. The key lives only in the Mac\'s Keychain. Claude never gets your own key, cannot delete rows or make keys, and everything it does is written in the Log. You can turn it off here at any time.</p>' +
+          (c.waiting ? '<div class="warn"><b>A key is waiting:</b> ' + esc(c.waiting.name) + (c.waiting.at ? ' (asked ' + esc(when(c.waiting.at)) + ')' : '') + '. <button class="btn" data-cl="allow" style="min-height:0;padding:8px 14px;margin-left:8px">Allow Claude</button> <button class="btn ghost" data-cl="off" style="min-height:0;padding:8px 14px">Refuse</button></div>' : '') +
+          (c.on ? '<div class="okbox"><b>On:</b> ' + esc(c.name || 'Claude') + ' has a key. <button class="btn ghost" data-cl="off" style="min-height:0;padding:8px 14px;margin-left:8px">Turn Claude\'s key off</button></div>' : c.waiting ? '' : '<p><b>Off.</b> No key is in use and none is waiting.</p>') + '</div>'; })();
+    $$('[data-cl]').forEach(function (b) { b.onclick = function () { var allow = b.getAttribute('data-cl') === 'allow';
+      act(b, allow ? 'owner_claude_allow' : 'owner_claude_off', {}, { ask: allow ? 'Allow Claude on your Mac to use this dashboard with its own key?' : 'Turn Claude\'s key off? It stops working at once.', done: allow ? 'Claude\'s key is on.' : 'Claude\'s key is off.' }); }; });
     $$('[data-set]').forEach(function (i) { i.onchange = function () { run('owner_setting', { name: i.getAttribute('data-set'), value: i.value }).then(function () { i.style.borderColor = 'var(--ok)'; D.settings[i.getAttribute('data-set')] = i.value; }, function (x) { i.style.borderColor = 'var(--bad)'; alert(x.message); }); }; });   // saves in place: a redraw here ate the next tap on a phone (2026-09-26)
   }
   reload();

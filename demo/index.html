@@ -2502,6 +2502,7 @@ var Core = (function () {
     payments_email: 'artteam+payments@stminacalgary.ca',   // one email per payment (Tamer 2026-09-25); 'off' = none
     tickets_pdf: 'N',   // the tickets PDF in the tickets email: off (Tamer 2026-09-25: with it, the email went to Yahoo's spam); 'Y' once DKIM/DMARC are set
     servant_names: '',   // every servant who has typed their name on the servants' link, in the order they came (2026-11-21: "should show all members who would add them self"), with | between
+    claude_on: 'N', claude_hash: '', claude_name: '', claude_pending: '',   // Claude's own key for the dashboard (Tamer 2026-11-21): only a fingerprint is kept; off until he presses Allow
     blocked_sellers: '',   // names Tamer has rejected on the servants' link (2026-11-21: "give me option to reject certain name for servant if needed"), kept in small letters, one after the other with | between
     printed_on: 'N', door_on: 'N',   // the servant page (Tamer 2026-11-21): printed tickets greyed "for now as we might never print tickets"; the door check hidden ("drop at the door, scan the tickets"). 'Y' brings either back
     sms_pictures: 'N',   // the ticket pictures as a second, picture message after the text with the link (Tamer 2026-11-21: "yes build it"); the link text always goes first, so a picture message that fails loses nothing
@@ -3846,7 +3847,7 @@ var Core = (function () {
     var t = { seatsUsed: Object.keys(usedNumbers(env)).length, seatsLeft: sc.left, printed: sc.printed, eticket: sc.eticket, gifts: { given: sc.gift, numbers: sc.giftNumbers, held: sc.heldGift, pool: sc.pool, poolLeft: sc.poolLeft }, capacity: num(s.capacity), reserved: num(s.reserved), goal: num(s.goal), total: 0, byMethod: {}, byKind: {} };
     live(env).forEach(function (e) { t.total += num(e.amount); t.byMethod[e.method] = (t.byMethod[e.method] || 0) + num(e.amount); t.byKind[e.kind] = (t.byKind[e.kind] || 0) + num(e.amount); });
     var announcements = env.list('announcements').filter(function (a) { return String(a.active) !== 'N'; }).slice().reverse();
-    return { entries: entries, members: members, handovers: env.list('handovers'), announcements: announcements, totals: t, settings: s, cols: ENTRY_COLS };
+    return { entries: entries, members: members, handovers: env.list('handovers'), announcements: announcements, totals: t, settings: s, cols: ENTRY_COLS, claude: claudeState(s) };
   }
   function ownerMemberAdd(env, p) {
     requireOwner(env, p.key);
@@ -4156,7 +4157,60 @@ var Core = (function () {
     announcements: announcements, owner_announce: ownerAnnounce, owner_announce_off: ownerAnnounceOff,
     owner_void: ownerVoid, owner_clear: ownerClear, owner_delete: ownerDelete, owner_sponsor_show: ownerSponsorShow, owner_handover: ownerHandover, owner_setting: ownerSetting, owner_resend: ownerResend, owner_test_email: ownerTestEmail,
     owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); }, owner_sheet_key: ownerSheetKey, sheet_rows: sheetRows, sheet_backup: sheetBackup, owner_test_pdf: ownerTestPdf, owner_test_pass: ownerTestPass,
-    card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck, owner_free_tickets: ownerFreeTickets, owner_cash_gift: ownerCashGift, ticket_picture: ticketPicture, tickets_list: ticketsList, ticket_pass: ticketPass, tickets_passes: ticketsPasses, owner_test_text: ownerTestText, owner_seller_block: ownerSellerBlock, owner_set_tickets: ownerSetTickets, owner_refunded: ownerRefunded };
+    card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck, owner_free_tickets: ownerFreeTickets, owner_cash_gift: ownerCashGift, ticket_picture: ticketPicture, tickets_list: ticketsList, ticket_pass: ticketPass, tickets_passes: ticketsPasses, owner_test_text: ownerTestText, owner_seller_block: ownerSellerBlock, claude_join: claudeJoin, owner_claude_allow: ownerClaudeAllow, owner_claude_off: ownerClaudeOff, owner_set_tickets: ownerSetTickets, owner_refunded: ownerRefunded };
+
+  // ---------- Claude's own key for the dashboard (Tamer 2026-11-21: "need you to have control when need it") ----------
+  // The same idea as the book store's (14 Nov 2026). The key is made on Tamer's Mac and lives only in its Keychain: never in a file,
+  // never in a chat. The engine keeps only its fingerprint, and that does nothing until Tamer presses Allow on his dashboard; he
+  // turns it off there at any time. It opens the dashboard's actions EXCEPT the ones in CLAUDE_NO; every use is written in the Log,
+  // and the dashboard's own key is never handed to it. The setup actions that hold secrets (Twilio, Square, Wallet) live on the
+  // Apps Script side and take Tamer's key only.
+  var CLAUDE_NO = { owner_sheet_key: 1, owner_delete: 1, owner_claude_allow: 1, owner_claude_off: 1 };
+  var HIDDEN_FROM_CLAUDE = ['owner_key', 'sheet_key', 'claude_hash', 'claude_pending'];
+  function claudeJoin(env, p) {   // anyone can call it, and all it does is leave a fingerprint waiting for Tamer
+    var h = str(p.hash).toLowerCase(), s = settings(env);
+    if (!/^[0-9a-f]{64}$/.test(h)) throw err('That is not a fingerprint.');
+    if (env.hit && !env.hit('claude-join', 3, 3600)) throw err('Too many requests. Please try again in an hour.');
+    env.setSetting('claude_pending', h + '|' + sellerName(String(p.name || 'Claude on the Mac').replace(/\|/g, ' ')) + '|' + env.now().toISOString());
+    try {
+      env.mail({ to: s.team_email, subject: 'Claude asks for a key to the tickets dashboard', name: s.from_name,
+        html: shell('<p>Claude on your Mac asked for its own key to the tickets dashboard.</p><p>It does nothing until you open your dashboard, go to <b>Settings</b> and press <b>Allow Claude</b>. If you did not ask for this, press <b>Refuse</b> there.</p><p>The Wonder Worker ticket system</p>') });
+    } catch (x) { env.log('claude join mail failed: ' + x.message); }
+    return { ok: true, waiting: true };
+  }
+  function ownerClaudeAllow(env, p) {
+    var s = requireOwner(env, p.key), w = str(s.claude_pending).split('|');
+    if (!/^[0-9a-f]{64}$/.test(w[0])) throw err('No key is waiting.');
+    env.setSetting('claude_hash', w[0]); env.setSetting('claude_name', w[1] || 'Claude'); env.setSetting('claude_on', 'Y'); env.setSetting('claude_pending', '');
+    env.log('CLAUDE KEY allowed by Tamer: ' + (w[1] || 'Claude'));
+    return { ok: true };
+  }
+  function ownerClaudeOff(env, p) {   // turn the key off, or refuse one that is waiting
+    requireOwner(env, p.key);
+    env.setSetting('claude_on', 'N'); env.setSetting('claude_hash', ''); env.setSetting('claude_pending', '');
+    env.log('CLAUDE KEY turned off by Tamer');
+    return { ok: true };
+  }
+  function claudeState(s) {
+    var w = str(s.claude_pending).split('|');
+    return { on: String(s.claude_on).toUpperCase() === 'Y' && !!str(s.claude_hash), name: str(s.claude_name), waiting: /^[0-9a-f]{64}$/.test(w[0]) ? { name: w[1] || 'Claude', at: w[2] || '' } : null };
+  }
+  // In handle(): a request that carries Claude's key is checked here, written in the Log and passed on as the owner's.
+  function asClaude(env, s0, action, payload) {
+    var k = str(payload && payload.key);
+    if (!k || !/^owner_/.test(action) || !env.sha256 || String(s0.claude_on).toUpperCase() !== 'Y' || !str(s0.claude_hash)) return null;
+    if (k === String(s0.owner_key) || env.sha256(k) !== String(s0.claude_hash)) return null;
+    if (CLAUDE_NO[action]) throw err('This one is for Tamer only.');
+    var shown = {}; Object.keys(payload).forEach(function (x) { if (x !== 'key' && x !== 'logo' && x !== 'proof' && x !== 'photo') shown[x] = payload[x]; });
+    env.log('CLAUDE KEY · ' + action + ' · ' + JSON.stringify(shown).slice(0, 400));
+    var p = {}; Object.keys(payload).forEach(function (x) { p[x] = payload[x]; }); p.key = String(s0.owner_key);
+    return p;
+  }
+  function hideFromClaude(r) {   // what goes back never carries the dashboard's own key
+    if (r && r.settings) { var s = {}; Object.keys(r.settings).forEach(function (k) { if (HIDDEN_FROM_CLAUDE.indexOf(k) < 0) s[k] = r.settings[k]; }); r.settings = s; }
+    if (r && r.sheet_key) delete r.sheet_key;
+    return r;
+  }
 
   var PUBLIC_WRITES = { order: 1, donate: 1, sponsor: 1, waitlist: 1 };
   // Google's Sheets service fails now and then for a single call ("Service Spreadsheets failed while accessing document …":
@@ -4179,6 +4233,8 @@ var Core = (function () {
     try {
       var s0 = firstRead(env);
       if (PUBLIC_WRITES[action]) { var paused = str(s0.paused); if (paused) throw err(paused); }
+      var mine = asClaude(env, s0, action, payload || {});   // Claude's own key (2026-11-21): checked, logged, and never given the owner's key back
+      if (mine) return hideFromClaude(f(env, mine));
       return f(env, payload || {});
     } catch (e) {
       if (e.userMessage) return { ok: false, error: e.userMessage };
