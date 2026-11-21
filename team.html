@@ -314,6 +314,42 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   .hd-cal{font-size:0;gap:0;padding:calc(7*var(--zu))}
   .hd-cal svg{width:calc(14*var(--zu));height:calc(14*var(--zu))}
 }
+/* The donation card (Tamer 2026-11-18, picked on the tryout: "expense first"): the header's red, OUR EXPENSES first and
+   biggest, then COVERED SO FAR; the next step and the supporters small; a standing thermometer with bold marks. */
+.gc{position:relative;border-radius:18px;overflow:hidden;margin:0 0 16px;padding:20px 24px;color:#FBF4E4;--f:0%;--y:0%;
+  background:repeating-linear-gradient(115deg,rgba(255,255,255,.045) 0 2px,rgba(0,0,0,0) 2px 7px),linear-gradient(180deg,#96242A 0%,#7A1A20 55%,#5E1217 100%)}
+.gc *{box-sizing:border-box}
+.gc-in{position:relative;display:flex;align-items:center;gap:16px 26px;flex-wrap:wrap}
+.gc .txt{flex:1 1 230px;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:6px;justify-items:start;text-align:left}
+.gc .lab{font:400 17px/1.15 "Bebas Neue",Impact,sans-serif;letter-spacing:1.3px;text-transform:uppercase;color:#F6CB5C}
+.gc .num{font:400 46px/1.05 "Abril Fatface",Georgia,serif;font-variant-numeric:tabular-nums;color:#FBF4E4;text-shadow:0 2px 0 rgba(0,0,0,.25)}
+.gc .g .lab{font-size:24px}.gc .g .num{font-size:68px}
+.gc .v{display:flex;align-items:baseline;gap:4px 12px;flex-wrap:wrap;margin-top:8px;padding-top:10px;border-top:1px solid rgba(246,203,92,.5);width:100%}
+.gc .v .num{font-size:38px}
+.gc .next{font:400 15px/1.15 "Bebas Neue",Impact,sans-serif;letter-spacing:1px;text-transform:uppercase;background:#F6CB5C;color:#3A0D10;border-radius:999px;padding:5px 12px;margin-top:6px}
+.gc .sup{font-size:13px;letter-spacing:1px;color:#FBF4E4;opacity:.8}
+.gc .after{margin-top:6px;background:rgba(0,0,0,.28);border:1px dashed #F6CB5C;border-radius:8px;padding:8px 10px;font:400 15px/1.4 Inter,system-ui,sans-serif;color:#FBF4E4}
+.gc .after b{color:#F6CB5C}
+.gc-btn{position:relative;display:block;text-align:center;font:800 18px/1 Inter,system-ui,sans-serif;border-radius:12px;padding:13px 26px;flex:0 0 auto;align-self:flex-end;margin-left:auto;background:#F6CB5C;color:#0B1530}
+.gc .tube{position:relative;width:108px;height:204px;flex:none}
+.gc .tube .glass{position:absolute;left:8px;top:4px;width:22px;height:170px;border-radius:11px;background:rgba(255,255,255,.93);border:2px solid #3A0D10;overflow:hidden}
+.gc .tube .glass i{position:absolute;left:3px;right:3px;transition:height 1.6s cubic-bezier(.2,.8,.2,1),bottom 1.6s cubic-bezier(.2,.8,.2,1)}
+.gc .tube .fill{bottom:0;height:var(--f);background:linear-gradient(0deg,#A12A22,#D63A2E)}
+.gc .tube .you{bottom:var(--f);height:var(--y);background:#F2C14E}
+.gc .tube .bulb{position:absolute;left:1px;top:166px;width:36px;height:36px;border-radius:50%;background:radial-gradient(circle at 35% 32%,#EF6A5E,#A12A22 70%);border:2px solid #3A0D10}
+.gc .tube .ticks{position:absolute;left:34px;top:6px;height:166px;width:72px;color:#FBF4E4}
+.gc .tube .ticks span{position:absolute;left:0;transform:translateY(50%);font:800 16px/1 Inter,system-ui,sans-serif;white-space:nowrap}
+.gc .tube .ticks span::before{content:"";display:inline-block;width:9px;height:2px;background:currentColor;vertical-align:middle;margin-right:5px}
+@media (max-width:640px){
+  .gc{padding:14px}.gc-in{gap:12px 14px}
+  .gc .lab{font-size:14px;letter-spacing:1px}.gc .g .lab{font-size:20px}.gc .g .num{font-size:42px}.gc .v .num{font-size:28px}
+  .gc .next{font-size:14px}.gc .sup{font-size:12px}
+  .gc-btn{flex:1 1 100%;margin:4px 0 0}
+  .gc .tube{width:100px;height:184px}.gc .tube .glass{height:150px}.gc .tube .bulb{top:146px}.gc .tube .ticks{height:146px}.gc .tube .ticks span{font-size:15px}
+  .gc .txt{flex-basis:150px}
+}
+@media (prefers-reduced-motion:reduce){.gc .tube .glass i{transition:none}}
+#goalbox .gc{margin:0}
 /* the servant's own bar under the banner (Tamer 2026-11-21: "also add the banner") */
 .svbar{background:#fff;border-bottom:4px solid var(--tab-gold);box-shadow:0 2px 10px rgba(11,21,48,.06)}
 .svbar .in{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -337,6 +373,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 @media (min-width:900px){main.teamgrid{display:grid;grid-template-columns:240px minmax(0,1fr);column-gap:18px;align-items:start}
   main.teamgrid>#soldbar{grid-column:1;grid-row:1/span 30;position:sticky;top:14px;grid-template-columns:1fr!important;gap:14px;padding:16px 12px}
   main.teamgrid>*:not(#soldbar){grid-column:2}}
+@media (max-width:899px){main.teamgrid>#share{order:-2}main.teamgrid>#goalbox{order:-1}}
 .soldbar{border-bottom:4px solid var(--tab-gold)}.soldbar>div:first-child>b{font-size:30px;color:#0B1530}
 #mine [data-list]{overflow-x:auto}   /* the sales table scrolls on narrow phones */
 /* the e-Transfer screenshot box, as on the public page (Tamer 2026-11-21) */
@@ -401,6 +438,16 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
 <div class="svbar"><div class="in"><div><div class="bebas kick" style="font-size:14px;letter-spacing:3px">SERVANT PAGE</div><div class="bebas" style="font-size:26px;letter-spacing:1.5px" id="hi">Loading…</div></div>
   <div class="held" id="held"></div></div></div>
 <main class="teamgrid">
+  <!-- the public page's own code and link, FIRST on the page (Tamer 2026-11-21: "add to the page the barcode for the actual page ...
+       the servant can help them also to copy paste and message it"; then "just have it load first thing on the page on the phone") -->
+  <section class="card hide" id="share">
+    <div class="sharebox"><div class="qrbox" data-qr></div>
+      <div class="sharecol"><h2 style="margin:0">The tickets page</h2><p class="hint" style="margin:0">Scan the code, or send the link.</p>
+        <div class="copy" style="margin:0"><span>https://thewonderworker.ca</span><button type="button">Copy</button></div>
+        <button type="button" class="btn wide" data-sharelink>Send the link by message</button><p class="hint" data-shareout style="margin:0"></p></div></div>
+  </section>
+  <!-- the donation banner, as on the public page (his word: "the donation banner is not there") -->
+  <div class="hide" id="goalbox"></div>
   <!-- live counter (Tamer 2026-09-24): printed and e-tickets sold, gifted seats (not in the total), seats left -->
   <section class="soldbar hide" id="soldbar" aria-live="polite"></section>
   <section class="card hide" id="notteam"><h2>This code is for the team</h2><p>Please show it to a Wonder Worker team member when you pay. They will scan it, and your tickets will arrive by email.</p></section>
@@ -472,15 +519,6 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
     <button class="btn wide" type="submit">Submit sponsorship</button>
     <div data-result></div>
   </form>
-  <!-- Tamer 2026-11-21: "add to the page the barcode for the actual page if someone asking, the servant can help them also to
-       copy paste and message it if they want, through their own phone" -->
-  <section class="card hide" id="share">
-    <h2>They want to do it on their own phone?</h2>
-    <p class="hint" style="margin:6px 0 12px">Let them scan this code with their phone's camera, or send them the link. It opens the tickets page, where they can get tickets, donate or become a sponsor themselves.</p>
-    <div class="sharebox"><div class="qrbox" data-qr></div>
-      <div class="sharecol"><div class="copy" style="margin:0"><span>https://thewonderworker.ca</span><button type="button">Copy</button></div>
-        <button type="button" class="btn wide" data-sharelink>Send the link by message</button><p class="hint" data-shareout style="margin:0"></p></div></div>
-  </section>
   <section class="card hide" id="mine"><h2>My sales</h2><div data-list></div></section>
   <section class="card hide" id="collect">
     <h2>At the door (January 30)</h2>
@@ -491,7 +529,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   </section>
   <section class="card hide" id="bad"><h2>Link not valid</h2><p>This link is no longer valid. Please ask Tamer for a new one.</p></section>
 </main>
-<footer><span>Wonder Worker Art Team · servant page</span><span class="ver">v1.113</span></footer>
+<footer><span>Wonder Worker Art Team · servant page</span><span class="ver">v1.114</span></footer>
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
    Online demo (window.WW_DEMO): the engine runs in the page around this one; ask it by message. */
@@ -3205,6 +3243,8 @@ var qrcode = function() {
   function render(me) {
     // the servants' shared link has no name on it (Tamer 2026-11-21: "no name on that link")
     SHARED = !!me.shared;
+    // the name this phone remembers is no longer on the list (Tamer took it off): forget it here, and the page closes until it is saved again
+    if (me.unknown) { SELLER = ''; FIRST = ''; LAST = ''; try { ['ww27-seller', 'ww27-seller-first', 'ww27-seller-last'].forEach(function (k) { localStorage.removeItem(k); }); } catch (e) { } }
     $('#hi').textContent = 'Hi ' + (SHARED ? (SELLER || 'there') : me.name);
     $('#who').classList.toggle('hide', !SHARED); if (SHARED && document.activeElement !== $('#seller1') && document.activeElement !== $('#seller2')) { $('#seller1').value = FIRST; $('#seller2').value = LAST; }
     $('#held').innerHTML = '<small>CASH YOU HOLD</small>' + money(me.cash);
@@ -3242,7 +3282,7 @@ var qrcode = function() {
     var tb = $('[data-tiers]', spon), most = Math.max.apply(null, me.tiers || [0]);
     if (!tb.innerHTML) tb.innerHTML = (me.tiers || []).map(function (v, i) { return '<label><input type="radio" name="tier" value="' + v + '"' + (i ? '' : ' checked') + '> ' + money(v) + '</label>'; }).join('');
     $('[data-over]', spon).textContent = 'or type more than ' + money(most);
-    $('#howto').classList.remove('hide'); $('[data-namefirst]').classList.toggle('hide', !SHARED); showKind();
+    $('#howto').classList.remove('hide'); $('[data-namefirst]').classList.toggle('hide', !SHARED); $('#share').classList.remove('hide'); showKind(); goal();
     $('#mine').classList.remove('hide'); $('#collect').classList.toggle('hide', !DOOR); sync();
   }
 
@@ -3303,11 +3343,11 @@ var qrcode = function() {
         })();
       }, function () { box.innerHTML = '<div class="warn">The camera could not open here. Use your phone\'s camera app on the code, or type the code.</div>'; });
   };
-  function load() { return api('member_me', { key: KEY, seller: SELLER }).then(render, function () { $('#bad').classList.remove('hide'); $('#hi').textContent = 'Team'; }); }
+  function load(save) { return api('member_me', { key: KEY, seller: SELLER, save: save === true }).then(render, function () { $('#bad').classList.remove('hide'); $('#hi').textContent = 'Team'; }); }
   if (!KEY) { $('#hi').textContent = 'Wonder Worker'; $(REF ? '#notteam' : '#bad').classList.remove('hide'); return; }
   if (REF) { $('[data-code]', col).value = (decodeURIComponent(REF).match(/WW27-\d{4}/i) || [''])[0]; find(REF); }
   // ---- Tickets · Donation · Sponsor (Tamer 2026-11-21): one form at a time, the same three ways to take the money on each ----
-  function showKind() { var off = BLOCKED || (SHARED && SELLER.length < 2); $('#kinds').classList.toggle('hide', off); $('#share').classList.toggle('hide', off); ['sale', 'gift', 'spon'].forEach(function (k) { $('#' + k).classList.toggle('hide', off || k !== KIND); }); $$('#kinds button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-kind') === KIND); }); }
+  function showKind() { var off = BLOCKED || (SHARED && SELLER.length < 2); $('#kinds').classList.toggle('hide', off); ['sale', 'gift', 'spon'].forEach(function (k) { $('#' + k).classList.toggle('hide', off || k !== KIND); }); $$('#kinds button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-kind') === KIND); }); }
   $$('#kinds button').forEach(function (b) { b.onclick = function () { KIND = b.getAttribute('data-kind'); showKind(); }; });
   function dataOf(f) { var o = {}; $$('input', f).forEach(function (i) { if (!i.name) return; if (i.type === 'radio') { if (i.checked) o[i.name] = i.value; } else if (i.type === 'checkbox') o[i.name] = i.checked; else o[i.name] = i.value.trim(); }); return o; }
   function payPart(form, who, amountOf, done) {
@@ -3383,6 +3423,34 @@ var qrcode = function() {
     return '<b>Done.</b> Sponsorship of ' + money(r.amount) + ' recorded for ' + esc(r.business) + (r.silent ? ' (silent sponsor)' : '. The name and logo show on the tickets page once Tamer approves them') + '. The thank-you went to ' + esc(r.email) + '. ' + cashLine(r);
   }, function () { sponProof.reset(); LOGO = ''; $('[data-logoprev]', spon).innerHTML = ''; silentSync(); var first = $('[name=tier]', spon); if (first) first.checked = true; });
 
+  // The donation card (Tamer 2026-11-18, picked on the tryout: "expense first"). It used to say "Our goal · to cover the
+  // expenses" / "Given so far" on the night picture (2026-09-24); people read $10,000 as a wish, not a bill, so it now
+  // says OUR EXPENSES / COVERED SO FAR on the header's red. The small gold tag is the next step (every $1,000), which
+  // feels closer than the whole amount; with a donation typed it says where that brings the total.
+  function kMark(v) { return v >= 1000 ? '$' + (v / 1000).toFixed(v % 1000 ? 1 : 0) + 'K' : '$' + v; }
+  function nextStep(raised, add, goal) {
+    var total = raised + add, next = Math.min(goal, Math.floor(total / 1000) * 1000 + 1000), go = next - total;
+    return add > 0 ? 'With yours: ' + money(total) : go > 0 ? money(go) + ' to reach ' + money(next) : 'Expenses covered';
+  }
+  // footer: an extra piece inside the card (the tickets page adds "Donate"); top: the tickets page, where a typed donation
+  // shows as "With yours" in the tag - the Donate page keeps its own full sentence (Tamer 2026-09-24).
+  function banner(raised, add, goal, givers, footer, top) {
+    goal = goal || 1; raised = Number(raised) || 0; add = Number(add) || 0;
+    var p = Math.max(0, Math.min(100, raised / goal * 100)), y = add > 0 ? Math.min(100 - p, Math.max(2.5, add / goal * 100)) : 0, ticks = '';
+    [0, 25, 50, 75, 100].forEach(function (q) { ticks += '<span style="bottom:' + q + '%">' + kMark(Math.round(goal * q / 100)) + '</span>'; });
+    return '<div class="gc" data-f="' + p + '" data-v="' + raised + '" style="--f:' + p + '%;--y:' + y + '%"><div class="gc-in">' +
+      '<div class="tube" aria-hidden="true"><div class="glass"><i class="fill"></i><i class="you"></i></div><div class="bulb"></div><div class="ticks">' + ticks + '</div></div>' +
+      '<div class="txt">' +
+      '<div class="g"><div class="lab">Our expenses</div><div class="num">' + money(goal) + '</div></div>' +
+      '<div class="v"><div class="lab">Covered so far · ' + Math.round(p) + '%</div><div class="num" data-gcnum>' + money(raised) + '</div></div>' +
+      (add > 0 && !top ? '<div class="after">This will be the total after you complete your donation: <b>' + money(raised + add) + '</b> of ' + money(goal) + '.</div>'
+        : '<div class="next">' + nextStep(raised, top ? add : 0, goal) + '</div>') +
+      '<div class="lab sup">' + (givers ? givers + (givers === 1 ? ' supporter' : ' supporters') + ' · thank you' : raised > 0 ? 'Thank you to everyone who has given' : 'Be the first to give') + '</div>' +
+      '</div>' + (footer || '') + '</div></div>';
+  }
+  function goal() {   // the same numbers as the public page; drawn again after every entry, so a donation taken here shows at once
+    api('config', {}).then(function (c) { if (!c || !c.goal) return; var g = $('#goalbox'); g.innerHTML = banner(c.raised, 0, c.goal, c.givers, '', true); g.classList.remove('hide'); }, function () { });
+  }
   // the public page's own code and link (Tamer 2026-11-21): the person scans it, or the servant copies the link or sends it from
   // their own phone (the phone's own share sheet: Messages, WhatsApp...)
   var SITE = 'https://thewonderworker.ca', SHARE_TEXT = 'Nativity Celebration 2027, Saturday, January 30. Get your tickets here:';
@@ -3400,7 +3468,7 @@ var qrcode = function() {
     if (!a || !b) { if (!a) $('#seller1').focus(); else $('#seller2').focus(); return; }   // both are needed: the page stays closed until then
     FIRST = a; LAST = b; SELLER = a + ' ' + b; $('#seller1').value = a; $('#seller2').value = b;
     try { localStorage.setItem('ww27-seller', SELLER); localStorage.setItem('ww27-seller-first', a); localStorage.setItem('ww27-seller-last', b); } catch (e) { }
-    load();
+    load(true);   // saving the name is what puts the servant on the list
   }
   $('#sellergo').onclick = saveName;
   $('#seller2').onchange = function () { if ($('#seller1').value.trim() && this.value.trim()) saveName(); };
@@ -3430,12 +3498,12 @@ var qrcode = function() {
   var TEAM_TOUR = [
     { el: null, t: 'Welcome to the servant page', d: 'This quick guide shows you how to record tickets, a donation or a sponsorship taken in person.', go: 'Start' },
     { el: '#kinds', t: 'Tickets, donation or sponsor', d: 'Choose what the person is giving for. Each one asks only for what it needs, and takes cash, a cheque or an e-Transfer.' },
+    { el: '#share', t: 'The tickets page', d: 'Someone prefers to do it on their own phone? Let them scan this code, or send them the link from your phone.' },
     { el: '#held', t: 'Cash you hold', d: 'Adds up the cash and cheques you collect. Give them to Hany; Tamer records the hand-over. An e-Transfer is not counted here: it goes straight to the church.' },
     { el: '#soldbar', t: 'Tickets sold', d: 'Tickets sold so far, gifted seats (not in the total) and seats left. A warning shows when seats run low.' },
     { el: '#sale .two', t: 'Selling in person', d: 'Under <b>New sale</b>, type the buyer\'s name, then the email or the mobile.' },
     { el: function () { var r = $('#sale [name=mode]'); return r && r.closest('.pills'); }, t: 'How the tickets go', d: '<b>Email e-tickets</b>: choose how many; they arrive by email. No email? Send them <b>by text to the mobile</b> when that choice shows.' },
     { el: '#sale .money', t: 'Amount and payment', d: 'Enter the amount received, choose <b>Cash</b>, <b>Cheque</b> or <b>e-Transfer</b>, then tap <b>Submit purchase</b>. For an e-Transfer, add the screenshot of the buyer\'s confirmation first.' },
-    { el: '#share', t: 'On their own phone', d: 'Someone prefers to do it themselves? Let them scan the code, or send them the link from your phone.' },
     { el: '#mine', t: 'My sales', d: 'The sales made with this link show here. Made a mistake? <b>Undo</b> within 15 minutes.' }
   ];
   load().then(function () {

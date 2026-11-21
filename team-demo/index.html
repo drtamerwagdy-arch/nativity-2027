@@ -3605,8 +3605,13 @@ var Core = (function () {
     var m = memberByKey(env, p.key); if (!m) throw err('This link is no longer valid. Please ask Tamer for a new one.');
     var shared = m.name === SHARED_LINK, seller = shared ? sellerName(p.seller) : '';   // the servants' link: only this servant's own sales and cash
     var s = settings(env), mine = env.list('entries').filter(function (e) { return e.member_id === m.id && (!shared || (!!seller && sellerKey(e.recorded_by) === sellerKey(seller))); }).reverse();
-    if (shared && seller && !servantKnown(s, seller) && !sellerBlocked(s, seller)) { try { servantAdd(env, seller); } catch (x) { env.log('servant not added to the list: ' + x.message); } }
-    return { name: m.name, seller: seller, blocked: shared && !!seller && sellerBlocked(s, seller), cash: shared ? (seller ? cashHeld(env, m, seller) : 0) : cashHeld(env, m), seatsLeft: Math.max(0, seatsLeft(env, s)), suggested: num(s.suggested), capacity: num(s.capacity), sold: soldFor(env, s), sms: smsOn(env, s),
+    // A servant joins the list only by pressing "Save my name" (p.save). A phone that merely remembers a name that is not on the list
+    // (Tamer took it off) is told so, and its page closes until the name is saved again (his try, 21 Nov: "i removed my name from
+    // the list and it gone but when i reloaded the servant page still showing my name and the whole page").
+    var known = !shared || !seller || servantKnown(s, seller) || mine.length > 0, barred = shared && !!seller && sellerBlocked(s, seller);
+    if (!known && !barred && p.save === true) { try { servantAdd(env, seller); known = servantKnown(settings(env), seller); } catch (x) { env.log('servant not added to the list: ' + x.message); } }
+    if (!known && !barred) { seller = ''; mine = []; }
+    return { name: m.name, seller: seller, unknown: !known && !barred, blocked: barred, cash: shared ? (seller ? cashHeld(env, m, seller) : 0) : cashHeld(env, m), seatsLeft: Math.max(0, seatsLeft(env, s)), suggested: num(s.suggested), capacity: num(s.capacity), sold: soldFor(env, s), sms: smsOn(env, s),
       shared: m.name === SHARED_LINK, printed: String(s.printed_on).toUpperCase() === 'Y', door: String(s.door_on).toUpperCase() === 'Y',
       tiers: String(s.sponsor_tiers).split(/[\s,]+/).map(Number).filter(Boolean),   // the sponsor amounts, for the servant page's Sponsor form
       sales: mine.slice(0, 50).map(function (e) { return { id: e.id, created: e.created, name: e.first + ' ' + e.last, email: e.email, tickets: e.tickets, kind: e.kind, business: e.business, amount: num(e.amount), method: e.method, status: e.status,
