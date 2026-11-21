@@ -2504,6 +2504,7 @@ var Core = (function () {
     square_on: 'N', square_env: 'sandbox', square_location_id: '', square_fee_pct: 2.8, square_fee_fixed: 0.30, site_url: 'https://thewonderworker.ca/',   // card payments (Square), off until connected
     payments_email: 'artteam+payments@stminacalgary.ca',   // one email per payment (Tamer 2026-09-25); 'off' = none
     tickets_pdf: 'N',   // the tickets PDF in the tickets email: off (Tamer 2026-09-25: with it, the email went to Yahoo's spam); 'Y' once DKIM/DMARC are set
+    sms_pictures: 'N',   // the ticket pictures as a second, picture message after the text with the link (Tamer 2026-11-21: "yes build it"); the link text always goes first, so a picture message that fails loses nothing
     sms_on: 'N', sms_from: '',   // tickets by text to the buyer's mobile, from the team page (Tamer 2026-11-21): 'Y' once Twilio's send-only key is in (tools/sms_setup.py); sms_from = the number that sends, like +18254509095
     wallet_on: 'N', wallet_pass_type: '', wallet_team: '',   // Apple Wallet passes (Tamer 2026-09-25): 'Y' once the church's Apple certificate is in
     booking_max: 6,        // pay-in-cash booking: most of the buyer's own tickets per booking (gifted seats not counted)
@@ -2912,13 +2913,13 @@ var Core = (function () {
   function walletPass(env, s, e, n, test) {   // test (Tamer 2026-11-21): a pass that says TEST everywhere and carries no door code of a ticket
     var who = str((e.first || '') + ' ' + (e.last || ''));
     var pass = { formatVersion: 1, passTypeIdentifier: str(s.wallet_pass_type), teamIdentifier: str(s.wallet_team), serialNumber: test ? 'WW27-TEST-' + n : 'WW27-T' + n,
-      organizationName: 'St. Mina Coptic Orthodox Church', description: 'Nativity Celebration 2027 · ' + (test ? 'TEST, not a real ticket' : 'ticket No. ' + n), logoText: test ? 'TEST · Nativity 2027' : 'Nativity 2027',
+      organizationName: 'St. Mina Coptic Orthodox Church', description: 'Nativity Celebration 2027 · ' + (test ? 'DEMO, not a real ticket' : 'ticket No. ' + n), logoText: test ? 'DEMO · NOT A TICKET' : 'Nativity 2027',
       foregroundColor: 'rgb(255, 243, 214)', backgroundColor: 'rgb(142, 34, 38)', labelColor: 'rgb(246, 203, 92)',   // red like the ticket (Tamer 2026-09-29)
       relevantDate: '2027-01-30T15:00:00-06:00', expirationDate: '2027-01-31T06:00:00-06:00',
-      barcodes: [{ format: 'PKBarcodeFormatQR', message: test ? 'WW27-TEST' : 'WW27-T' + n, messageEncoding: 'iso-8859-1', altText: test ? 'TEST · NOT A REAL TICKET' : 'No. ' + n }],
+      barcodes: [{ format: 'PKBarcodeFormatQR', message: test ? 'WW27-TEST' : 'WW27-T' + n, messageEncoding: 'iso-8859-1', altText: test ? 'DEMO · NOT A REAL TICKET' : 'No. ' + n }],
       eventTicket: {
-        primaryFields: [{ key: 'event', label: test ? 'TEST · NOT A REAL TICKET' : 'SATURDAY, JANUARY 30, 2027', value: 'Nativity Celebration' }],
-        secondaryFields: [{ key: 'ticket', label: 'TICKET', value: test ? 'TEST' : 'No. ' + n }, { key: 'time', label: 'TIME', value: '3:00 – 8:00 PM', textAlignment: 'PKTextAlignmentRight' }],
+        primaryFields: [{ key: 'event', label: test ? 'DEMO · NOT A REAL TICKET' : 'SATURDAY, JANUARY 30, 2027', value: test ? 'DEMO' : 'Nativity Celebration' }],   // his test, 21 Nov: "can be missed when we got busy on the day" → DEMO in the big words too
+        secondaryFields: [{ key: 'ticket', label: 'TICKET', value: test ? 'DEMO' : 'No. ' + n }, { key: 'time', label: 'TIME', value: '3:00 – 8:00 PM', textAlignment: 'PKTextAlignmentRight' }],
         auxiliaryFields: [{ key: 'where', label: 'WHERE', value: 'Bert Church LIVE Theatre, Airdrie' }].concat(who ? [{ key: 'name', label: 'NAME', value: who, textAlignment: 'PKTextAlignmentRight' }] : []),
         backFields: [
           { key: 'program', label: 'PROGRAMME', value: 'The choir: From angels to adults\nSunday school\'s play: Worth It — St. Paul\'s Journeys\nAdult play: "ماليش دعوة" · Malish Da3wa\nFollowed by Tasbeha' },
@@ -2928,7 +2929,7 @@ var Core = (function () {
         ].concat(e.order_code ? [{ key: 'ref', label: 'REFERENCE', value: e.order_code }] : []).concat([{ key: 'contact', label: 'QUESTIONS', value: 'artteam@stminacalgary.ca' }])
       }
     };
-    return env.walletPkpass(pass, test ? 'Apple Wallet - TEST ticket.pkpass' : 'Apple Wallet - Ticket ' + n + '.pkpass');   // the name buyers see (Tamer 2026-09-29)
+    return env.walletPkpass(pass, test ? 'Apple Wallet - DEMO ticket.pkpass' : 'Apple Wallet - Ticket ' + n + '.pkpass', !!test);   // test: the strip with DEMO across it   // the name buyers see (Tamer 2026-09-29)
   }
   // ---------- Tickets by text (Tamer 2026-11-21) ----------
   // From the team page only: the servant types the buyer's mobile and the tickets arrive as ONE plain text from the team's Twilio
@@ -2940,12 +2941,24 @@ var Core = (function () {
     var d = String(v == null ? '' : v).replace(/\D/g, ''); if (d.length === 11 && d.charAt(0) === '1') d = d.slice(1);
     return /^[2-9]\d{2}[2-9]\d{6}$/.test(d) ? '+1' + d : '';
   }
+  // The pictures themselves, as a picture message right after the link text (Tamer 2026-11-21). keys: ticket numbers, or the DEMO
+  // pictures' names for his test. Twilio takes at most 10 pictures a message, so a big sale goes in parts. The engine hands Twilio a
+  // short-lived address of each picture (env.ticketPictureLinks); Apps Script closes those addresses again a little later.
+  function picturesOn(env, s) { return String(s.sms_pictures).toUpperCase() === 'Y' && !!env.ticketPictureLinks; }
+  function ticketsPictures(env, s, to, keys, test) {
+    var parts = []; for (var i = 0; i < keys.length; i += 10) parts.push(keys.slice(i, i + 10));
+    parts.forEach(function (part, j) {
+      var body = (test ? 'TEST, NOT REAL TICKETS. Nativity Celebration: DEMO ticket' + (keys.length > 1 ? 's' : '') : 'Nativity Celebration: your ticket' + (keys.length > 1 ? 's' : '') + ' No. ' + part.join(', ')) +
+        (parts.length > 1 ? ' (' + (j + 1) + ' of ' + parts.length + ')' : '') + '. Download, save to your pictures and show at the door.';   // his words, 21 Nov
+      env.sms(to, body, mobile(s.sms_from), env.ticketPictureLinks(part));
+    });
+  }
   function entryKey(env, id) { return env.sign('entry-' + id); }
   function ticketsLink(env, s, e) { return siteUrl(s) + 'ticket/?e=' + encodeURIComponent(e.id) + '&k=' + entryKey(env, e.id); }
   function ticketsText(env, s, e) { return textBody(s, list(e.tickets).length, ticketsLink(env, s, e)); }
   function textBody(s, n, link) {
     return 'St. Mina Calgary, Wonder Worker Art Team: here ' + (n > 1 ? 'are your ' + n + ' tickets' : 'is your ticket') + ' for the Nativity Celebration, Saturday, January 30, 2027, 3:00 PM.\n\n' +
-      'Your ticket' + (n > 1 ? 's' : '') + ': ' + link + '\n\n' +
+      'Press the link to open your ticket' + (n > 1 ? 's' : '') + ' and add ' + (n > 1 ? 'them' : 'it') + ' to Apple Wallet (for iPhones): ' + link + '\n\n' +   // his words, 21 Nov: "just write press link to open and add to apple wallet for iphones"
       'Location: Bert Church LIVE Theatre, Airdrie ' + siteUrl(s) + 'map\n\n' +
       'Add to calendar: ' + siteUrl(s) + 'calendar\n\n' +
       'Please do not reply to this number. For help, send us an email at artteam@stminacalgary.ca';
@@ -2973,10 +2986,19 @@ var Core = (function () {
     if (!/^(\d{1,4}|demo-\d{2})$/.test(n) || str(p.k) !== ticketKey(env, n)) throw err('This link is not valid. Please email artteam@stminacalgary.ca and we will send your ticket again.');
     var s = settings(env);
     if (!walletOn(env, s)) throw err('Apple Wallet tickets are not available right now. Your ticket picture works at the door.');
-    if (/^demo-/.test(n)) return { ok: true, name: 'Apple Wallet - TEST ticket.pkpass', pass: env.dataUri(walletPass(env, s, { first: 'Test', last: 'Only' }, Number(n.slice(5)), true)) };   // a pass that says TEST
+    if (/^demo-/.test(n)) return { ok: true, name: 'Apple Wallet - DEMO ticket.pkpass', pass: env.dataUri(walletPass(env, s, { first: 'Test', last: 'Only' }, Number(n.slice(5)), true)) };   // a pass that says TEST
     var e = env.list('entries').filter(function (x) { return x.status !== 'void' && x.status !== 'refunded' && list(x.tickets).indexOf(Number(n)) > -1; })[0];
     if (!e) throw err('This ticket is no longer valid. Please email artteam@stminacalgary.ca.');
     return { ok: true, name: 'Apple Wallet - Ticket ' + n + '.pkpass', pass: env.dataUri(walletPass(env, s, e, Number(n))) };
+  }
+  // Every pass of one sale in ONE file (Tamer 2026-11-21, after his test: "no option to add all pass to wallet, has to do them one
+  // by one"): Apple's bundle of passes, which an iPhone adds in one go.
+  function ticketsPasses(env, p) {
+    var L = ticketsList(env, p), s = settings(env);   // the same checks as the page's list: the link's own key, not void
+    if (!walletOn(env, s) || !env.walletBundle) throw err('Apple Wallet tickets are not available right now. Your ticket picture works at the door.');
+    var e = L.test ? { first: 'Test', last: 'Only' } : env.list('entries').filter(function (x) { return String(x.id) === str(p.e); })[0];
+    var passes = L.tickets.map(function (t, i) { return L.test ? walletPass(env, s, e, i + 1, true) : walletPass(env, s, e, Number(t.n)); });
+    return { ok: true, count: passes.length, passes: env.dataUri(env.walletBundle(passes, 'Nativity 2027 tickets.pkpasses')) };
   }
   // Tamer's dashboard key only: the real text with TEST in front and TEST tickets behind its link (nothing recorded, no seat used)
   function ownerTestText(env, p) {
@@ -2987,7 +3009,12 @@ var Core = (function () {
     if (q < 1 || q > 10) throw err('Test tickets: 1 to 10.');
     try { env.sms(to, 'TEST, NOT REAL TICKETS. ' + textBody(s, q, siteUrl(s) + 'ticket/?t=' + q + '&k=' + env.sign('test-' + q)), from); }
     catch (x) { return { ok: false, error: 'The test text did not go out: ' + String(x && x.message || x).slice(0, 500) }; }
-    return { ok: true, to: to, qty: q };
+    var pics = 'off';
+    if (picturesOn(env, s)) {
+      var demo = []; for (var i = 1; i <= q; i++) demo.push('demo-' + ('0' + i).slice(-2));
+      try { ticketsPictures(env, s, to, demo, true); pics = 'sent'; } catch (x) { pics = 'failed: ' + String(x && x.message || x).slice(0, 300); }   // he sees the cause
+    }
+    return { ok: true, to: to, qty: q, pictures: pics };
   }
   // Tamer's dashboard key only: a sample pass for ticket 1001 sent back to the caller (nothing emailed), to try on an iPhone
   function ownerTestPass(env, p) {
@@ -3552,8 +3579,10 @@ var Core = (function () {
       env.append('entries', e);
       var textFail = [];   // a text that does not go out never stops the sale: the row is marked and the team is told
       if (texted) { try { env.sms(cell, ticketsText(env, s, e), mobile(s.sms_from)); } catch (x) { textFail.push('the tickets text did not go out to ' + cell + ' (' + x.message + '): send the tickets another way'); } }
+      var pics = false;   // the pictures follow the link text; if they fail the buyer still has the link, so the sale is not marked
+      if (texted && !textFail.length && picturesOn(env, s)) { try { ticketsPictures(env, s, cell, nums, false); pics = true; } catch (x) { env.log('ticket pictures text to ' + cell + ': ' + x.message); } }
       finishSale(env, s, e, 'Thank you for your donation of <b>' + money(amount) + '</b>, received by ' + esc(m.name) + '. ' + (printed ? 'Here is a copy of your printed ticket' + (nums.length > 1 ? 's' : '') + '.' : 'Your tickets are below.'), textFail, 'cash sale');
-      return outcome(e, null, { cash: cashHeld(env, m), texted: texted && !textFail.length ? cell : '', text_failed: texted && textFail.length > 0 });
+      return outcome(e, null, { cash: cashHeld(env, m), texted: texted && !textFail.length ? cell : '', text_failed: texted && textFail.length > 0, pictures: pics });
     });
   }
   // Free tickets, the owner only (Tamer 2026-09-25: "myself only can issue those tickets"). Someone who can't give right now emails
@@ -3764,7 +3793,7 @@ var Core = (function () {
   }
   function ownerSetting(env, p) {
     requireOwner(env, p.key);
-    var allowed = ['capacity', 'reserved', 'suggested', 'goal', 'given_before', 'demo_open_until', 'payments_email', 'square_on', 'square_env', 'square_location_id', 'square_fee_pct', 'square_fee_fixed', 'site_url', 'tickets_pdf', 'wallet_on', 'wallet_pass_type', 'wallet_team', 'sms_on', 'sms_from', 'sales_close', 'receipt_ticket_value', 'sponsor_ad_value', 'void_numbers', 'paused', 'booking_max', 'min_table', 'order_max', 'hold_days', 'sponsor_tiers', 'gift_seats', 'team_page_url', 'owner_page_url', 'low_seats'];
+    var allowed = ['capacity', 'reserved', 'suggested', 'goal', 'given_before', 'demo_open_until', 'payments_email', 'square_on', 'square_env', 'square_location_id', 'square_fee_pct', 'square_fee_fixed', 'site_url', 'tickets_pdf', 'wallet_on', 'wallet_pass_type', 'wallet_team', 'sms_on', 'sms_from', 'sms_pictures', 'sales_close', 'receipt_ticket_value', 'sponsor_ad_value', 'void_numbers', 'paused', 'booking_max', 'min_table', 'order_max', 'hold_days', 'sponsor_tiers', 'gift_seats', 'team_page_url', 'owner_page_url', 'low_seats'];
     if (allowed.indexOf(p.name) < 0) throw err('That setting cannot be changed here.');
     env.setSetting(p.name, str(p.value)); return { ok: true };
   }
@@ -3971,7 +4000,7 @@ var Core = (function () {
     announcements: announcements, owner_announce: ownerAnnounce, owner_announce_off: ownerAnnounceOff,
     owner_void: ownerVoid, owner_clear: ownerClear, owner_delete: ownerDelete, owner_sponsor_show: ownerSponsorShow, owner_handover: ownerHandover, owner_setting: ownerSetting, owner_resend: ownerResend, owner_test_email: ownerTestEmail,
     owner_export: ownerExport, owner_rows: function (env, p) { return exportRows(env, p); }, owner_sheet_key: ownerSheetKey, sheet_rows: sheetRows, sheet_backup: sheetBackup, owner_test_pdf: ownerTestPdf, owner_test_pass: ownerTestPass,
-    card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck, owner_free_tickets: ownerFreeTickets, owner_cash_gift: ownerCashGift, ticket_picture: ticketPicture, tickets_list: ticketsList, ticket_pass: ticketPass, owner_test_text: ownerTestText, owner_set_tickets: ownerSetTickets, owner_refunded: ownerRefunded };
+    card_status: cardStatus, square_event: squareEvent, owner_card_check: ownerCardCheck, owner_free_tickets: ownerFreeTickets, owner_cash_gift: ownerCashGift, ticket_picture: ticketPicture, tickets_list: ticketsList, ticket_pass: ticketPass, tickets_passes: ticketsPasses, owner_test_text: ownerTestText, owner_set_tickets: ownerSetTickets, owner_refunded: ownerRefunded };
 
   var PUBLIC_WRITES = { order: 1, donate: 1, sponsor: 1, waitlist: 1 };
   // Google's Sheets service fails now and then for a single call ("Service Spreadsheets failed while accessing document …":

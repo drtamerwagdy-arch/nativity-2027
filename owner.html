@@ -207,7 +207,7 @@ input.s{font:15px Arial,sans-serif;padding:7px 10px;border:1px solid var(--line)
   <section id="t-settings" class="hide"></section>
   <section class="card hide" id="bad"><h2>Link not valid</h2></section>
 </main>
-<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.106</span></footer>
+<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.107</span></footer>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -325,7 +325,8 @@ function copyBtn(root) {
       '<details style="margin-top:8px"><summary style="cursor:pointer;font-weight:700">Set up the number (once)</summary><p class="hint">Paste the values from Twilio. Use a send-only key. The secret is hidden; it goes straight to the engine and is not kept on this page.</p>' +
       '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><input class="s" id="tw-acct" autocomplete="off" placeholder="Account SID (AC…)" style="min-width:220px"> <input class="s" id="tw-ksid" autocomplete="off" placeholder="Key SID (SK…)" style="min-width:220px"> ' +
       '<input class="s" id="tw-ksec" type="password" autocomplete="new-password" placeholder="Key secret" style="min-width:220px"> <input class="s" id="tw-from" type="tel" value="+18254509095" aria-label="The number that sends" style="width:160px"> ' +
-      '<button class="btn" id="tw-connect" style="padding:9px 16px;min-height:0">Connect</button> <button class="btn ghost" id="tw-on" style="padding:8px 14px;min-height:0">Switch on</button> <button class="btn ghost" id="tw-off" style="padding:8px 14px;min-height:0">Switch off</button></div><p id="tw-out" class="hint"></p></details></div>' +
+      '<button class="btn" id="tw-connect" style="padding:9px 16px;min-height:0">Connect</button> <button class="btn ghost" id="tw-on" style="padding:8px 14px;min-height:0">Switch on</button> <button class="btn ghost" id="tw-off" style="padding:8px 14px;min-height:0">Switch off</button></div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px">The ticket pictures inside the text (a second message): <button class="btn ghost" id="tw-pon" style="padding:8px 14px;min-height:0">Pictures on</button> <button class="btn ghost" id="tw-poff" style="padding:8px 14px;min-height:0">Pictures off</button></div><p id="tw-out" class="hint"></p></details></div>' +
       // Cash or a cheque handed over in person (Tamer 2026-10-04): it goes in as a real donation, so the thermometer on the
       // tickets page moves at once, it counts as a supporter, and Hany sees it on his sheet with the tax-receipt line.
       '<div class="card" style="margin-top:12px"><h2>Money given in person (cash or cheque)</h2><p class="hint">For a gift handed to you outside the website. It is added to the thermometer on the tickets page straight away and appears on Hany\'s sheet. An email address is optional: give one and they get the thank-you and their receipt line; leave it out and it is recorded as a gift with no receipt.</p>' +
@@ -371,7 +372,8 @@ function copyBtn(root) {
       var b = this, out = $('#tt-out'); if (BUSY || b.disabled) return;
       b.disabled = true; out.textContent = 'Sending…';
       run('owner_test_text', { to: $('#tt-to').value.trim(), qty: $('#tt-qty').value }).then(function (r) {
-        out.innerHTML = '<b>Sent</b> to ' + esc(r.to) + ': ' + esc(r.qty) + ' TEST ticket' + (r.qty > 1 ? 's' : '') + '. Nothing was recorded.'; b.disabled = false;
+        out.innerHTML = '<b>Sent</b> to ' + esc(r.to) + ': ' + esc(r.qty) + ' TEST ticket' + (r.qty > 1 ? 's' : '') + '. Nothing was recorded.' +
+          (r.pictures === 'sent' ? ' The pictures went as a second message.' : r.pictures && r.pictures !== 'off' ? ' <b>The pictures did not go:</b> ' + esc(r.pictures) : ''); b.disabled = false;
       }, function (x) { out.textContent = x.message; b.disabled = false; });
     };
     $('#tw-connect').onclick = function () {
@@ -382,8 +384,9 @@ function copyBtn(root) {
         $('#tw-ksec').value = ''; out.innerHTML = '<b>Connected.</b> Send yourself a test text above. When it looks right, press Switch on.'; b.disabled = false;
       }, function (x) { out.textContent = x.message; b.disabled = false; });
     };
-    [['#tw-on', 'Y', 'Tickets by text are ON: the team page now shows the choice.'], ['#tw-off', 'N', 'Tickets by text are OFF: the choice is gone from the team page.']].forEach(function (x) {
-      $(x[0]).onclick = function () { var out = $('#tw-out'); out.textContent = 'Working…'; run('owner_setting', { name: 'sms_on', value: x[1] }).then(function () { out.textContent = x[2]; }, function (e) { out.textContent = e.message; }); };
+    [['#tw-on', 'sms_on', 'Y', 'Tickets by text are ON: the servant page now shows the choice.'], ['#tw-off', 'sms_on', 'N', 'Tickets by text are OFF: the choice is gone from the servant page.'],
+      ['#tw-pon', 'sms_pictures', 'Y', 'Pictures are ON: after the text with the link, the ticket pictures follow as a second message. Send yourself a test.'], ['#tw-poff', 'sms_pictures', 'N', 'Pictures are OFF: only the text with the link goes out.']].forEach(function (x) {
+      $(x[0]).onclick = function () { var out = $('#tw-out'); out.textContent = 'Working…'; run('owner_setting', { name: x[1], value: x[2] }).then(function () { out.textContent = x[3]; }, function (e) { out.textContent = e.message; }); };
     });
     var ftId = newId();
     $('#ft-go').onclick = function () {

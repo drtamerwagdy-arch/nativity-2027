@@ -241,7 +241,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   </section>
   <section class="card hide" id="bad"><h2>Link not valid</h2><p>This link is no longer valid. Please ask Tamer for a new one.</p></section>
 </main>
-<footer><span>Wonder Worker Art Team · team page</span><span class="ver">v1.106</span></footer>
+<footer><span>Wonder Worker Art Team · team page</span><span class="ver">v1.107</span></footer>
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
    Online demo (window.WW_DEMO): the engine runs in the page around this one; ask it by message. */
@@ -660,7 +660,7 @@ var SheetReader = (function () {
     if (!d.first || !d.last) { err.textContent = 'Enter the buyer\'s first and last name.'; return; }
     btn.disabled = true; btn.textContent = 'Sending…';
     api('cash_sale', d).then(function (r) {
-      $('[data-result]', sale).innerHTML = '<div class="okbox"><b>Done.</b> Tickets ' + esc(r.tickets.join(', ')) + (r.texted ? ' sent by text to ' + esc(r.texted) + (r.email ? ' and emailed to ' + esc(r.email) : '') : r.text_failed ? ' recorded, but the text did not go out. The team has been told' + (r.email ? '; the email went to ' + esc(r.email) : '') : r.email ? ' emailed to ' + esc(r.email) : ' recorded (printed, no email)') + '. You now hold ' + money(r.cash) + '.</div>';
+      $('[data-result]', sale).innerHTML = '<div class="okbox"><b>Done.</b> Tickets ' + esc(r.tickets.join(', ')) + (r.texted ? ' sent by text to ' + esc(r.texted) + (r.pictures ? ', with the ticket pictures' : '') + (r.email ? ' and emailed to ' + esc(r.email) : '') : r.text_failed ? ' recorded, but the text did not go out. The team has been told' + (r.email ? '; the email went to ' + esc(r.email) : '') : r.email ? ' emailed to ' + esc(r.email) : ' recorded (printed, no email)') + '. You now hold ' + money(r.cash) + '.</div>';
       $$('input[name=first],input[name=last],input[name=email],input[name=phone],input[name=numbers],input[name=amount]', sale).forEach(function (i) { i.value = ''; });
       touched = false; sid = newId(); load();
     }, function (x) { err.textContent = x.message; }).then(function () { btn.disabled = false; btn.textContent = 'Submit purchase'; });

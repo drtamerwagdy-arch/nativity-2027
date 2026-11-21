@@ -202,6 +202,7 @@ body{background:linear-gradient(180deg,#0B1530,#1A2D57);min-height:100vh}
   <h1>Nativity Celebration 2027</h1>
   <p class="when">Saturday, January 30, 2027 · 3:00 – 8:00 PM · Bert Church LIVE Theatre, Airdrie</p>
   <p class="testbar hide" id="test">TEST · these are not real tickets</p>
+  <button class="btn wide wal hide" id="walall" type="button">Add all tickets to Apple Wallet</button>
   <div class="tk" id="tk"><p class="how">Getting your ticket…</p></div>
   <button class="btn wide save hide" id="save" type="button">Save ticket</button>
   <button class="btn wide wal hide" id="wal" type="button">Add to Apple Wallet</button>
@@ -304,6 +305,17 @@ function copyBtn(root) {
   api('tickets_list', E ? { e: E, k: param('k') } : { t: T, k: param('k') }).then(function (r) {
     if (r.test) $('#test').classList.remove('hide');
     tk.innerHTML = ''; $('#more').classList.remove('hide');
+    // all the passes in one go (Tamer 2026-11-21: "no option to add all pass to wallet, has to do them one by one")
+    if (r.wallet && IOS && r.tickets.length > 1) {
+      var all = $('#walall'); all.textContent = 'Add all ' + r.tickets.length + ' tickets to Apple Wallet'; all.classList.remove('hide');
+      all.onclick = function () {
+        var old = all.textContent; all.disabled = true; all.textContent = 'Getting your passes…';
+        api('tickets_passes', E ? { e: E, k: param('k') } : { t: T, k: param('k') }).then(function (x) { return fetch(x.passes); }).then(function (x) { return x.blob(); }).then(function (blob) {
+          location.href = URL.createObjectURL(new Blob([blob], { type: 'application/vnd.apple.pkpasses' }));
+        }).catch(function (x) { note(esc((x && x.message) || 'The passes could not be opened. Please add them one by one below.')); })
+          .then(function () { all.disabled = false; all.textContent = old; });
+      };
+    }
     note(IOS ? 'Tap <b>Save ticket</b>, then <b>Save Image</b>: it goes to your Photos. You can also press and hold a ticket.'
       : 'Tap <b>Save ticket</b> to keep it on your phone, or press and hold a ticket and choose <b>Save image</b>.');
     r.tickets.forEach(function (t, i) {
