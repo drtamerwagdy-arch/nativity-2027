@@ -642,7 +642,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
 
   <!-- ============ GET TICKETS ============ -->
   <form class="card hide" id="buy" novalidate>
-    <div class="sechead"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M13 6v2M13 11v2M13 16v2"/></svg></span><div><h2 class="sugh">E-tickets: suggested donation <span class="hl" data-sughead>$20</span> per ticket</h2></div><span id="seats" class="seatpill" style="visibility:hidden">&nbsp;</span></div>   <!-- its place is kept while the engine answers (Tamer 2026-11-18); the count itself is never shown from a copy -->
+    <div class="sechead"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M13 6v2M13 11v2M13 16v2"/></svg></span><div><h2 class="sugh">E-tickets: suggested donation <span class="hl" data-sughead>$20</span> per ticket</h2></div><span id="seats" class="seatpill hide"></span></div>   <!-- shown only for "sold out" or "closed": the number of seats left is not shown to the public (Tamer 2026-11-21) -->
     <!-- Tamer 2026-09-25 (layout D): one line instead of the "4 easy steps" box; the e-Transfer steps open under their own pay button -->
     <p class="lead">Choose your number of tickets, add your details, then pay by card or Interac e-Transfer. Your e-tickets arrive by email.</p>
     <div data-topthermo class="topthermo"></div>
@@ -749,7 +749,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.116</span></footer>
+<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.117</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -3447,7 +3447,7 @@ var qrcode = function() {
 <script>
 (function () {
   var CFG = { tiers: [300, 400, 500], sponsors: [], suggested: 20, etransfer: 'donations@stminacalgary.ca', seatsLeft: 999, open: true, goal: 10000, raised: 0, givers: 0, bookingMax: 6, minTable: '10,25,45,70', orderMax: 20, holdDays: 10, form: '' };
-  var SNAP = {"t":1795289350924,"goal":10000,"raised":2590,"givers":12,"sponsors":[{"business":"Pixel Architecture","logo":"https://drive.google.com/thumbnail?id=1Nv8ZpN0kba2UOvoOdhHpQzeRbqpvLwGP&sz=w600","website":"www.pixelarch.ca","ad":"Architecture firm for healthcare, commercial and residential projects. Proud to support this community. pixelarch.ca"},{"business":"Tarek Younan","logo":"https://drive.google.com/thumbnail?id=1M3Fu3nrCvaq9Xdb9VEksjVRoLZnIeJOq&sz=w600","website":"https://insurelinehamptons.com/","ad":""}]};   // the goal and sponsors as of the last publish (build.py, tools/snapshot.py; Tamer 2026-11-18)
+  var SNAP = {"t":1795290719654,"goal":10000,"raised":2590,"givers":12,"sponsors":[{"business":"Pixel Architecture","logo":"https://drive.google.com/thumbnail?id=1Nv8ZpN0kba2UOvoOdhHpQzeRbqpvLwGP&sz=w600","website":"www.pixelarch.ca","ad":"Architecture firm for healthcare, commercial and residential projects. Proud to support this community. pixelarch.ca"},{"business":"Tarek Younan","logo":"https://drive.google.com/thumbnail?id=1M3Fu3nrCvaq9Xdb9VEksjVRoLZnIeJOq&sz=w600","website":"https://insurelinehamptons.com/","ad":""}]};   // the goal and sponsors as of the last publish (build.py, tools/snapshot.py; Tamer 2026-11-18)
   var PERSON = '<h3>Your details</h3><div class="two"><label class="f">First name<input name="first" autocomplete="given-name"></label><label class="f">Last name<input name="last" autocomplete="family-name"></label></div>' +
     '<label class="f">Email (your tickets and receipt go here)<input name="email" type="email" inputmode="email" autocomplete="email"></label>' +
     '<label class="f">Mobile <span style="font-weight:400">(optional)</span><input name="phone" type="tel" inputmode="tel" autocomplete="tel"></label>' +
@@ -3488,7 +3488,7 @@ var qrcode = function() {
     try { if (/[?&]v=/.test(location.search)) { var u0 = new URL(location.href); u0.searchParams.delete('v'); history.replaceState(null, '', u0.pathname + u0.search + u0.hash); } } catch (x) { }
     if (window.WW_DEMO || !/(^|\.)thewonderworker\.ca$/.test(location.hostname)) return;
     fetch('/version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
-      if (!j || !j.v || j.v === '1.116') return;
+      if (!j || !j.v || j.v === '1.117') return;
       try { var k = 'ww27-updated-' + j.v; if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (x) { return; }
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () { });
@@ -4045,8 +4045,9 @@ var qrcode = function() {
     for (var k in c) CFG[k] = c[k];
     try { localStorage.setItem(QUICK_KEY, JSON.stringify({ t: Date.now(), goal: CFG.goal, raised: CFG.raised, givers: CFG.givers, sponsors: CFG.sponsors })); } catch (x) { }
     if (c.orderMax) $$('[name=qty],[name=gift_qty]').forEach(function (i) { i.max = c.orderMax; });
-    $('#seats').style.visibility = '';
-    $('#seats').textContent = CFG.open ? (CFG.seatsLeft > 0 ? CFG.seatsLeft + ' seats left' : 'Sold out: join the waitlist') : 'Ticket sales are closed.';
+    // the number of seats left is not shown to the public (his word, 21 Nov 2026); the dashboard and the servant page keep it. Only "sold out" and "closed" still show here.
+    var seatsNote = CFG.open ? (CFG.seatsLeft > 0 ? '' : 'Sold out: join the waitlist') : 'Ticket sales are closed.';
+    $('#seats').textContent = seatsNote; $('#seats').classList.toggle('hide', !seatsNote);   // no empty gap under the heading
     if (CFG.paused) { $('#pick').outerHTML = '<section class="card"><h2>Back soon</h2><p>' + esc(CFG.paused) + '</p></section>'; forms.forEach(function (f) { $('#' + f).classList.add('hide'); }); return; }
     if (cur === 'buy' && (CFG.seatsLeft <= 0 || !CFG.open)) show('wait', true);
     var tl = $('[data-tierlist]', spon); if (tl && CFG.tiers.length) tl.textContent = CFG.tiers.map(money).join(', ').replace(/, ([^,]*)$/, ' or $1');
