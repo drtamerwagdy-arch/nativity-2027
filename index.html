@@ -749,7 +749,7 @@ footer.site .ver{background:transparent;border-color:rgba(255,255,255,.25);color
     <button class="btn wide" type="submit">Join the waitlist</button>
   </form>
 </main>
-<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.118</span></footer>
+<footer class="site"><span>© 2026 | <b>St. Mina Coptic Orthodox Church</b> | <b>Wonder Worker Art Team</b> | All Rights Reserved | Questions: <a href="mailto:artteam@stminacalgary.ca">artteam@stminacalgary.ca</a></span><span class="ver" title="Version of these pages">v1.119</span></footer>
 
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -958,7 +958,7 @@ function ProofBox(root, opts) {
       (opts.example ? '<figure class="shotex"><figcaption class="cap">Like this</figcaption><img src="' + opts.example + '" alt="Example: an Interac e-Transfer confirmation showing who was paid, the amount, the date and the message"></figure>' : '') +
       '<div><span class="cap">Yours</span><label class="upsq" data-upload>' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>' +
-        (opts.camera ? '<b>Upload a screenshot</b><small>Tap here to choose it from the photos</small>' : '<b>Upload your screenshot</b><small>Tap here to choose it from your photos</small>') +
+        (opts.square ? '<b>Add a screenshot</b><small>Optional. Tap here to choose it from your photos</small>' : opts.camera ? '<b>Upload a screenshot</b><small>Tap here to choose it from the photos</small>' : '<b>Upload your screenshot</b><small>Tap here to choose it from your photos</small>') +
         '<input type="file" accept="image/*" class="hide" data-file><canvas class="hide" data-shot></canvas><span class="chg hide" data-chg>Screenshot added · tap to change</span></label></div>' +
       // the servant page (Tamer 2026-11-21): a second square that opens the camera, to take a photo of the other person's screen
       (opts.camera ? '<div><label class="upsq" data-camsq>' +
@@ -966,8 +966,10 @@ function ProofBox(root, opts) {
         '<b>Open the camera</b><small>Take a photo of their screen</small>' +
         '<input type="file" accept="image/*" capture="environment" class="hide" data-camfile></label></div>' : '') +
     '</div>' +
-    '<p class="privnote">It only needs who you paid (<b>donations@stminacalgary.ca</b>), the amount and "Wonder Worker". Anything private, such as account or card numbers or your balance, is blacked out automatically before it is sent. ' +
-      'Once submitted, ' + (opts.done || 'you will get your tickets by email.') + '</p>' +
+    // a Square tap on the servant page (Tamer 2026-11-21): the screenshot is optional and is not read like an e-Transfer
+    (opts.square ? '<p class="privnote">You can submit without it. If you add one, it only needs to show the amount paid on Square. Anything private on it, such as a card number, is blacked out automatically before it is sent.</p>'
+    : '<p class="privnote">It only needs who you paid (<b>donations@stminacalgary.ca</b>), the amount and "Wonder Worker". Anything private, such as account or card numbers or your balance, is blacked out automatically before it is sent. ' +
+      'Once submitted, ' + (opts.done || 'you will get your tickets by email.') + '</p>') +
     '<div data-status></div>';
   var file = $('[data-file]', root), status = $('[data-status]', root), cv = $('[data-shot]', root), up = $('[data-upload]', root), chg = $('[data-chg]', root);
   function shown(on) { cv.classList.toggle('hide', !on); chg.classList.toggle('hide', !on); up.classList.toggle('got', !!on); }
@@ -1004,6 +1006,7 @@ function ProofBox(root, opts) {
       lines.forEach(function (l, n) { if (hits[n]) { scramble(ctx, l.bbox); if (state.scrambled.indexOf(hits[n]) < 0) state.scrambled.push(hits[n]); } else kept.push(texts[n]); });
       state.text = lines.length ? kept.join('\n') : (out.data.text || '');   // only what was left readable goes with it
       state.dataUrl = cv.toDataURL('image/jpeg', 0.85);
+      if (opts.square) { say('okbox', '<b>Screenshot added.</b>' + (state.scrambled.length ? ' Private details on it (' + esc(state.scrambled.join(', ')) + ') have been blacked out, so no one can see them.' : '')); return; }
       var f = Proof.facts(state.text), notes = [];
       if (!f.recipient) notes.push('we could not see donations@stminacalgary.ca');
       if (exp && f.amount && f.amount + 0.001 < exp) notes.push('the amount shown (' + money(f.amount) + ') is less than ' + money(exp));
@@ -3447,7 +3450,7 @@ var qrcode = function() {
 <script>
 (function () {
   var CFG = { tiers: [300, 400, 500], sponsors: [], suggested: 20, etransfer: 'donations@stminacalgary.ca', seatsLeft: 999, open: true, goal: 10000, raised: 0, givers: 0, bookingMax: 6, minTable: '10,25,45,70', orderMax: 20, holdDays: 10, form: '' };
-  var SNAP = {"t":1795292945286,"goal":10000,"raised":2610,"givers":13,"sponsors":[{"business":"Pixel Architecture","logo":"https://drive.google.com/thumbnail?id=1Nv8ZpN0kba2UOvoOdhHpQzeRbqpvLwGP&sz=w600","website":"www.pixelarch.ca","ad":"Architecture firm for healthcare, commercial and residential projects. Proud to support this community. pixelarch.ca"},{"business":"Tarek Younan","logo":"https://drive.google.com/thumbnail?id=1M3Fu3nrCvaq9Xdb9VEksjVRoLZnIeJOq&sz=w600","website":"https://insurelinehamptons.com/","ad":""}]};   // the goal and sponsors as of the last publish (build.py, tools/snapshot.py; Tamer 2026-11-18)
+  var SNAP = {"t":1795307535388,"goal":10000,"raised":2590,"givers":12,"sponsors":[{"business":"Pixel Architecture","logo":"https://drive.google.com/thumbnail?id=1Nv8ZpN0kba2UOvoOdhHpQzeRbqpvLwGP&sz=w600","website":"www.pixelarch.ca","ad":"Architecture firm for healthcare, commercial and residential projects. Proud to support this community. pixelarch.ca"},{"business":"Tarek Younan","logo":"https://drive.google.com/thumbnail?id=1M3Fu3nrCvaq9Xdb9VEksjVRoLZnIeJOq&sz=w600","website":"https://insurelinehamptons.com/","ad":""}]};   // the goal and sponsors as of the last publish (build.py, tools/snapshot.py; Tamer 2026-11-18)
   var PERSON = '<h3>Your details</h3><div class="two"><label class="f">First name<input name="first" autocomplete="given-name"></label><label class="f">Last name<input name="last" autocomplete="family-name"></label></div>' +
     '<label class="f">Email (your tickets and receipt go here)<input name="email" type="email" inputmode="email" autocomplete="email"></label>' +
     '<label class="f">Mobile <span style="font-weight:400">(optional)</span><input name="phone" type="tel" inputmode="tel" autocomplete="tel"></label>' +
@@ -3488,7 +3491,7 @@ var qrcode = function() {
     try { if (/[?&]v=/.test(location.search)) { var u0 = new URL(location.href); u0.searchParams.delete('v'); history.replaceState(null, '', u0.pathname + u0.search + u0.hash); } } catch (x) { }
     if (window.WW_DEMO || !/(^|\.)thewonderworker\.ca$/.test(location.hostname)) return;
     fetch('/version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
-      if (!j || !j.v || j.v === '1.118') return;
+      if (!j || !j.v || j.v === '1.119') return;
       try { var k = 'ww27-updated-' + j.v; if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (x) { return; }
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () { });

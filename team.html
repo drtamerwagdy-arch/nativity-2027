@@ -455,7 +455,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   <!-- his words the same day: "how to mainly how to use it to purchase tickets to others" · "or donation or sponsor, like how to use it to help others" -->
   <!-- and: "and that you need to add your name first" · "can't work without it" (the line shows on the servants' link, where the name box is) -->
   <section class="card hide" id="howto" style="padding:14px 18px"><p class="hide" data-namefirst style="margin:0 0 6px"><b>First, type your own first and last name in the boxes below.</b> The page does not work without them.</p>
-    <p style="margin:0"><b>Use this page to help someone</b> get tickets, give a donation or become a sponsor. Choose <b>Tickets</b>, <b>Donation</b> or <b>Sponsor</b>, type their details and the amount they gave you, choose how they paid (cash, cheque or e-Transfer) and press <b>Submit</b>. Their tickets or their thank-you reach them at once.</p>
+    <p style="margin:0"><b>Use this page to help someone</b> get tickets, give a donation or become a sponsor. Choose <b>Tickets</b>, <b>Donation</b> or <b>Sponsor</b>, type their details and the amount they gave you, choose how they paid (cash, cheque, e-Transfer or Square tap) and press <b>Submit</b>. Their tickets or their thank-you reach them at once.</p>
     <!-- "and pin it to your mobile by add to home on iPhone or how on Android, or pin to Chrome on your computer" -->
     <p class="hint" style="margin:8px 0 0"><b>Keep this page one tap away.</b> iPhone: press Share, then <b>Add to Home Screen</b>. Android: press the three dots, then <b>Add to Home screen</b>. Computer: bookmark it in Chrome (press Cmd + D, or Ctrl + D on Windows).</p></section>
   <!-- the servants' link: each servant types their own name once (Tamer 2026-11-21); it goes on every sale, and the dashboard shows who holds what -->
@@ -476,9 +476,11 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
     <div data-eticket class="row"><span>How many</span><div class="stepper"><button type="button" data-d="-1">−</button><input name="qty" type="number" min="1" max="20" value="1"><button type="button" data-d="1">+</button></div></div>
     <h3>Received</h3>
     <div class="money"><b>$</b><input name="amount" type="text" inputmode="decimal" autocomplete="off" data-money><span class="hint" data-suggest></span></div>
-    <div class="pills"><label><input type="radio" name="method" value="Cash" checked> Cash</label><label><input type="radio" name="method" value="Cheque"> Cheque</label><label><input type="radio" name="method" value="e-Transfer"> e-Transfer</label></div>
+    <div class="pills"><label><input type="radio" name="method" value="Cash" checked> Cash</label><label><input type="radio" name="method" value="Cheque"> Cheque</label><label><input type="radio" name="method" value="e-Transfer"> e-Transfer</label><label><input type="radio" name="method" value="Square tap"> Square tap</label></div>
     <!-- e-Transfer shown to the servant (Tamer 2026-11-21): the buyer sends it from their own bank, the servant adds the screenshot -->
     <div class="hide" data-etbox><p class="hint" style="margin:4px 0 10px">The buyer sends the e-Transfer to <b>donations@stminacalgary.ca</b> with <b>Wonder Worker</b> in the message. Then <b>upload the screenshot</b> of the confirmation, or <b>open the camera</b> and take a photo of their screen.</p><div data-proof></div></div>
+    <!-- Square tap (Tamer 2026-11-21): the card is tapped on the Square app on the servant's phone; a screenshot is optional -->
+    <div class="hide" data-sqbox><p class="hint" style="margin:4px 0 10px">Take the payment first on the <b>Square app on your phone</b>: tap the buyer's card or phone. When Square shows it went through, press Submit here. A <b>screenshot of the Square payment is optional</b>.</p><div data-proof-sq></div></div>
     <div class="err" data-err></div>
     <button class="btn wide" type="submit">Submit purchase</button>
     <div data-result></div>
@@ -531,7 +533,7 @@ footer .privacy{flex-basis:100%;color:var(--ink);font-weight:700;white-space:now
   </section>
   <section class="card hide" id="bad"><h2>Link not valid</h2><p>This link is no longer valid. Please ask Tamer for a new one.</p></section>
 </main>
-<footer><span>Wonder Worker Art Team · servant page</span><span class="ver">v1.118</span></footer>
+<footer><span>Wonder Worker Art Team · servant page</span><span class="ver">v1.119</span></footer>
 <script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
    Online demo (window.WW_DEMO): the engine runs in the page around this one; ask it by message. */
@@ -854,7 +856,7 @@ function ProofBox(root, opts) {
       (opts.example ? '<figure class="shotex"><figcaption class="cap">Like this</figcaption><img src="' + opts.example + '" alt="Example: an Interac e-Transfer confirmation showing who was paid, the amount, the date and the message"></figure>' : '') +
       '<div><span class="cap">Yours</span><label class="upsq" data-upload>' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>' +
-        (opts.camera ? '<b>Upload a screenshot</b><small>Tap here to choose it from the photos</small>' : '<b>Upload your screenshot</b><small>Tap here to choose it from your photos</small>') +
+        (opts.square ? '<b>Add a screenshot</b><small>Optional. Tap here to choose it from your photos</small>' : opts.camera ? '<b>Upload a screenshot</b><small>Tap here to choose it from the photos</small>' : '<b>Upload your screenshot</b><small>Tap here to choose it from your photos</small>') +
         '<input type="file" accept="image/*" class="hide" data-file><canvas class="hide" data-shot></canvas><span class="chg hide" data-chg>Screenshot added · tap to change</span></label></div>' +
       // the servant page (Tamer 2026-11-21): a second square that opens the camera, to take a photo of the other person's screen
       (opts.camera ? '<div><label class="upsq" data-camsq>' +
@@ -862,8 +864,10 @@ function ProofBox(root, opts) {
         '<b>Open the camera</b><small>Take a photo of their screen</small>' +
         '<input type="file" accept="image/*" capture="environment" class="hide" data-camfile></label></div>' : '') +
     '</div>' +
-    '<p class="privnote">It only needs who you paid (<b>donations@stminacalgary.ca</b>), the amount and "Wonder Worker". Anything private, such as account or card numbers or your balance, is blacked out automatically before it is sent. ' +
-      'Once submitted, ' + (opts.done || 'you will get your tickets by email.') + '</p>' +
+    // a Square tap on the servant page (Tamer 2026-11-21): the screenshot is optional and is not read like an e-Transfer
+    (opts.square ? '<p class="privnote">You can submit without it. If you add one, it only needs to show the amount paid on Square. Anything private on it, such as a card number, is blacked out automatically before it is sent.</p>'
+    : '<p class="privnote">It only needs who you paid (<b>donations@stminacalgary.ca</b>), the amount and "Wonder Worker". Anything private, such as account or card numbers or your balance, is blacked out automatically before it is sent. ' +
+      'Once submitted, ' + (opts.done || 'you will get your tickets by email.') + '</p>') +
     '<div data-status></div>';
   var file = $('[data-file]', root), status = $('[data-status]', root), cv = $('[data-shot]', root), up = $('[data-upload]', root), chg = $('[data-chg]', root);
   function shown(on) { cv.classList.toggle('hide', !on); chg.classList.toggle('hide', !on); up.classList.toggle('got', !!on); }
@@ -900,6 +904,7 @@ function ProofBox(root, opts) {
       lines.forEach(function (l, n) { if (hits[n]) { scramble(ctx, l.bbox); if (state.scrambled.indexOf(hits[n]) < 0) state.scrambled.push(hits[n]); } else kept.push(texts[n]); });
       state.text = lines.length ? kept.join('\n') : (out.data.text || '');   // only what was left readable goes with it
       state.dataUrl = cv.toDataURL('image/jpeg', 0.85);
+      if (opts.square) { say('okbox', '<b>Screenshot added.</b>' + (state.scrambled.length ? ' Private details on it (' + esc(state.scrambled.join(', ')) + ') have been blacked out, so no one can see them.' : '')); return; }
       var f = Proof.facts(state.text), notes = [];
       if (!f.recipient) notes.push('we could not see donations@stminacalgary.ca');
       if (exp && f.amount && f.amount + 0.001 < exp) notes.push('the amount shown (' + money(f.amount) + ') is less than ' + money(exp));
@@ -3243,8 +3248,10 @@ var qrcode = function() {
     $('[data-suggest]', sale).textContent = c ? 'suggested ' + money(c * SUG) + ' for ' + c : '';
     if (!touched) $('[name=amount]', sale).value = c ? c * SUG : '';
     $('[data-etbox]', sale).classList.toggle('hide', d.method !== 'e-Transfer');
+    $('[data-sqbox]', sale).classList.toggle('hide', d.method !== 'Square tap');
   }
   var proof = new ProofBox($('[data-proof]', sale), { expected: function () { return $('[name=amount]', sale).value; }, done: 'the buyer gets the tickets.', camera: true });
+  var proofSq = new ProofBox($('[data-proof-sq]', sale), { expected: function () { return $('[name=amount]', sale).value; }, square: true });
   // once the member types an amount, stop suggesting one
   sale.addEventListener('input', function (e) { if (e.target.name === 'amount') touched = true; else sync(); });
   sale.addEventListener('change', function (e) { if (e.target.name !== 'amount') sync(); });
@@ -3299,10 +3306,10 @@ var qrcode = function() {
     }
     var rows = me.sales.map(function (s) {
       return '<tr' + (s.status === 'void' ? ' style="opacity:.45;text-decoration:line-through"' : '') + '><td>' + esc(when(s.created)) + '</td><td>' + esc(s.name) + '<br><span class="hint">' + esc(s.email || 'no email') + '</span></td><td>' + esc(s.kind === 'donation' ? 'Donation' : s.kind === 'sponsor' ? 'Sponsor' + (s.business ? ' · ' + s.business : '') : s.tickets) + '</td><td>' + money(s.amount) + '<br><span class="hint">' + esc(s.method) + '</span></td><td>' +
-        (s.undo ? '<button class="link" data-undo="' + esc(s.id) + '">Undo</button>' : '') + '</td></tr>';
+        (s.undo ? '<button class="link" data-undo="' + esc(s.id) + '"' + (s.method === 'Square tap' ? ' data-tap="1"' : '') + '>Undo</button>' : '') + '</td></tr>';
     }).join('');
     $('[data-list]', $('#mine')).innerHTML = rows ? '<table class="t"><tr><th>When</th><th>Buyer</th><th>Tickets</th><th>Amount</th><th></th></tr>' + rows + '</table><p class="hint">You can undo a sale for 15 minutes. After that, ask Tamer.</p>' : '<p class="hint">No sales yet.</p>';
-    $$('[data-undo]').forEach(function (b) { b.onclick = function () { if (!confirm('Undo this sale? The tickets will be cancelled.')) return; api('member_undo', { key: KEY, id: b.getAttribute('data-undo') }).then(load, function (x) { alert(x.message); }); }; });
+    $$('[data-undo]').forEach(function (b) { b.onclick = function () { if (!confirm('Undo this sale? The tickets will be cancelled.' + (b.getAttribute('data-tap') ? '\n\nThe card is NOT refunded by this. Refund it in the Square app.' : ''))) return; api('member_undo', { key: KEY, id: b.getAttribute('data-undo') }).then(load, function (x) { alert(x.message); }); }; });
     // the sponsor amounts, as set in Settings
     var tb = $('[data-tiers]', spon), most = Math.max.apply(null, me.tiers || [0]);
     if (!tb.innerHTML) tb.innerHTML = (me.tiers || []).map(function (v, i) { return '<label><input type="radio" name="tier" value="' + v + '"' + (i ? '' : ' checked') + '> ' + money(v) + '</label>'; }).join('');
@@ -3318,12 +3325,12 @@ var qrcode = function() {
     if (b.state === 'cancelled') { box.innerHTML = '<div class="badbox"><b>' + esc(b.order) + ' was cancelled.</b> Make a new sale below instead.</div>'; return; }
     box.innerHTML = '<div class="pay"><div class="big">' + esc(b.order) + '</div><p><b>' + esc(b.name) + '</b> · ' + esc(b.email) + '<br>' + b.qty + ' ticket' + (b.qty > 1 ? 's' : '') + (b.gift_qty ? ' + ' + b.gift_qty + ' gifted seat' + (b.gift_qty > 1 ? 's' : '') : '') + ' · booked ' + esc(when(b.created)) + (b.receipt === 'N' ? ' · no tax receipt' : '') + '</p>' +
       '<div class="money"><b>$</b><input data-amt type="text" inputmode="decimal" autocomplete="off" data-money value="' + b.amount + '"><span class="hint">received (booked ' + money(b.amount) + ')</span></div>' +
-      '<div class="pills"><label><input type="radio" name="bmethod" value="Cash" checked> Cash</label><label><input type="radio" name="bmethod" value="Cheque"> Cheque</label></div>' +
+      '<div class="pills"><label><input type="radio" name="bmethod" value="Cash" checked> Cash</label><label><input type="radio" name="bmethod" value="Cheque"> Cheque</label><label><input type="radio" name="bmethod" value="Square tap"> Square tap</label></div>' +
       '<div class="err" data-berr></div><button type="button" class="btn wide" data-paid>Paid, send the tickets</button></div>';
     $('[data-paid]', box).onclick = function () {
-      var btn = this; btn.disabled = true; btn.textContent = 'Sending…';
-      api('member_paid', { key: KEY, ref: b.order, amount: $('[data-amt]', box).value, method: ($('[name=bmethod]:checked', box) || {}).value }).then(function (r) {
-        box.innerHTML = '<div class="okbox"><b>Paid.</b> Tickets ' + esc(r.tickets) + (r.gift_count ? ' + ' + r.gift_count + ' gifted seat' + (r.gift_count > 1 ? 's' : '') : '') + ' emailed to ' + esc(r.email) + '. You now hold ' + money(r.cash) + '.</div>';
+      var btn = this, bhow = ($('[name=bmethod]:checked', box) || {}).value; btn.disabled = true; btn.textContent = 'Sending…';
+      api('member_paid', { key: KEY, ref: b.order, amount: $('[data-amt]', box).value, method: bhow }).then(function (r) {
+        box.innerHTML = '<div class="okbox"><b>Paid.</b> Tickets ' + esc(r.tickets) + (r.gift_count ? ' + ' + r.gift_count + ' gifted seat' + (r.gift_count > 1 ? 's' : '') : '') + ' emailed to ' + esc(r.email) + '. ' + cashLine({ method: bhow, cash: r.cash }) + '</div>';
         $('[data-code]', col).value = ''; load();
       }, function (x) { $('[data-berr]', box).textContent = x.message; btn.disabled = false; btn.textContent = 'Paid, send the tickets'; });
     };
@@ -3376,18 +3383,27 @@ var qrcode = function() {
   $$('#kinds button').forEach(function (b) { b.onclick = function () { KIND = b.getAttribute('data-kind'); showKind(); }; });
   function dataOf(f) { var o = {}; $$('input', f).forEach(function (i) { if (!i.name) return; if (i.type === 'radio') { if (i.checked) o[i.name] = i.value; } else if (i.type === 'checkbox') o[i.name] = i.checked; else o[i.name] = i.value.trim(); }); return o; }
   function payPart(form, who, amountOf, done) {
-    $('[data-pay]', form).innerHTML = '<div class="pills"><label><input type="radio" name="method" value="Cash" checked> Cash</label><label><input type="radio" name="method" value="Cheque"> Cheque</label><label><input type="radio" name="method" value="e-Transfer"> e-Transfer</label></div>' +
-      '<div class="hide" data-etbox><p class="hint" style="margin:4px 0 10px">' + who + ' sends the e-Transfer to <b>donations@stminacalgary.ca</b> with <b>Wonder Worker</b> in the message. Then <b>upload the screenshot</b> of the confirmation, or <b>open the camera</b> and take a photo of their screen.</p><div data-proof></div></div>';
-    var pb = new ProofBox($('[data-proof]', form), { expected: amountOf, done: done, camera: true });
-    form.addEventListener('change', function () { $('[data-etbox]', form).classList.toggle('hide', ($('[name=method]:checked', form) || {}).value !== 'e-Transfer'); });
-    return pb;
+    $('[data-pay]', form).innerHTML = '<div class="pills"><label><input type="radio" name="method" value="Cash" checked> Cash</label><label><input type="radio" name="method" value="Cheque"> Cheque</label><label><input type="radio" name="method" value="e-Transfer"> e-Transfer</label><label><input type="radio" name="method" value="Square tap"> Square tap</label></div>' +
+      '<div class="hide" data-etbox><p class="hint" style="margin:4px 0 10px">' + who + ' sends the e-Transfer to <b>donations@stminacalgary.ca</b> with <b>Wonder Worker</b> in the message. Then <b>upload the screenshot</b> of the confirmation, or <b>open the camera</b> and take a photo of their screen.</p><div data-proof></div></div>' +
+      '<div class="hide" data-sqbox><p class="hint" style="margin:4px 0 10px">Take the payment first on the <b>Square app on your phone</b>: tap their card or phone. When Square shows it went through, press Submit here. A <b>screenshot of the Square payment is optional</b>.</p><div data-proof-sq></div></div>';
+    var pb = new ProofBox($('[data-proof]', form), { expected: amountOf, done: done, camera: true }), sq = new ProofBox($('[data-proof-sq]', form), { expected: amountOf, square: true });
+    form.addEventListener('change', function () { var how = ($('[name=method]:checked', form) || {}).value; $('[data-etbox]', form).classList.toggle('hide', how !== 'e-Transfer'); $('[data-sqbox]', form).classList.toggle('hide', how !== 'Square tap'); });
+    return { et: pb, sq: sq, reset: function () { pb.reset(); sq.reset(); } };
   }
-  function addProof(d, pb) {
+  function addProof(d, boxes) {
+    if (d.method === 'Square tap') {   // its screenshot is optional (Tamer 2026-11-21)
+      if (boxes.sq.busy()) throw new Error('One moment: still checking the screenshot.');
+      var shot = boxes.sq.value(); if (shot) d.proof = shot;
+      return;
+    }
     if (d.method !== 'e-Transfer') return;
-    if (pb.busy()) throw new Error('One moment: still checking the screenshot.');
-    d.proof = pb.value(); if (!d.proof) throw new Error('Add the screenshot of the e-Transfer. Every e-Transfer needs one.');
+    if (boxes.et.busy()) throw new Error('One moment: still checking the screenshot.');
+    d.proof = boxes.et.value(); if (!d.proof) throw new Error('Add the screenshot of the e-Transfer. Every e-Transfer needs one.');
   }
-  function cashLine(r) { return r.method === 'e-Transfer' ? 'The e-Transfer went straight to the church, so the cash stays at ' + money(r.cash) + '.' : 'You now hold ' + money(r.cash) + '.'; }
+  function cashLine(r) {
+    return r.method === 'e-Transfer' ? 'The e-Transfer went straight to the church, so the cash stays at ' + money(r.cash) + '.'
+      : r.method === 'Square tap' ? 'The card payment went to the church through Square, so the cash stays at ' + money(r.cash) + '.' : 'You now hold ' + money(r.cash) + '.';
+  }
   function sendForm(form, action, build, said, after) {
     form.onsubmit = function (ev) {
       ev.preventDefault();
@@ -3398,7 +3414,7 @@ var qrcode = function() {
       btn.disabled = true; btn.textContent = 'Sending…';
       api(action, d).then(function (r) {
         $('[data-result]', form).innerHTML = '<div class="okbox">' + said(r, d) + '</div>';
-        form.reset(); form._sid = null; after(); $('[data-etbox]', form).classList.add('hide'); load();
+        form.reset(); form._sid = null; after(); $('[data-etbox]', form).classList.add('hide'); $('[data-sqbox]', form).classList.add('hide'); load();
       }, function (x) { err.textContent = x.message; }).then(function () { btn.disabled = false; btn.textContent = label; });
     };
   }
@@ -3513,10 +3529,14 @@ var qrcode = function() {
       d.proof = proof.value();
       if (!d.proof) { err.textContent = 'Add the screenshot of the e-Transfer. Every e-Transfer sale needs one.'; return; }
     }
+    if (d.method === 'Square tap') {   // its screenshot is optional
+      if (proofSq.busy()) { err.textContent = 'One moment: still checking the screenshot.'; return; }
+      var shot = proofSq.value(); if (shot) d.proof = shot;
+    }
     btn.disabled = true; btn.textContent = 'Sending…';
     api('cash_sale', d).then(function (r) {
-      $('[data-result]', sale).innerHTML = '<div class="okbox"><b>Done.</b> Tickets ' + esc(r.tickets.join(', ')) + (r.texted ? ' sent by text to ' + esc(r.texted) + (r.pictures ? ', with the ticket pictures' : '') + (r.email ? ' and emailed to ' + esc(r.email) : '') : r.text_failed ? ' recorded, but the text did not go out. The team has been told' + (r.email ? '; the email went to ' + esc(r.email) : '') : r.email ? ' emailed to ' + esc(r.email) : ' recorded (printed, no email)') + '. ' + (r.method === 'e-Transfer' ? 'The e-Transfer went straight to the church, so the cash stays at ' + money(r.cash) + '.' : 'You now hold ' + money(r.cash) + '.') + '</div>';
-      proof.reset(); $('[name=method][value=Cash]', sale).checked = true;
+      $('[data-result]', sale).innerHTML = '<div class="okbox"><b>Done.</b> Tickets ' + esc(r.tickets.join(', ')) + (r.texted ? ' sent by text to ' + esc(r.texted) + (r.pictures ? ', with the ticket pictures' : '') + (r.email ? ' and emailed to ' + esc(r.email) : '') : r.text_failed ? ' recorded, but the text did not go out. The team has been told' + (r.email ? '; the email went to ' + esc(r.email) : '') : r.email ? ' emailed to ' + esc(r.email) : ' recorded (printed, no email)') + '. ' + cashLine(r) + '</div>';
+      proof.reset(); proofSq.reset(); $('[name=method][value=Cash]', sale).checked = true;
       $$('input[name=first],input[name=last],input[name=email],input[name=phone],input[name=numbers],input[name=amount]', sale).forEach(function (i) { i.value = ''; });
       touched = false; sid = newId(); load();
     }, function (x) { err.textContent = x.message; }).then(function () { btn.disabled = false; btn.textContent = 'Submit purchase'; });
@@ -3525,13 +3545,13 @@ var qrcode = function() {
   // thewonderworker.ca/team-help.html; opens only from the Help button (Tamer 2026-09-25)
   var TEAM_TOUR = [
     { el: null, t: 'Welcome to the servant page', d: 'This quick guide shows you how to record tickets, a donation or a sponsorship taken in person.', go: 'Start' },
-    { el: '#kinds', t: 'Tickets, donation or sponsor', d: 'Choose what the person is giving for. Each one asks only for what it needs, and takes cash, a cheque or an e-Transfer.' },
+    { el: '#kinds', t: 'Tickets, donation or sponsor', d: 'Choose what the person is giving for. Each one asks only for what it needs, and takes cash, a cheque, an e-Transfer or a Square tap.' },
     { el: '#share', t: 'The tickets page', d: 'Someone prefers to do it on their own phone? Let them scan this code, or send them the link from your phone.' },
-    { el: '#held', t: 'Cash you hold', d: 'Adds up the cash and cheques you collect. Give them to Hany; Tamer records the hand-over. An e-Transfer is not counted here: it goes straight to the church.' },
+    { el: '#held', t: 'Cash you hold', d: 'Adds up the cash and cheques you collect. Give them to Hany; Tamer records the hand-over. An e-Transfer or a Square tap is not counted here: it goes straight to the church.' },
     { el: '#soldbar', t: 'Tickets sold', d: 'Tickets sold so far, gifted seats (not in the total) and seats left. A warning shows when seats run low.' },
     { el: '#sale .two', t: 'Selling in person', d: 'Under <b>New sale</b>, type the buyer\'s name and email. The email is a must for every ticket.' },
     { el: function () { var r = $('#sale [name=mode]'); return r && r.closest('.pills'); }, t: 'How the tickets go', d: '<b>Email e-tickets</b>: choose how many; they arrive by email. <b>Text e-tickets to the mobile</b> (when that choice shows): they go by text as well as by email.' },
-    { el: '#sale .money', t: 'Amount and payment', d: 'Enter the amount received, choose <b>Cash</b>, <b>Cheque</b> or <b>e-Transfer</b>, then tap <b>Submit purchase</b>. For an e-Transfer, add the screenshot of the buyer\'s confirmation first.' },
+    { el: '#sale .money', t: 'Amount and payment', d: 'Enter the amount received, choose <b>Cash</b>, <b>Cheque</b>, <b>e-Transfer</b> or <b>Square tap</b>, then tap <b>Submit purchase</b>. For an e-Transfer, add the screenshot of the buyer\'s confirmation first. For a Square tap, take the payment on your Square app first; a screenshot is optional.' },
     { el: '#mine', t: 'My sales', d: 'The sales made with this link show here. Made a mistake? <b>Undo</b> within 15 minutes.' }
   ];
   load().then(function () {

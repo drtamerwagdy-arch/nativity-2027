@@ -207,7 +207,7 @@ input.s{font:15px Arial,sans-serif;padding:7px 10px;border:1px solid var(--line)
   <section id="t-settings" class="hide"></section>
   <section class="card hide" id="bad"><h2>Link not valid</h2></section>
 </main>
-<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.118</span></footer>
+<footer><span>Nativity 2027 · owner dashboard</span><span class="ver">v1.119</span></footer>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>window.WW_API='https://script.google.com/macros/s/AKfycbypq4eaYGTLyL7PYuED1yp9lZfLGS6FJla6uoHT7OxyBYBm2PMj1dJH6HFSOvet-em9/exec';</script><script>/* api(action, payload) → Promise of the server's answer.
    Served by Apps Script: google.script.run. Embedded elsewhere / local demo: POST JSON to WW_API.
@@ -516,7 +516,7 @@ function copyBtn(root) {
   function exporter() {
     $('#t-export').innerHTML = '<div class="card"><h2>Export for Hany</h2><p class="hint">Pick the columns and filters Hany wants, preview, then download or email the Excel file to artteam@.</p>' +
       '<div class="cols">' + COLS.map(function (c) { return '<label><input type="checkbox" value="' + c[0] + '"' + (chosen.indexOf(c[0]) > -1 ? ' checked' : '') + '> ' + c[1] + '</label>'; }).join('') + '</div>' +
-      '<div class="row"><select class="s" data-ex="method"><option value="">All methods</option><option>e-Transfer</option><option>Card</option><option>Cash</option><option>Cheque</option><option>Free</option></select>' +
+      '<div class="row"><select class="s" data-ex="method"><option value="">All methods</option><option>e-Transfer</option><option>Card</option><option>Cash</option><option>Cheque</option><option>Square tap</option><option>Free</option></select>' +
       '<select class="s" data-ex="member"><option value="">All sellers</option>' + D.members.map(function (m) { return '<option value="' + m.id + '">' + esc(m.name) + '</option>'; }).join('') + '</select>' +
       '<label class="hint">From <input class="s" type="date" data-ex="from"></label><label class="hint">To <input class="s" type="date" data-ex="to"></label></div>' +
       '<div class="row"><button class="btn ghost" data-prev style="min-height:0;padding:8px 14px">Preview</button><button class="btn" data-dl style="min-height:0;padding:8px 14px">Download Excel</button><button class="btn" data-mail style="min-height:0;padding:8px 14px">Email Excel to artteam@</button></div><div data-out class="scroll"></div></div>';

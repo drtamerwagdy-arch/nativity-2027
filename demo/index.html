@@ -3246,7 +3246,7 @@ var Core = (function () {
       var who = str((e.first || '') + ' ' + (e.last || '')) || e.business || '', n = list(e.tickets).length;
       var what = e.kind === 'donation' ? 'donation' : e.kind === 'sponsor' ? 'sponsorship' + (e.silent === 'Y' ? ' (silent)' : '') : n + ' ticket' + (n === 1 ? '' : 's');
       var rows = [['Name', who], ['Email', e.email], ['For', what + (e.kind === 'sponsor' && e.business ? ' · ' + e.business : '')],
-        ['Amount', money(e.amount) + (num(e.card_fee) ? ' (+ card fee ' + money(e.card_fee) + ', covered by the buyer)' : /card/i.test(e.method) ? ' (card fee not covered: the church pays it)' : '')], ['Paid by', e.method],
+        ['Amount', money(e.amount) + (num(e.card_fee) ? ' (+ card fee ' + money(e.card_fee) + ', covered by the buyer)' : /card/i.test(e.method) || isTap(e.method) ? ' (card fee not covered: the church pays it)' : '')], ['Paid by', e.method],
         ['Tickets', [e.tickets, e.gift_numbers ? 'gift seats ' + e.gift_numbers : ''].filter(Boolean).join(' · ')], ['Reference', e.order_code], ['Recorded by', e.recorded_by],
         ['Status', e.status === 'flagged' ? 'needs a look (see the "Check needed" email)' : 'ok']].filter(function (r) { return str(r[1]); });
       env.mail({ to: to, subject: 'Payment · ' + money(e.amount) + ' · ' + (who || 'no name') + ' · ' + what + (e.order_code ? ' · ' + e.order_code : ''), name: 'Nativity payments', replyTo: e.email || s.team_email,
@@ -3488,7 +3488,7 @@ var Core = (function () {
       var rows = env.list('entries').slice();
       if (days > 0) {
         var old = now.getTime() - days * 864e5;
-        rows.filter(function (e) { return e.proof && e.method === 'e-Transfer' && Date.parse(e.created) < old; }).slice(0, 20)
+        rows.filter(function (e) { return e.proof && (e.method === 'e-Transfer' || e.method === TAP) && Date.parse(e.created) < old; }).slice(0, 20)
           .forEach(function (e) { if (dropProof(env, e)) done.proofs++; });
       }
       if (String(s.details_wipe).toUpperCase() !== 'N') {
@@ -3638,9 +3638,23 @@ var Core = (function () {
     });
     return out;
   }
-  function cashHeld(env, m, seller) {   // cash and cheques in a servant's hands; an e-Transfer went straight to the church, so it is never counted here
+  // Square tap (Tamer 2026-11-21: "add to the servant payment option using square tap. Make upload screen shot of the payment is
+  // option if use this method. Some servant has square on their phone"): the servant taps the card on the Square app on their own
+  // phone. The money goes to the church through Square, so, like an e-Transfer, it is never cash in the servant's hands. A
+  // screenshot of the Square payment may be added; it is never asked for and never checked like an e-Transfer.
+  var TAP = 'Square tap';
+  function isTap(method) { return /square/i.test(str(method)) && !/transfer/i.test(str(method)); }
+  function tapShot(env, p, expected, name) {   // the optional screenshot: null = none was added
+    var pr = p.proof || {}; if (!pr.dataUrl) return null;
+    var pre = p.proofText || readProofText(env, p), hits = pre.text ? Proof.sensitive(pre.text, expected) : [];
+    if (hits.length) return { url: '' };   // something private still readable on it: the picture is not kept, as with an e-Transfer
+    try { return { url: env.saveProof(pr.dataUrl, name) || '' }; } catch (x) { env.log('Square tap screenshot not saved: ' + x.message); return { url: '' }; }   // never stops the entry
+  }
+  function tapNote(shot) { return ' · Square tap on the servant\'s phone' + (shot && !shot.url ? ' (its screenshot was not kept)' : ''); }
+  function tapCols(shot) { return shot && shot.url ? { proof: shot.url, proof_status: 'square' } : { proof_status: 'none' }; }
+  function cashHeld(env, m, seller) {   // cash and cheques in a servant's hands; an e-Transfer or a Square tap went straight to the church, so it is never counted here
     var k = seller ? sellerKey(seller) : '';   // on the servants' link: one servant's own cash
-    var took = live(env).filter(function (e) { return e.member_id === m.id && e.method !== 'e-Transfer' && (!k || sellerKey(e.recorded_by) === k); }).reduce(function (t, e) { return t + num(e.amount); }, 0);
+    var took = live(env).filter(function (e) { return e.member_id === m.id && e.method !== 'e-Transfer' && e.method !== TAP && (!k || sellerKey(e.recorded_by) === k); }).reduce(function (t, e) { return t + num(e.amount); }, 0);
     var gave = env.list('handovers').filter(function (h) { return h.member_id === m.id && (!k || sellerKey(h.name) === k); }).reduce(function (t, h) { return t + num(h.amount); }, 0);
     return Math.round((took - gave) * 100) / 100;
   }
@@ -3677,7 +3691,7 @@ var Core = (function () {
     // tickets through servant or regular purchase"). Before, a text or a printed ticket could go out with no email.
     if (!email) throw err('Enter the buyer\'s email. Every ticket needs one: the tickets are sent there.');
     if (!validEmail(email)) throw err('Check the email address.');
-    var et = /transfer/i.test(p.method), amount = num(p.amount), method = et ? 'e-Transfer' : /cheque/i.test(p.method) ? 'Cheque' : 'Cash';
+    var et = /transfer/i.test(p.method), tap = isTap(p.method), amount = num(p.amount), method = et ? 'e-Transfer' : tap ? TAP : /cheque/i.test(p.method) ? 'Cheque' : 'Cash';
     if (!(amount > 0)) throw err('Enter the amount received.');
     // An e-Transfer shown to a servant (Tamer 2026-11-21: "add option beside cash, cheque, add upload e-transfer screen shot"): the
     // same rules as an online order: the screenshot is a must, private lines are blacked out on the phone, one e-Transfer is one sale.
@@ -3688,7 +3702,7 @@ var Core = (function () {
     if (texted && !smsOn(env, s)) throw err('Tickets by text are not switched on. Please use the email or printed tickets.');
     if (texted && !cell) throw err('Enter the buyer\'s mobile number with the area code. The tickets are sent there by text.');
     if (texted) who.phone = cell;
-    if (et) p.proofText = readProofText(env, p);   // the slow reading of the screenshot, before the lock
+    if (et || (tap && p.proof && p.proof.dataUrl)) p.proofText = readProofText(env, p);   // the slow reading of the screenshot, before the lock
     return env.lock(function () {
       s = settings(env);   // fresh inside the lock (2026-09-26)
       var again = seenBefore(env, p, function (a) { return outcome(a, null, { cash: held() }); }); if (again) return again;   // same request sent twice
@@ -3712,12 +3726,13 @@ var Core = (function () {
         proof_status: 'none', submit_id: str(p.submit_id), note: (shared ? 'servants\' link · ' : '') + (printed ? 'printed tickets handed over' : texted ? 'e-tickets by text' : 'e-tickets') + (p.sheet !== undefined ? ' · from a paper sales sheet' : ''),
         proof: /^https:\/\/drive\.google\.com\//.test(str(p.sheet)) ? str(p.sheet) : '' });
       if (checked) { e.interac_ref = checked.facts.ref || ''; e.proof = checked.url; e.proof_hash = checked.hash; e.proof_status = checked.status; e.note += ' · e-Transfer shown to a servant'; }
+      if (tap) { var shot = tapShot(env, p, amount, 'Servant sale - ' + who.last + ' - ' + money(amount) + ' - Square tap'), tc = tapCols(shot); for (var c in tc) e[c] = tc[c]; e.note += tapNote(shot); }
       env.append('entries', e);
       var textFail = [];   // a text that does not go out never stops the sale: the row is marked and the team is told
       if (texted) { try { env.sms(cell, ticketsText(env, s, e), mobile(s.sms_from)); } catch (x) { textFail.push('the tickets text did not go out to ' + cell + ' (' + x.message + '): send the tickets another way'); } }
       var pics = false;   // the pictures follow the link text; if they fail the buyer still has the link, so the sale is not marked
       if (texted && !textFail.length && picturesOn(env, s)) { try { ticketsPictures(env, s, cell, nums, false); pics = true; } catch (x) { env.log('ticket pictures text to ' + cell + ': ' + x.message); } }
-      finishSale(env, s, e, 'Thank you for your donation of <b>' + money(amount) + '</b>' + (et ? ' by e-Transfer' : ', received by ' + esc(shared ? seller : m.name)) + '. ' + (printed ? 'Here is a copy of your printed ticket' + (nums.length > 1 ? 's' : '') + '.' : 'Your tickets are below.'), textFail.concat(checked ? checked.reasons : []), et ? 'e-Transfer sale by a servant' : 'cash sale');
+      finishSale(env, s, e, 'Thank you for your donation of <b>' + money(amount) + '</b>' + (et ? ' by e-Transfer' : tap ? ' by card' : ', received by ' + esc(shared ? seller : m.name)) + '. ' + (printed ? 'Here is a copy of your printed ticket' + (nums.length > 1 ? 's' : '') + '.' : 'Your tickets are below.'), textFail.concat(checked ? checked.reasons : []), et ? 'e-Transfer sale by a servant' : tap ? 'Square tap sale by a servant' : 'cash sale');
       return outcome(e, null, { cash: held(), texted: texted && !textFail.length ? cell : '', text_failed: texted && textFail.length > 0, pictures: pics, method: method });
     });
   }
@@ -3736,11 +3751,11 @@ var Core = (function () {
         if (shared && sellerBlocked(s, seller)) throw err('This name cannot record sales. Please speak to Tamer.');
       } };
   }
-  function paidHow(env, p) {   // Cash, Cheque or e-Transfer; an e-Transfer must come with its screenshot
-    var et = /transfer/i.test(p.method);
+  function paidHow(env, p) {   // Cash, Cheque, e-Transfer or Square tap; an e-Transfer must come with its screenshot, a Square tap may
+    var et = /transfer/i.test(p.method), tap = isTap(p.method);
     if (et && !(p.proof && p.proof.dataUrl)) throw err('Add the screenshot of the e-Transfer. Every e-Transfer needs one.');
-    if (et) p.proofText = readProofText(env, p);   // the slow reading, before the lock
-    return { et: et, method: et ? 'e-Transfer' : /cheque/i.test(p.method) ? 'Cheque' : 'Cash' };
+    if (et || (tap && p.proof && p.proof.dataUrl)) p.proofText = readProofText(env, p);   // the slow reading, before the lock
+    return { et: et, tap: tap, method: et ? 'e-Transfer' : tap ? TAP : /cheque/i.test(p.method) ? 'Cheque' : 'Cash' };
   }
   function proofCols(checked) {
     return checked ? { interac_ref: checked.facts.ref || '', proof: checked.url, proof_hash: checked.hash, proof_status: checked.status, flags: checked.reasons.join(' | ') } : { proof_status: 'none' };
@@ -3762,8 +3777,9 @@ var Core = (function () {
       if (how.et) { p.nameForFile = code + ' - ' + str(p.last) + ' - ' + money(amount) + ' - donation (servant)'; checked = checkProof(env, p, amount); }
       // no email: no thank-you to send and no receipt line, as with a gift recorded on the dashboard; Hany still sees the amount
       var who = { first: str(p.first), last: str(p.last), email: email, phone: str(p.phone), address: '', city: '', postal: '', receipt: email ? 'Y' : 'N' };
-      var cols = proofCols(checked), o = { kind: 'donation', amount: amount, method: how.method, order_code: code, submit_id: str(p.submit_id), recorded_by: v.by, member_id: m.id,
-        note: (v.shared ? 'servants\' link · ' : '') + 'donation taken by a servant' + (how.et ? ' · e-Transfer shown to a servant' : '') };
+      var shot = how.tap ? tapShot(env, p, amount, code + ' - ' + str(p.last) + ' - ' + money(amount) + ' - donation (servant, Square tap)') : null;
+      var cols = how.tap ? tapCols(shot) : proofCols(checked), o = { kind: 'donation', amount: amount, method: how.method, order_code: code, submit_id: str(p.submit_id), recorded_by: v.by, member_id: m.id,
+        note: (v.shared ? 'servants\' link · ' : '') + 'donation taken by a servant' + (how.et ? ' · e-Transfer shown to a servant' : how.tap ? tapNote(shot) : '') };
       for (var k in cols) o[k] = cols[k];
       var e = mk(env, who, o);
       if (checked && checked.status !== 'ok') e.status = 'flagged';
@@ -3795,9 +3811,10 @@ var Core = (function () {
       var code = orderCode(env, s), checked = null;
       if (how.et) { p.nameForFile = code + ' - ' + label + ' - ' + money(tier) + ' - sponsor (servant)' + (silent ? ' (silent)' : ''); checked = checkProof(env, p, tier); }
       var logo = silent ? '' : env.saveLogo(p.logo, code + ' - ' + business);
-      var cols = proofCols(checked), o = { kind: 'sponsor', amount: tier, method: how.method, order_code: code, submit_id: str(p.submit_id), business: business,
+      var shot = how.tap ? tapShot(env, p, tier, code + ' - ' + label + ' - ' + money(tier) + ' - sponsor (servant, Square tap)' + (silent ? ' (silent)' : '')) : null;
+      var cols = how.tap ? tapCols(shot) : proofCols(checked), o = { kind: 'sponsor', amount: tier, method: how.method, order_code: code, submit_id: str(p.submit_id), business: business,
         website: silent ? '' : str(p.site), logo: logo, shown: 'N', ad_text: silent ? '' : str(p.ad_text).slice(0, 120), show_as: showAs, silent: silent ? 'Y' : '',
-        recorded_by: v.by, member_id: m.id, note: (v.shared ? 'servants\' link · ' : '') + 'sponsorship taken by a servant' + (how.et ? ' · e-Transfer shown to a servant' : '') };
+        recorded_by: v.by, member_id: m.id, note: (v.shared ? 'servants\' link · ' : '') + 'sponsorship taken by a servant' + (how.et ? ' · e-Transfer shown to a servant' : how.tap ? tapNote(shot) : '') };
       for (var k in cols) o[k] = cols[k];
       var e = mk(env, who, o);
       if (checked && checked.status !== 'ok') e.status = 'flagged';
@@ -3889,17 +3906,17 @@ var Core = (function () {
       // once only, whatever the sheet shows (a double tap on Paid + the sheet lag = two sets of tickets); undone if this run fails
       if (env.once && !env.once('paid-' + e.id)) throw err('Booking ' + e.order_code + ' is being marked paid right now. Check the list in a moment.');
       try {
-        var amount = num(p.amount) || num(e.amount), method = /cheque/i.test(p.method) ? 'Cheque' : 'Cash';
+        var amount = num(p.amount) || num(e.amount), tap = isTap(p.method), method = tap ? TAP : /cheque/i.test(p.method) ? 'Cheque' : 'Cash';
         var qty = num(e.qty), gq = num(e.gift_qty);
         if (!fits(env, s, qty, gq, e.id)) throw err('Not enough seats left for this booking. Please call Tamer.');
         var patch = { kind: 'cash', status: 'ok', amount: amount, method: method, recorded_by: m.name, member_id: m.id,
           tickets: take(env, s, qty).join(', '),
           gift_numbers: gq ? takeGift(env, s, gq).join(', ') : '',
-          note: str(e.note + ' booked online, paid ' + env.now().toISOString().slice(0, 10)) };
+          note: str(e.note + ' booked online, paid ' + env.now().toISOString().slice(0, 10)) + (tap ? tapNote(null) : '') };
         env.update('entries', e.id, patch);
       } catch (x) { if (env.unmark) env.unmark('paid-' + e.id); throw x; }
       for (var k in patch) e[k] = patch[k];
-      finishSale(env, s, e, 'Thank you for your donation of <b>' + money(amount) + '</b>, received by ' + esc(m.name) + '. Your tickets are below.', [], 'cash booking ' + e.order_code);
+      finishSale(env, s, e, 'Thank you for your donation of <b>' + money(amount) + '</b>' + (tap ? ' by card' : ', received by ' + esc(m.name)) + '. Your tickets are below.', [], (tap ? 'Square tap booking ' : 'cash booking ') + e.order_code);
       var r = bookingView(e); r.cash = cashHeld(env, m); return r;
     });
   }
